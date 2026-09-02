@@ -7,5 +7,6 @@ data/*.db
 data/*.db-journal
 data/projects/*
 !data/projects/.gitkeep
+data/fal_test/
 .pytest_cache/
 *.egg-info/

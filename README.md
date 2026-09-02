@@ -292,7 +292,7 @@ the mocks. They have never been executed against the live API: outbound
 access to fal.ai is blocked from this development environment, so their
 first real invocation will be the approved test itself.
 
-### The one real test we're proposing
+### The one real test - approved, run it locally
 
 **Endpoints:**
 - Video: `fal-ai/wan/v2.2-a14b/image-to-video/turbo`, called with
@@ -301,12 +301,24 @@ first real invocation will be the approved test itself.
 
 **Exact expected cost: $0.053** ($0.003 image + $0.05 video, both flat
 rates with no rounding uncertainty - the reason we like flat billing).
-The only real risk is a bug sending the wrong resolution (Turbo defaults
-to 720p/$0.10 if `resolution` isn't set) - we'll show you the literal
-request payload, `resolution: "480p"` included, right before it's sent, so
-that's visible before anything is charged.
 
-We have not made this call. Waiting on your go-ahead.
+This test is approved (max spend $0.06) but has not been run anywhere yet.
+It can't be run from this development sandbox at all: the sandbox's
+network egress policy returns a hard 403 policy denial on every fal.ai
+host (`fal.ai`, `fal.run`, `queue.fal.run`, `rest.alpha.fal.ai`), confirmed
+directly (not just inferred from one blocked tool). Per that policy's own
+guidance, we did not retry or attempt to route around it.
+
+Instead, `scripts/run_first_fal_test.py` is a standalone script - not
+routed through the project/database pipeline, just the two adapters
+directly - meant to be run on a machine that *can* reach fal.ai (e.g. your
+own computer). See "Running the one real fal.ai test" below for exact
+commands. Its full request/response logic has been dry-run end-to-end
+against a fake HTTP transport (same technique as the adapter tests) with
+the real cost math, confirming the $0.0530 total and that
+`resolution: "480p"` / `aspect_ratio: "9:16"` are both actually present in
+the outgoing request - only the network call itself is untested, since
+that's the one thing that can't be faked.
 
 ## Requirements
 
@@ -336,6 +348,39 @@ shot to completion - using only free mock providers:
 python -m scripts.seed_demo_project
 # or with your own idea:
 python -m scripts.seed_demo_project "He converted an enormous concrete pipe into a hidden luxury home."
+```
+
+## Running the one real fal.ai test (spends real money - max $0.06)
+
+`scripts/run_first_fal_test.py` generates exactly one FLUX schnell
+reference image and exactly one Wan 2.2 A14B Turbo (480p, 9:16) video from
+it, using the real `FalImageProvider`/`FalVideoProvider` adapters directly
+- not the mocks, and not routed through the project/database pipeline.
+
+**Safety properties, all in the script itself:**
+- Refuses to run if `FAL_API_KEY` isn't found in `.env` (prints whether it
+  loaded, without printing the key).
+- Computes and prints the exact cost estimate ($0.0530 expected) and
+  refuses to proceed if it exceeds the $0.06 hard cap - before any network
+  call.
+- Prints the full plan (prompts, model ids, resolution, aspect ratio, cost)
+  and asks you to type `yes` before spending anything (skip with `--yes`).
+- No automatic retries anywhere - image generation, video submission, each
+  status check, and the download are each a single attempt; any failure
+  stops the script immediately with a clear message. Waiting for a
+  still-processing video is normal polling, not a retry, and is itself
+  capped (5 minutes) so the script can't hang forever.
+- Generates exactly one image and exactly one video. No regeneration path.
+- Saves both outputs to `data/fal_test/` (gitignored) and prints the final
+  image/video paths, actual cost, and generation time.
+
+Requires `FAL_API_KEY=your_key_here` in your `.env` file first (get one at
+https://fal.ai/dashboard/keys).
+
+```bash
+python -m scripts.run_first_fal_test
+# or, to skip the "type yes to proceed" confirmation prompt:
+python -m scripts.run_first_fal_test --yes
 ```
 
 ## Running the API server
@@ -408,10 +453,11 @@ provider-level rate limiting.
 
 - **Milestone 2, remaining**: the real fal.ai `VideoProvider` (Wan 2.2 A14B
   Turbo) and `ImageProvider` (FLUX schnell) adapters are written and locally
-  tested against simulated responses (see "Cost model" above) - not yet
-  wired in as the active provider, and not yet called for real. Next is
-  running the single approved $0.053 test generation. Will not happen
-  without your explicit go-ahead.
+  tested against simulated responses (see "Cost model" above), and the
+  single approved $0.06-capped test is packaged as a standalone script
+  (`scripts/run_first_fal_test.py`) - not yet run anywhere, since the dev
+  sandbox can't reach fal.ai. Next is running it from a machine that can
+  (e.g. your own computer) and reviewing the result.
 - **Milestone 3+**: full multi-shot async generation across an entire
   project, voiceover, FFmpeg assembly, captions, AI QA, ChatGPT+Claude
   collaboration, a review dashboard, and eventually publishing - see the

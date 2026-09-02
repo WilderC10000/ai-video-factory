@@ -13,6 +13,7 @@ import pytest  # noqa: E402
 
 from app.db import Base, SessionLocal, engine  # noqa: E402
 import app.models.project  # noqa: E402,F401  (register models on Base)
+import app.models.video_job  # noqa: E402,F401
 
 
 @pytest.fixture(autouse=True)

@@ -23,6 +23,14 @@ class Settings(BaseSettings):
     max_daily_spend_usd: float = 20.00
     max_regenerations_per_shot: int = 3
 
+    # How long (wall-clock seconds since a job started) we'll wait for a video
+    # provider before giving up and marking the job TIMED_OUT.
+    video_job_timeout_seconds: int = 300
+    # How many times a single poll can hit a transient provider error (network
+    # blip, etc.) before the job is given up on and marked FAILED. This is
+    # separate from Shot.regeneration_count, which tracks whole new attempts.
+    max_job_poll_retries: int = 3
+
     # Real provider keys - unused until later milestones.
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None

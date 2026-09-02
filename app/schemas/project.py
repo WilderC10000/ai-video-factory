@@ -5,10 +5,30 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 from app.models.project import OperationType, ProjectStatus, ShotStatus
+from app.models.video_job import VideoJobStatus
 
 
 class ProjectCreateRequest(BaseModel):
     idea_text: str
+
+
+class VideoJobOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    shot_id: str
+    provider_name: str
+    provider_job_id: str | None
+    prompt: str
+    reference_image_path: str | None
+    status: VideoJobStatus
+    started_at: datetime | None
+    completed_at: datetime | None
+    output_file_path: str | None
+    estimated_cost_usd: float | None
+    actual_cost_usd: float | None
+    retry_count: int
+    error_message: str | None
 
 
 class ShotOut(BaseModel):
@@ -25,6 +45,7 @@ class ShotOut(BaseModel):
     qa_score: float | None
     error_message: str | None
     regeneration_count: int
+    video_jobs: list[VideoJobOut] = []
 
 
 class CostRecordOut(BaseModel):

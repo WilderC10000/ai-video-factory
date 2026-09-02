@@ -129,6 +129,9 @@ class Shot(Base):
     )
 
     project: Mapped[Project] = relationship(back_populates="shots")
+    video_jobs: Mapped[list["VideoJob"]] = relationship(  # noqa: F821
+        back_populates="shot", cascade="all, delete-orphan", order_by="VideoJob.created_at"
+    )
 
 
 class CostRecord(Base):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Run one project all the way from an idea to a full storyboard, using only the
-free mock LLM provider. This is how we prove the pipeline works end-to-end
+"""Run one project all the way from an idea to a rendered first shot, using
+only free mock providers. This is how we prove the pipeline works end-to-end
 without needing a frontend or spending any money.
 
 Usage:
@@ -8,10 +8,13 @@ Usage:
     python -m scripts.seed_demo_project "He converted a giant concrete pipe into a hidden luxury home."
 """
 import sys
+import time
 
 from app.db import SessionLocal, init_db
+from app.models.video_job import VideoJobStatus
 from app.providers.llm.mock import MockLLMProvider
-from app.services import project_service
+from app.providers.video.mock import MockVideoProvider
+from app.services import project_service, video_job_service
 
 DEFAULT_IDEA = (
     "He buried an abandoned private jet beneath his backyard and turned it into "
@@ -25,26 +28,53 @@ def main() -> None:
 
     db = SessionLocal()
     llm = MockLLMProvider()
+    video = MockVideoProvider()
     try:
         project = project_service.create_project(db, idea)
-        print(f"[1/4] Created project {project.id} - status={project.status.value}")
+        print(f"[1/6] Created project {project.id} - status={project.status.value}")
 
         project = project_service.advance_to_concept(db, project, llm)
-        print(f"[2/4] Concept ready - status={project.status.value}")
+        print(f"[2/6] Concept ready - status={project.status.value}")
         print(f"      Title: {project.title}")
         print(f"      Continuity bible: {project.continuity_bible}")
 
         project = project_service.advance_to_script(db, project, llm)
-        print(f"[3/4] Script ready - status={project.status.value}")
+        print(f"[3/6] Script ready - status={project.status.value}")
         print(f"      Hook: {project.script['hook']}")
 
         project = project_service.advance_to_storyboard(db, project, llm)
-        print(f"[4/4] Storyboard ready - status={project.status.value}")
+        print(f"[4/6] Storyboard ready - status={project.status.value}")
         print(f"      {len(project.shots)} shots created:")
         for shot in project.shots:
             print(f"        #{shot.shot_number} [{shot.status.value}] {shot.description}")
 
-        print(f"\nTotal cost so far: ${project.total_cost_usd:.4f}")
+        first_shot = project.shots[0]
+        print(f"\n[5/6] Submitting video generation job for shot #{first_shot.shot_number}...")
+        job = video_job_service.submit_shot_video_job(db, first_shot, video)
+        print(f"      Job {job.id} submitted to {job.provider_name} "
+              f"(provider job id: {job.provider_job_id}), status={job.status.value}, "
+              f"estimated cost=${job.estimated_cost_usd:.4f}")
+        print(f"      Shot status is now {first_shot.status.value}")
+
+        print("[6/6] Polling job status until it reaches a terminal state...")
+        poll_count = 0
+        while job.status not in (VideoJobStatus.COMPLETED, VideoJobStatus.FAILED, VideoJobStatus.TIMED_OUT):
+            poll_count += 1
+            job = video_job_service.poll_shot_video_job(db, job, video)
+            print(f"      Poll #{poll_count}: status={job.status.value}")
+            if job.status not in (VideoJobStatus.COMPLETED, VideoJobStatus.FAILED, VideoJobStatus.TIMED_OUT):
+                time.sleep(0.2)  # just for readable output pacing, not required by the mock
+
+        db.refresh(first_shot)
+        print(f"\nFinal shot status: {first_shot.status.value}")
+        if job.status == VideoJobStatus.COMPLETED:
+            print(f"Clip saved to: {first_shot.video_file_path}")
+            print(f"Actual cost: ${job.actual_cost_usd:.4f}")
+        else:
+            print(f"Job did not complete: {job.error_message}")
+
+        db.refresh(project)
+        print(f"\nTotal project cost so far: ${project.total_cost_usd:.4f}")
         print(f"Project ID for further API calls: {project.id}")
     finally:
         db.close()

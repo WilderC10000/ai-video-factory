@@ -12,14 +12,17 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.project import CostRecord, OperationType, Project, ProjectStatus, Shot, ShotStatus
 from app.providers.base import LLMProvider
+from app.services.errors import FactoryPausedError, InvalidTransitionError
 
-
-class FactoryPausedError(Exception):
-    """Raised when generation is attempted while the global pause flag is on."""
-
-
-class InvalidTransitionError(Exception):
-    """Raised when a project isn't in the right status for the requested step."""
+__all__ = [
+    "FactoryPausedError",
+    "InvalidTransitionError",
+    "build_shot_prompt",
+    "create_project",
+    "advance_to_concept",
+    "advance_to_script",
+    "advance_to_storyboard",
+]
 
 
 def _require_status(project: Project, expected: ProjectStatus) -> None:

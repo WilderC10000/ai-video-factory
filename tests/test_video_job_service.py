@@ -5,7 +5,7 @@ import pytest
 from app.config import settings
 from app.models.project import ShotStatus
 from app.models.video_job import VideoJobStatus
-from app.providers.video.mock import MockVideoProvider
+from app.providers.video.mock import WAN_STANDARD_PRICING, MockVideoProvider
 from app.services import video_job_service
 from app.services.errors import (
     FactoryPausedError,
@@ -19,8 +19,9 @@ from app.services.video_job_service import _utcnow
 
 @pytest.fixture()
 def video(tmp_path, monkeypatch):
-    # Cheap-but-nonzero simulated cost so spend-limit logic has something real to check.
-    return MockVideoProvider(cost_per_second=0.10)
+    # Default pricing (Wan Turbo, flat $0.05/video @480p) - our current
+    # cheapest-credible real candidate, so most tests exercise real numbers.
+    return MockVideoProvider()
 
 
 def _poll_until_terminal(db_session, job, video_provider, max_polls=10):
@@ -41,13 +42,13 @@ def test_successful_generation(db_session, ready_shot, video):
     job = video_job_service.submit_shot_video_job(db_session, ready_shot, video)
     assert job.status == VideoJobStatus.PROCESSING
     assert job.provider_job_id is not None
-    assert job.estimated_cost_usd == pytest.approx(0.5)  # 5s * $0.10/s
+    assert job.estimated_cost_usd == pytest.approx(0.05)  # Wan Turbo flat price @480p
     assert ready_shot.status == ShotStatus.GENERATING
 
     job = _poll_until_terminal(db_session, job, video)
 
     assert job.status == VideoJobStatus.COMPLETED
-    assert job.actual_cost_usd == pytest.approx(0.5)
+    assert job.actual_cost_usd == pytest.approx(0.05)
     assert job.output_file_path is not None
     assert job.completed_at is not None
 
@@ -63,10 +64,18 @@ def test_successful_generation(db_session, ready_shot, video):
 
     project = ready_shot.project
     db_session.refresh(project)
-    assert project.total_cost_usd == pytest.approx(0.5)
+    assert project.total_cost_usd == pytest.approx(0.05)
     video_costs = [c for c in project.cost_records if c.shot_id == ready_shot.id]
     assert len(video_costs) == 1
-    assert video_costs[0].cost_usd == pytest.approx(0.5)
+    assert video_costs[0].cost_usd == pytest.approx(0.05)
+
+
+def test_standard_pricing_scales_with_duration(db_session, ready_shot):
+    # Confirms the per-second billing path (kept available for a premium
+    # upgrade later) still works alongside Turbo's flat pricing.
+    standard = MockVideoProvider(pricing=WAN_STANDARD_PRICING)
+    job = video_job_service.submit_shot_video_job(db_session, ready_shot, standard)
+    assert job.estimated_cost_usd == pytest.approx(0.20)  # 5s * $0.04/s @480p
 
 
 # ---------------------------------------------------------------------------

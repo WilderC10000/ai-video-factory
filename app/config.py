@@ -31,7 +31,11 @@ class Settings(BaseSettings):
     # separate from Shot.regeneration_count, which tracks whole new attempts.
     max_job_poll_retries: int = 3
 
-    # Real provider keys - unused until later milestones.
+    # Real provider keys - not used by anything active yet. The fal.ai adapters
+    # (app/providers/video/fal.py, app/providers/image/fal.py) read this, but
+    # they are not wired into the app as the active provider until explicitly
+    # approved and switched on.
+    fal_api_key: str | None = None
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
 

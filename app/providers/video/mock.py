@@ -1,8 +1,15 @@
-"""A free video provider used until a real paid provider (Veo/Kling/Runway/...)
-is wired in and explicitly approved. It never makes a network call and never
-costs real money - `estimate_cost`/`actual_cost_usd` return a small SIMULATED
-number purely so the spend-limit and cost-tracking logic has something real
-to exercise and test.
+"""A free video provider used until a real paid provider is wired in and
+explicitly approved. It never makes a network call and never costs real
+money - `estimate_cost`/`actual_cost_usd` return a small SIMULATED number
+purely so the spend-limit and cost-tracking logic has something real to
+exercise and test.
+
+Real video providers bill in different ways - some per second of output
+(e.g. Wan 2.2 A14B standard), some a flat price per video regardless of
+exact length (e.g. Wan 2.2 A14B Turbo, priced by resolution tier only).
+`VideoPricingConfig` models both so our cost estimates match whichever
+billing model the active provider actually uses; see providers/video/fal.py
+for the real (not yet invoked) adapter that shares these same configs.
 
 Its behavior is controllable per-request via `extra_params["mock_behavior"]`
 so the whole async submit -> poll -> complete/fail/timeout/retry flow can be
@@ -13,8 +20,12 @@ tested deterministically, without sleeping or hitting a real API:
     "timeout"             always PROCESSING - never completes (exercises our timeout logic)
     "flaky_then_success"  raises VideoProviderError a couple of times, then COMPLETED
     "submit_fail"         raises VideoProviderError immediately on submit
+
+Pass `extra_params["resolution"]` ("480p"/"580p"/"720p") to pick a pricing
+tier; defaults to the pricing config's own default_resolution (480p).
 """
 import uuid
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from app.providers.base import (
@@ -29,22 +40,62 @@ from app.providers.base import (
 _FIXTURE_CLIP = Path(__file__).resolve().parent / "fixtures" / "mock_clip.mp4"
 
 
+@dataclass
+class VideoPricingConfig:
+    """One provider/model's billing shape. `billing` is `"flat"` (look up
+    `price_by_resolution`, ignore duration) or `"per_second"` (look up
+    `price_per_second_by_resolution`, multiply by requested duration)."""
+
+    billing: str
+    price_by_resolution: dict[str, float] = field(default_factory=dict)
+    price_per_second_by_resolution: dict[str, float] = field(default_factory=dict)
+    default_resolution: str = "480p"
+
+
+# Wan 2.2 A14B Turbo, per fal.ai's official pricing: flat per-video by
+# resolution tier, NOT per-second. Our current cheapest-credible candidate
+# and the mock's default, so local cost estimates match what we'd actually
+# be quoted.
+WAN_TURBO_PRICING = VideoPricingConfig(
+    billing="flat",
+    price_by_resolution={"480p": 0.05, "580p": 0.075, "720p": 0.10},
+    default_resolution="480p",
+)
+
+# Wan 2.2 A14B standard (non-turbo), per fal.ai's official pricing:
+# per-second by resolution tier. Higher quality, kept available so an
+# individual important shot can be upgraded later - see FalVideoModelConfig
+# for how this plugs into the real adapter.
+WAN_STANDARD_PRICING = VideoPricingConfig(
+    billing="per_second",
+    price_per_second_by_resolution={"480p": 0.04, "580p": 0.06, "720p": 0.08},
+    default_resolution="480p",
+)
+
+
 class MockVideoProvider(VideoProvider):
     name = "mock-video"
 
-    def __init__(self, cost_per_second: float = 0.04) -> None:
-        # Default mirrors fal.ai's Wan 2.2 A14B image-to-video at 480p
-        # ($0.04/video-second) - our current cheapest-credible real candidate -
-        # so cost estimates shown locally are a realistic preview, not a
-        # placeholder number.
-        self.cost_per_second = cost_per_second
+    def __init__(self, pricing: VideoPricingConfig = WAN_TURBO_PRICING) -> None:
+        self.pricing = pricing
         # In-memory job store. A real provider doesn't need this - the vendor's
         # API is the source of truth - but the mock has to remember what it
         # promised to do across separate submit()/get_job_status() calls.
         self._jobs: dict[str, dict] = {}
 
+    def _resolution(self, request: VideoGenerationRequest) -> str:
+        return request.extra_params.get("resolution", self.pricing.default_resolution)
+
     def estimate_cost(self, request: VideoGenerationRequest) -> float:
-        return round(self.cost_per_second * request.duration_seconds, 4)
+        resolution = self._resolution(request)
+        if self.pricing.billing == "flat":
+            price = self.pricing.price_by_resolution.get(resolution)
+        else:
+            per_second = self.pricing.price_per_second_by_resolution.get(resolution)
+            price = per_second * request.duration_seconds if per_second is not None else None
+        if price is None:
+            raise VideoProviderError(f"Mock provider: no pricing configured for resolution {resolution!r}")
+        return round(price, 4)
 
     def submit_video_job(self, request: VideoGenerationRequest) -> SubmittedVideoJob:
         behavior = request.extra_params.get("mock_behavior", "success")

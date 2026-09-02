@@ -158,93 +158,155 @@ provider is added, cost tracking already works - no schema changes needed.
 You told us cost matters more than quality for this first experiment - the
 goal is to test whether the concepts/hooks get views and whether the
 automation is economically viable, not to maximize visual fidelity. So we
-researched the cheapest *credible* (not just cheapest possible) options.
+researched the cheapest *credible* (not just cheapest possible) options,
+and switched our primary candidate to **Wan 2.2 A14B Turbo** after you
+independently verified its pricing against fal.ai's own model pages.
 
-**Caveat on the numbers below:** fal.ai's own site is blocked by this
-environment's network policy, so these prices come from several
-independent third-party trackers as of the research date, not fal.ai's own
-pricing page directly. They're consistent across sources, but **you should
-confirm the live price on fal.ai's dashboard before approving any real
-spend** - AI provider pricing changes often.
+**On sourcing:** fal.ai's own site is blocked by this environment's network
+policy, so our research came from several independent third-party
+trackers. You separately confirmed the numbers below directly against
+fal.ai's official model pages - that's now the authoritative source, and it
+matches what we found. Still worth reconfirming on fal.ai's dashboard right
+before spending, since pricing can change.
 
-### The cheapest credible pair we found
+### Turbo vs. standard: technically compatible with our pipeline
 
-| Purpose | Model | Price | Why this one |
-|---|---|---|---|
-| Reference image | **FLUX.1 [schnell]** via fal.ai | $0.003/megapixel (rounds up to nearest MP; our 576x1024 default = 1MP) | Cheapest credible text-to-image on fal.ai; supports 9:16 |
-| Video clip | **Wan 2.2 A14B (image-to-video, 480p)** via fal.ai | $0.04/video-second | Cheapest *image-to-video* tier that still has a real quality reputation (14B-parameter model); supports 9:16, ~5s default output |
+We checked `fal-ai/wan/v2.2-a14b/image-to-video/turbo` against what our
+image-to-video flow needs:
 
-A cheaper Wan 2.2 5B tier exists (~$0.15/video flat, so actually *more*
-than A14B works out to at 480p) and even cheaper models exist (Seedance
-2.0, plain Wan 2.2 at ~$0.02/sec) - those are worth trying later purely to
-drive cost down further, but A14B at 480p is our starting recommendation
-because it's a meaningfully better-regarded model for a similar price.
+| Requirement | Turbo | Compatible? |
+|---|---|---|
+| Takes an image + text prompt | `image_url` + `prompt` params | Yes |
+| 9:16 vertical output | `aspect_ratio: "9:16"` param, or follows the input image's own aspect ratio | Yes |
+| Selectable cheap resolution | `resolution` param: 480p/580p/720p | Yes - **but defaults to 720p ($0.10) if not set**, so our adapter must always pass `resolution: "480p"` explicitly |
+| Async submit/poll (matches our `VideoProvider` interface) | fal.ai's standard queue API (submit -> poll status -> fetch result) | Yes |
+
+One real difference from the standard model: **Turbo's output is a fixed
+~4 seconds (65 frames), not the ~5 seconds we'd been assuming** - duration
+isn't a parameter you can set on this endpoint, only resolution is. That's
+a minor pacing change (a 12-shot video becomes ~48s instead of ~60s) and no
+architectural problem - `Shot.target_duration_seconds` stays a planning
+value; what a provider actually delivered is on the `VideoJob` row. No
+technical reason not to use Turbo.
+
+### The cheapest credible pair, updated
+
+| Purpose | Model | Endpoint identifier | Price | Billing |
+|---|---|---|---|---|
+| Reference image | **FLUX.1 [schnell]** | `fal-ai/flux/schnell` | $0.003/megapixel (rounds up; our 576x1024 default = 1MP) | Per megapixel |
+| Video clip | **Wan 2.2 A14B Turbo, 480p** | `fal-ai/wan/v2.2-a14b/image-to-video/turbo` | **$0.05/video flat** (580p $0.075, 720p $0.10) | **Flat per video, NOT per second** |
+
+Wan 2.2 A14B **standard** (non-turbo) stays available as a swappable
+alternative - `fal-ai/wan/v2.2-a14b/image-to-video`, billed per-second
+($0.04/580p... $0.04/480p, $0.06/580p, $0.08/720p at standard rates) - for
+whenever a shot is worth spending more on for quality. See "Provider
+configuration" below for how the code switches between them.
+
+### Cost estimator now supports flat *and* per-second billing
+
+The `VideoProvider.estimate_cost(request)` interface itself never assumed
+a billing model - it always just returns a float. What needed updating was
+our pricing configs, since the mock and the real adapter had been written
+assuming every provider bills per-second. Both now use a shared
+`VideoPricingConfig`/`FalVideoModelConfig` shape:
+
+```python
+# app/providers/video/mock.py and app/providers/video/fal.py
+WAN_TURBO_PRICING    = VideoPricingConfig(billing="flat",       price_by_resolution={"480p": 0.05, "580p": 0.075, "720p": 0.10})
+WAN_STANDARD_PRICING = VideoPricingConfig(billing="per_second", price_per_second_by_resolution={"480p": 0.04, "580p": 0.06, "720p": 0.08})
+```
+
+`estimate_cost()` looks at `billing` and either looks up a flat price by
+resolution or multiplies a per-second price by the requested duration.
+Every cost figure in this README, the mock provider's simulated costs, and
+the spend-limit checks all go through this same logic now - not a
+per-second assumption baked into one formula.
 
 ### The optimized (cost-first) pipeline
 
-Compared to a quality-first setup, we deliberately made these choices:
-
-1. **480p, not 720p/1080p** for video - roughly half the cost of the next
-   tier up, and resolution matters less for a first "does this concept get
-   views" test than for a polished final product.
-2. **Image-to-video, not text-to-video** - the reference image is a very
-   small fraction of the cost (~1-2%) but meaningfully helps continuity,
-   which is one of your core product requirements.
-3. **A reference image is generated once per shot and reused** on every
+1. **480p, not 720p/1080p** for video - half (or less) the cost of the next
+   tier up. Our adapter always sends `resolution: "480p"` explicitly, since
+   Turbo defaults to 720p if you don't.
+2. **Turbo over standard** - a flat $0.05/video beats standard's
+   ~$0.16-0.20 for a 4-5s clip at 480p, for the same underlying 14B model
+   family, just optimized for speed over marginal quality.
+3. **Image-to-video, not text-to-video** - the reference image is ~6% of
+   the shot's cost ($0.003 of $0.053) but meaningfully helps continuity.
+4. **A reference image is generated once per shot and reused** on every
    regeneration - `regenerate_shot_video()` never re-generates the image,
    only the video, unless you explicitly ask for a new image.
-4. **No native audio from the video provider** - Wan/Kling audio add-ons
-   roughly double the price; we'll add voiceover separately later
-   (Milestone 4) with a provider chosen the same cost-conscious way.
-5. **~5 second shots** (Wan's native default) rather than paying for
-   longer clips per generation.
+5. **No native audio from the video provider** - we'll add voiceover
+   separately later (Milestone 4) with a provider chosen the same way.
 
-### Estimated costs
+### Estimated costs (updated for Turbo's flat pricing)
 
-Based on our current 12-shot storyboard template (~60 seconds of finished
-video) at the rates above: **1 reference image = $0.003, one 5-second clip
-= $0.20, one shot (image + video) = $0.203.**
+Based on our current 12-shot storyboard template at Turbo's rates:
+**1 reference image = $0.003, one video clip = $0.05 flat, one shot
+(image + video) = $0.053.**
 
 | | Cost |
 |---|---|
 | 1 reference image | $0.003 |
-| 1 five-second video clip | $0.20 |
-| 1 finished ~60s video (12 shots, 0% regeneration) | **$2.44** |
-| 10 finished videos | $24.36 |
-| 100 finished videos | $243.60 |
+| 1 Wan Turbo 480p video clip | $0.05 |
+| 1 finished video (12 shots, ~48s, 0% regeneration) | **$0.636** |
+| 10 finished videos | $6.36 |
+| 100 finished videos | $63.60 |
 
-These cover image + video generation only - the biggest cost driver.
-LLM costs stay $0 (mock provider through Milestone 8), and
-voiceover/assembly (Milestones 4-5) aren't built yet so aren't included.
+(For comparison, the previous per-second Wan-standard estimate was $2.44 /
+$24.36 / $243.60 for the same 12 shots - Turbo cuts this to about a
+quarter.) These cover image + video generation only. LLM costs stay $0
+(mock provider through Milestone 8), and voiceover/assembly (Milestones
+4-5) aren't built yet so aren't included.
 
-**With regeneration.** Because a regenerated shot reuses its existing
-reference image, a regeneration only costs the video portion again
-($0.20), not the full $0.203 - reflecting how this architecture actually
-behaves, not a worst-case guess:
+**With regeneration.** A regenerated shot reuses its existing reference
+image, so a regeneration only costs the flat video price again ($0.05),
+not the full $0.053:
 
 | Regeneration rate | Cost / video | Cost / 10 videos | Cost / 100 videos |
 |---|---|---|---|
-| 0% | $2.44 | $24.36 | $243.60 |
-| 20% | $2.92 | $29.16 | $291.60 |
-| 50% | $3.64 | $36.36 | $363.60 |
+| 0% | $0.636 | $6.36 | $63.60 |
+| 20% | $0.756 | $7.56 | $75.60 |
+| 50% | $0.936 | $9.36 | $93.60 |
 
-(Even in the worst case where a regeneration re-does the image too, these
-numbers barely move - the image is under 2% of a shot's cost.)
+### Provider configuration - switching models
+
+`FalVideoProvider` (app/providers/video/fal.py) and `FalImageProvider`
+(app/providers/image/fal.py) both take a config object in their
+constructor:
+
+```python
+FalVideoProvider(WAN_TURBO)      # default - $0.05/video flat @480p
+FalVideoProvider(WAN_STANDARD)   # per-second alternative, e.g. for one important shot
+FalImageProvider(FLUX_SCHNELL)   # default
+```
+
+Adding a future fal.ai model (or upgrading one shot to Kling/Veo later)
+means adding one more named config, not touching `video_job_service.py`,
+the routers, or anything else that calls `VideoProvider`.
+
+**These real adapters are written and locally tested (10 tests, using
+`httpx.MockTransport` to simulate fal.ai's documented request/response
+shapes with zero network calls and zero cost) but are NOT wired in as the
+active provider anywhere in the app** - `routers/projects.py` still uses
+the mocks. They have never been executed against the live API: outbound
+access to fal.ai is blocked from this development environment, so their
+first real invocation will be the approved test itself.
 
 ### The one real test we're proposing
 
-To go from "estimated" to "confirmed," the smallest useful real-money test
-is **one reference image + one 5-second Wan video clip**:
+**Endpoints:**
+- Video: `fal-ai/wan/v2.2-a14b/image-to-video/turbo`, called with
+  `resolution: "480p"` explicitly set
+- Image: `fal-ai/flux/schnell`
 
-- Image: $0.003 (FLUX schnell, ≤1MP)
-- Video: $0.04/sec x ~5s = ~$0.20, with a safety margin to ~$0.24 in case
-  fal.ai bills the extra fraction of a second up to a full 6th second
-  (Wan's actual default output is ~5.06s)
+**Exact expected cost: $0.053** ($0.003 image + $0.05 video, both flat
+rates with no rounding uncertainty - the reason we like flat billing).
+The only real risk is a bug sending the wrong resolution (Turbo defaults
+to 720p/$0.10 if `resolution` isn't set) - we'll show you the literal
+request payload, `resolution: "480p"` included, right before it's sent, so
+that's visible before anything is charged.
 
-**Maximum dollar amount required: $0.25 total**, expected actual cost
-closer to $0.20-$0.21. We will not submit this test, or any other paid
-call, without your explicit go-ahead - and we'll show you fal.ai's actual
-quoted price at submission time before it's charged.
+We have not made this call. Waiting on your go-ahead.
 
 ## Requirements
 
@@ -344,11 +406,12 @@ provider-level rate limiting.
 
 ## What's next
 
-- **Milestone 2, remaining**: implement the real fal.ai-backed `VideoProvider`
-  (Wan 2.2 A14B) and `ImageProvider` (FLUX schnell) adapters - straightforward
-  now that the interfaces are proven against mocks - and run the single
-  approved test generation (see "Cost model" above). Will not happen
-  without your explicit go-ahead on that specific spend.
+- **Milestone 2, remaining**: the real fal.ai `VideoProvider` (Wan 2.2 A14B
+  Turbo) and `ImageProvider` (FLUX schnell) adapters are written and locally
+  tested against simulated responses (see "Cost model" above) - not yet
+  wired in as the active provider, and not yet called for real. Next is
+  running the single approved $0.053 test generation. Will not happen
+  without your explicit go-ahead.
 - **Milestone 3+**: full multi-shot async generation across an entire
   project, voiceover, FFmpeg assembly, captions, AI QA, ChatGPT+Claude
   collaboration, a review dashboard, and eventually publishing - see the

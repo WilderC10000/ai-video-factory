@@ -180,7 +180,7 @@ def poll_shot_video_job(db: Session, job: VideoJob, video_provider: VideoProvide
             return job
 
     try:
-        result = video_provider.get_job_status(job.provider_job_id)
+        result = video_provider.get_job_status(job.provider_job_id, meta=job.meta)
     except VideoProviderError as e:
         job.retry_count += 1
         if job.retry_count > settings.max_job_poll_retries:

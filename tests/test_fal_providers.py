@@ -104,23 +104,25 @@ def test_full_video_submit_poll_download_cycle(tmp_path):
                 200,
                 json={
                     "request_id": "req-123",
-                    "status_url": "https://queue.fal.run/fal-ai/wan/v2.2-a14b/image-to-video/requests/req-123/status",
-                    "response_url": "https://queue.fal.run/fal-ai/wan/v2.2-a14b/image-to-video/requests/req-123",
+                    "status_url": "https://queue.fal.run/fal-ai/wan/requests/req-123/status",
+                    "response_url": "https://queue.fal.run/fal-ai/wan/requests/req-123",
                 },
             )
 
-        # ...but status/result routing must NOT include "turbo" - fal.ai's queue
-        # API only uses the subpath for submission, per their own docs. Using
-        # the full submit path here is exactly the bug that produced a real
-        # HTTP 405 on the first live test; these paths (no "/turbo") are the
-        # regression guard for that fix.
-        if path == "/fal-ai/wan/v2.2-a14b/image-to-video/requests/req-123/status":
+        # ...but status/result routing must use ONLY owner/alias ("fal-ai/wan"),
+        # not "turbo" and not "v2.2-a14b/image-to-video" either. Verified
+        # against fal.ai's own official Python client source
+        # (fal_client.client.AppId.from_endpoint_id): only the first two
+        # path segments matter for the queue's request tracking. Two real
+        # bugs produced a live HTTP 405 before this was right - these paths
+        # are the regression guard.
+        if path == "/fal-ai/wan/requests/req-123/status":
             status_calls["count"] += 1
             if status_calls["count"] == 1:
                 return httpx.Response(200, json={"status": "IN_PROGRESS"})
             return httpx.Response(200, json={"status": "COMPLETED"})
 
-        if path == "/fal-ai/wan/v2.2-a14b/image-to-video/requests/req-123" and request.method == "GET":
+        if path == "/fal-ai/wan/requests/req-123" and request.method == "GET":
             return httpx.Response(200, json={"video": {"url": "https://fake-cdn.example/clip.mp4"}})
 
         if str(request.url) == "https://fake-cdn.example/clip.mp4":
@@ -144,6 +146,9 @@ def test_full_video_submit_poll_download_cycle(tmp_path):
     assert submitted.provider_job_id == "req-123"
     assert submitted.estimated_cost_usd == pytest.approx(0.05)
 
+    # No meta passed here - this exercises the FALLBACK (queue_app_id)
+    # path, not the preferred server-provided-URL path (see the dedicated
+    # test below for that one).
     status1 = provider.get_job_status("req-123")
     assert status1.status.value == "PROCESSING"
 
@@ -157,11 +162,39 @@ def test_full_video_submit_poll_download_cycle(tmp_path):
     assert dest.read_bytes() == b"fake mp4 bytes"
 
 
+def test_get_job_status_prefers_server_provided_urls_over_reconstruction():
+    """This is the more important, more robust path - the same approach
+    fal.ai's own official client uses (store and reuse status_url/
+    response_url from the submission response, don't reconstruct). The
+    handler here ONLY recognizes an oddball URL shape that no formula
+    would derive from the model id, proving the provider used exactly the
+    URL handed to it in `meta` rather than building one itself."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        if url == "https://queue.fal.run/totally/custom/status/path":
+            return httpx.Response(200, json={"status": "COMPLETED"})
+        if url == "https://queue.fal.run/totally/custom/result/path":
+            return httpx.Response(200, json={"video": {"url": "https://fake-cdn.example/clip.mp4"}})
+        raise AssertionError(f"Unexpected request (meta URLs were not used): {request.method} {url}")
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = FalVideoProvider(WAN_TURBO, api_key="fake-key", client=client)
+
+    meta = {
+        "status_url": "https://queue.fal.run/totally/custom/status/path",
+        "response_url": "https://queue.fal.run/totally/custom/result/path",
+    }
+    result = provider.get_job_status("req-999", meta=meta)
+    assert result.status.value == "COMPLETED"
+    assert result.output_url == "https://fake-cdn.example/clip.mp4"
+
+
 def test_video_job_reported_as_failed_by_provider():
     def handler(request: httpx.Request) -> httpx.Response:
-        # Base path only - no "/turbo" - see the regression note in
+        # owner/alias only ("fal-ai/wan") - see the regression note in
         # test_full_video_submit_poll_download_cycle.
-        if request.url.path == "/fal-ai/wan/v2.2-a14b/image-to-video/requests/req-456/status":
+        if request.url.path == "/fal-ai/wan/requests/req-456/status":
             return httpx.Response(200, json={"status": "ERROR", "error": "content policy violation"})
         raise AssertionError(f"Unexpected request: {request.method} {request.url}")
 
@@ -171,6 +204,12 @@ def test_video_job_reported_as_failed_by_provider():
     result = provider.get_job_status("req-456")
     assert result.status.value == "FAILED"
     assert "ERROR" in result.error_message
+
+
+def test_queue_app_id_strips_everything_but_owner_and_alias():
+    assert WAN_TURBO.queue_app_id == "fal-ai/wan"
+    assert WAN_STANDARD.queue_app_id == "fal-ai/wan"
+    assert WAN_TURBO.submit_path == "fal-ai/wan/v2.2-a14b/image-to-video/turbo"
 
 
 def test_full_image_generation_cycle(tmp_path):

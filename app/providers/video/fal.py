@@ -1,12 +1,14 @@
 """Real fal.ai-backed VideoProvider for Alibaba's Wan 2.2 A14B family.
 
-IMPORTANT - not yet executed against the live API: outbound network access
-to fal.ai is blocked from this development sandbox, so this adapter is
-implemented from fal.ai's documented queue API (submit/status/result,
-`Authorization: Key $FAL_API_KEY`) and model pages, cross-checked via
-several sources, but has never actually been called. Treat the first real
-invocation as a live integration test - watch the response shapes closely,
-and don't be surprised if a field name needs a small fix.
+This has now been exercised against the live API (image + video submit both
+succeeded in a real test), which caught two real bugs in the status/result
+URL construction - see FalVideoModelConfig.queue_app_id's docstring for
+what was wrong and how it was verified against fal.ai's own official
+Python client source. get_job_status() now prefers the status_url/
+response_url fal.ai itself returns at submission time (same approach fal's
+own client uses) rather than reconstructing URLs, which is the more robust
+fix; the queue_app_id-based reconstruction is only a fallback for when that
+isn't available (e.g. recovering an old job).
 
 Configurable between named model presets via `FalVideoModelConfig` - swap
 which one is active by passing a different config to FalVideoProvider,
@@ -59,6 +61,22 @@ class FalVideoModelConfig:
     def submit_path(self) -> str:
         """The path used ONLY for submitting a new job (includes the subpath, if any)."""
         return f"{self.base_model_id}/{self.subpath}" if self.subpath else self.base_model_id
+
+    @property
+    def queue_app_id(self) -> str:
+        """The path fal.ai's queue actually tracks requests under for
+        status/result lookups - verified against fal.ai's own official
+        Python client source (fal_client.client.AppId.from_endpoint_id):
+        only the first two path segments (owner/alias) matter, e.g.
+        "fal-ai/wan" - NOT "fal-ai/wan/v2.2-a14b/image-to-video" and
+        NOT the submission subpath ("turbo"). Everything after the first
+        two segments is routing used only when submitting a job; the
+        queue's request/status/result tracking lives at the owner/alias
+        level. This was the second bug (the first fix stripped only the
+        subpath, which still 405'd - it needed to strip the whole
+        "v2.2-a14b/image-to-video" tail too)."""
+        segments = self.base_model_id.split("/")
+        return "/".join(segments[:2])
 
 
 # Cheapest-first candidate: flat per-video pricing, not per-second. Fixed
@@ -127,6 +145,13 @@ class FalVideoProvider(VideoProvider):
             )
         return round(price, 4)
 
+    @staticmethod
+    def _diag(method: str, url: str) -> None:
+        """Prints the exact outgoing request line - method and URL only,
+        NEVER headers (the Authorization header carries the API key) - so
+        this is always safe to leave on while debugging the live API."""
+        print(f"[fal debug] {method} {url}")
+
     def _upload_reference_image(self, local_path: str) -> str:
         """fal.ai's documented 2-step upload: request a signed upload URL,
         PUT the file bytes to it, then use the returned public file URL as
@@ -134,16 +159,17 @@ class FalVideoProvider(VideoProvider):
         path = Path(local_path)
         content_type = "image/jpeg" if path.suffix.lower() in (".jpg", ".jpeg") else "image/png"
 
+        initiate_url = f"{FAL_STORAGE_BASE}/storage/upload/initiate"
+        self._diag("POST", initiate_url)
         initiate = self._client.post(
-            f"{FAL_STORAGE_BASE}/storage/upload/initiate",
-            headers=self._headers(),
-            json={"content_type": content_type, "file_name": path.name},
+            initiate_url, headers=self._headers(), json={"content_type": content_type, "file_name": path.name}
         )
         if initiate.status_code >= 400:
             raise VideoProviderError(f"fal.ai upload initiate failed: {initiate.status_code} {initiate.text}")
         data = initiate.json()
         upload_url, file_url = data["upload_url"], data["file_url"]
 
+        self._diag("PUT", upload_url)
         put_resp = self._client.put(upload_url, content=path.read_bytes(), headers={"Content-Type": content_type})
         if put_resp.status_code >= 400:
             raise VideoProviderError(f"fal.ai image upload failed: {put_resp.status_code}")
@@ -160,9 +186,9 @@ class FalVideoProvider(VideoProvider):
             "resolution": self._resolution(request),
             "aspect_ratio": request.aspect_ratio,
         }
-        resp = self._client.post(
-            f"{FAL_QUEUE_BASE}/{self.model_config.submit_path}", headers=self._headers(), json=payload
-        )
+        submit_url = f"{FAL_QUEUE_BASE}/{self.model_config.submit_path}"
+        self._diag("POST", submit_url)
+        resp = self._client.post(submit_url, headers=self._headers(), json=payload)
         if resp.status_code >= 400:
             raise VideoProviderError(f"fal.ai submit failed: {resp.status_code} {resp.text}")
         data = resp.json()
@@ -174,12 +200,19 @@ class FalVideoProvider(VideoProvider):
             meta={"status_url": data.get("status_url"), "response_url": data.get("response_url")},
         )
 
-    def get_job_status(self, provider_job_id: str) -> VideoJobStatusResult:
-        # NOTE: base_model_id here, deliberately NOT submit_path - fal.ai's
-        # queue API does not use the subpath (e.g. "turbo") for status/result
-        # routing, only for the original submission. Using submit_path here
-        # is exactly the bug that produced a 405 on the first real test.
-        status_url = f"{FAL_QUEUE_BASE}/{self.model_config.base_model_id}/requests/{provider_job_id}/status"
+    def get_job_status(self, provider_job_id: str, meta: dict | None = None) -> VideoJobStatusResult:
+        # Prefer the status/result URLs fal.ai itself returned at submission
+        # time (this is what fal's own official client does - see
+        # fal_client.client.SyncRequestHandle, which stores and reuses
+        # data["status_url"]/data["response_url"] rather than reconstructing
+        # them). Only fall back to reconstructing from queue_app_id when we
+        # don't have those - e.g. recovering a job whose original submission
+        # response wasn't saved.
+        meta = meta or {}
+        status_url = meta.get("status_url") or (
+            f"{FAL_QUEUE_BASE}/{self.model_config.queue_app_id}/requests/{provider_job_id}/status"
+        )
+        self._diag("GET", status_url)
         resp = self._client.get(status_url, headers=self._headers())
         if resp.status_code >= 400:
             raise VideoProviderError(f"fal.ai status check failed: {resp.status_code} {resp.text}")
@@ -190,7 +223,10 @@ class FalVideoProvider(VideoProvider):
             return VideoJobStatusResult(status=ProviderJobState.PROCESSING)
 
         if status == "COMPLETED":
-            result_url = f"{FAL_QUEUE_BASE}/{self.model_config.base_model_id}/requests/{provider_job_id}"
+            result_url = meta.get("response_url") or (
+                f"{FAL_QUEUE_BASE}/{self.model_config.queue_app_id}/requests/{provider_job_id}"
+            )
+            self._diag("GET", result_url)
             result_resp = self._client.get(result_url, headers=self._headers())
             if result_resp.status_code >= 400:
                 raise VideoProviderError(
@@ -207,6 +243,7 @@ class FalVideoProvider(VideoProvider):
         )
 
     def download_result(self, provider_job_id: str, output_url: str, destination_path: str) -> str:
+        self._diag("GET", output_url)
         resp = self._client.get(output_url)
         if resp.status_code >= 400:
             raise VideoProviderError(f"fal.ai clip download failed: {resp.status_code}")

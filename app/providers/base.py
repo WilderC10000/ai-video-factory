@@ -152,9 +152,17 @@ class VideoProvider(ABC):
         the video is ready) and raise VideoProviderError on failure to submit."""
 
     @abstractmethod
-    def get_job_status(self, provider_job_id: str) -> VideoJobStatusResult:
-        """Check on a previously submitted job. Raise VideoProviderError for a
-        transient failure to check (e.g. network error) - the caller retries."""
+    def get_job_status(self, provider_job_id: str, meta: dict | None = None) -> VideoJobStatusResult:
+        """Check on a previously submitted job. `meta` is whatever
+        SubmittedVideoJob.meta held at submission time (e.g. status/result
+        URLs the provider handed back) - a provider that needs it to avoid
+        reconstructing URLs itself (see providers/video/fal.py) should
+        prefer it; a provider that doesn't need it can ignore the argument.
+        `meta` may be None (e.g. when recovering a job whose original
+        submission response wasn't saved) - implementations must handle
+        that by falling back to whatever they'd otherwise do.
+        Raise VideoProviderError for a transient failure to check (e.g.
+        network error) - the caller retries."""
 
     @abstractmethod
     def download_result(self, provider_job_id: str, output_url: str, destination_path: str) -> str:

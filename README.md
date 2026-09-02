@@ -307,30 +307,58 @@ using `scripts/run_first_fal_test.py`.
 
 **Result:** the FLUX schnell image succeeded (2.0s, $0.003) and the Wan
 Turbo video job submitted successfully (job accepted, estimated cost
-$0.0500) - but the very first status check failed with **HTTP 405**. The
-script correctly stopped immediately: no retry, no second job submitted,
-exactly as designed.
+$0.0500) - but the status check failed with **HTTP 405**. The script
+correctly stopped immediately both times below: no retry, no second job
+ever submitted.
 
-**Root cause, found and fixed:** fal.ai's queue API documents this
-explicitly - *"the subpath should be used when making the request, but
-not when getting request status or results."* `turbo` is a subpath of the
-base Wan app (`fal-ai/wan/v2.2-a14b/image-to-video`). Our adapter was
-correctly including `/turbo` when submitting, but was **also** including
-it when checking status/result - fal.ai returns 405 for that malformed
-path. `FalVideoModelConfig` now separates `base_model_id` (used for
-status/result) from `submit_path` (`base_model_id` + subpath, used only
-for submission) - see `app/providers/video/fal.py`. Our own adapter tests
-had mocked the *same* incorrect assumption the code made, which is why
-they passed despite the bug - only the real call surfaced it. The tests
-now mock fal.ai's actual documented routing and would fail again if this
-regressed.
+**Two bugs, found in sequence, both from getting fal.ai's queue routing
+wrong** - the second only surfaced after fixing the first and testing
+again for real, so it's worth recording both:
+
+1. *First attempt* (wrong): assumed only the `turbo` subpath needed
+   stripping for status/result requests, keeping
+   `fal-ai/wan/v2.2-a14b/image-to-video` as the base. Still 405'd on the
+   next real test.
+2. *Actual root cause*, confirmed by reading fal.ai's own official Python
+   client source (`fal_client.client.AppId.from_endpoint_id`, from
+   github.com/fal-ai/fal) rather than guessing from documentation prose
+   again: fal.ai's queue tracks requests under **owner/alias only** -
+   `fal-ai/wan` - dropping *everything* after that (`v2.2-a14b/`
+   `image-to-video/turbo`), not just the subpath. Submission still uses
+   the full path; status/result never does.
+3. The same source also showed fal.ai's own client doesn't reconstruct
+   these URLs at all - it saves and reuses the `status_url`/`response_url`
+   fal.ai returns in the submission response. `get_job_status()` now does
+   the same: it prefers those server-provided URLs when available (the
+   robust path, immune to us getting the formula wrong a third time), and
+   only falls back to reconstructing from `owner/alias` when they're not
+   available (e.g. recovering a job whose original response wasn't
+   saved). `FalVideoModelConfig.queue_app_id` implements the fallback;
+   `app/providers/video/fal.py`'s module docstring and that property's
+   docstring have the full detail.
+
+Our own adapter tests had mocked the same wrong assumption the code made
+each time, which is why they kept passing despite the bugs - only the
+real calls surfaced them. The tests now cover both the server-provided-URL
+path and the corrected fallback, and would fail again if either regressed.
+
+**Diagnostics:** every outgoing request `FalVideoProvider` makes now
+prints its exact method and URL (`[fal debug] GET https://...`) - never
+headers, so the API key is never printed - specifically so a routing
+problem like this is visible immediately instead of needing another round
+of guessing.
 
 **Recovering the orphaned job:** the video job that already succeeded in
 being submitted (job id `01a06472-6d21-7642-b26e-1dbb856b1e87`, likely
-already billed $0.05 by fal.ai regardless of our polling bug) can be
+already billed $0.05 by fal.ai regardless of our polling bugs) can be
 checked and downloaded - never resubmitted - with
-`scripts/recover_fal_video_job.py`. See "Running the one real fal.ai
-test" below for exact commands for both scripts.
+`scripts/recover_fal_video_job.py`. `run_first_fal_test.py` now also saves
+the job id and fal.ai's own status/result URLs to `data/fal_test/last_job.json`
+immediately after a successful submission (before polling even starts),
+so a future failure like this one leaves the recovery script able to use
+the robust server-provided-URL path automatically instead of only the
+fallback. See "Running the one real fal.ai test" below for exact commands
+for both scripts.
 
 ## Requirements
 

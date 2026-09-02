@@ -22,6 +22,7 @@ Usage (from the repo root, with FAL_API_KEY set in your .env):
     python -m scripts.run_first_fal_test
     python -m scripts.run_first_fal_test --yes     (skip the confirmation prompt)
 """
+import json
 import sys
 import time
 from pathlib import Path
@@ -59,6 +60,7 @@ VIDEO_PROMPT = (
 )
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "data" / "fal_test"
+JOB_STATE_PATH = OUTPUT_DIR / "last_job.json"
 
 
 def fail(message: str) -> None:
@@ -143,6 +145,16 @@ def main() -> None:
     print(f"      Submitted. Provider job id: {submitted.provider_job_id}")
     print(f"      Estimated video cost: ${submitted.estimated_cost_usd:.4f}")
 
+    # Save the job id + fal.ai's own status/result URLs (from submitted.meta)
+    # to disk immediately, BEFORE polling starts - this is what lets
+    # recover_fal_video_job.py use the exact URLs fal.ai gave us (the robust
+    # path) instead of reconstructing them, even if this script crashes on
+    # the very next line.
+    JOB_STATE_PATH.write_text(
+        json.dumps({"provider_job_id": submitted.provider_job_id, "meta": submitted.meta}, indent=2)
+    )
+    print(f"      Job state saved to: {JOB_STATE_PATH} (used automatically by recover_fal_video_job.py)")
+
     print("      Polling for completion (no retries on error - any failure stops here)...")
     result = None
     while True:
@@ -156,7 +168,7 @@ def main() -> None:
                 f"      python -m scripts.recover_fal_video_job {submitted.provider_job_id}"
             )
         try:
-            result = video_provider.get_job_status(submitted.provider_job_id)
+            result = video_provider.get_job_status(submitted.provider_job_id, meta=submitted.meta)
         except VideoProviderError as e:
             fail(
                 f"Status check failed: {e}\n"

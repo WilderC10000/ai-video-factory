@@ -118,7 +118,10 @@ class MockVideoProvider(VideoProvider):
             meta={"mock": True, "mock_behavior": behavior},
         )
 
-    def get_job_status(self, provider_job_id: str) -> VideoJobStatusResult:
+    def get_job_status(self, provider_job_id: str, meta: dict | None = None) -> VideoJobStatusResult:
+        # The mock's in-memory _jobs store already has everything it needs
+        # keyed by provider_job_id; meta (real providers' status/result
+        # URLs) doesn't apply here.
         entry = self._jobs.get(provider_job_id)
         if entry is None:
             raise VideoProviderError(f"Mock provider: unknown job id {provider_job_id!r}")

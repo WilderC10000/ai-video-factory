@@ -18,6 +18,7 @@ already COMPLETED, downloads it again. It never creates a new job, so
 running it five times costs the same as running it once.
 """
 import argparse
+import json
 import sys
 import time
 from pathlib import Path
@@ -30,6 +31,25 @@ POLL_INTERVAL_SECONDS = 3
 MAX_WAIT_SECONDS = 300  # if hit, just re-run this same command again later
 
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent.parent / "data" / "fal_test"
+JOB_STATE_PATH = DEFAULT_OUTPUT_DIR / "last_job.json"
+
+
+def _load_saved_meta(provider_job_id: str) -> dict | None:
+    """If run_first_fal_test.py's saved job state matches this job id, use
+    its saved status_url/response_url (the robust path - what fal.ai's own
+    client does) instead of falling back to reconstructing a URL. Returns
+    None (not an error) for a job with no saved state, e.g. one submitted
+    before this persistence existed - the provider's own fallback (verified
+    against fal.ai's official client source) handles that case."""
+    if not JOB_STATE_PATH.exists():
+        return None
+    try:
+        data = json.loads(JOB_STATE_PATH.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+    if data.get("provider_job_id") != provider_job_id:
+        return None
+    return data.get("meta")
 
 
 def fail(message: str) -> None:
@@ -61,6 +81,8 @@ def main() -> None:
     if not settings.fal_api_key:
         fail("FAL_API_KEY is not set. Add FAL_API_KEY=your_key_here to your .env file and try again.")
 
+    saved_meta = _load_saved_meta(args.provider_job_id)
+
     print("=" * 70)
     print("RECOVERING AN EXISTING fal.ai VIDEO JOB - no new job will be submitted")
     print("=" * 70)
@@ -68,6 +90,13 @@ def main() -> None:
     print(f"Model:           {model_config.base_model_id}"
           + (f" (originally submitted via subpath {model_config.subpath!r})" if model_config.subpath else ""))
     print(f"Output path:     {video_path}")
+    if saved_meta:
+        print(f"Status/result URLs: using fal.ai's own URLs saved from the original submission ({JOB_STATE_PATH})")
+    else:
+        print(
+            f"Status/result URLs: no saved job state found for this id - reconstructing from "
+            f"{model_config.queue_app_id!r} (owner/alias only, verified against fal.ai's official client source)"
+        )
     print("=" * 70)
 
     video_provider = FalVideoProvider(model_config)
@@ -84,7 +113,7 @@ def main() -> None:
                 + (" --standard" if args.standard else "")
             )
         try:
-            result = video_provider.get_job_status(args.provider_job_id)
+            result = video_provider.get_job_status(args.provider_job_id, meta=saved_meta)
         except VideoProviderError as e:
             fail(f"Status check failed: {e}")
 

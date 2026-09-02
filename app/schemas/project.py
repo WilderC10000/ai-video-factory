@@ -39,6 +39,7 @@ class ShotOut(BaseModel):
     description: str
     prompt: str | None
     target_duration_seconds: float
+    reference_image_path: str | None
     status: ShotStatus
     video_provider: str | None
     video_file_path: str | None

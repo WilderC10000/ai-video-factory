@@ -163,14 +163,43 @@ class VideoProvider(ABC):
         written, and should raise VideoProviderError on failure."""
 
 
+class ImageProviderError(Exception):
+    """Raised by an ImageProvider implementation for any provider-side failure."""
+
+
+@dataclass
+class ImageGenerationRequest:
+    """Everything a provider needs to generate one reference/keyframe image.
+
+    Unlike video, image generation from providers like fal.ai's FLUX is fast
+    (seconds) and synchronous - no submit/poll dance needed. `width`/`height`
+    default to a small 9:16 size that stays under 1 megapixel, since image
+    providers commonly bill per-megapixel rounded up - keeping the default
+    small keeps the default cheap.
+    """
+
+    prompt: str
+    width: int = 576
+    height: int = 1024
+    extra_params: dict = field(default_factory=dict)
+
+
 class ImageProvider(ABC):
-    """AI keyframe/reference image provider. Implemented when needed by Milestone 2+."""
+    """AI keyframe/reference image provider (used to give a video provider a
+    consistent starting frame for image-to-video generation)."""
 
     name: str
 
     @abstractmethod
-    def generate_image(self, prompt: str, **kwargs) -> "ImageResult":
-        ...
+    def estimate_cost(self, request: ImageGenerationRequest) -> float:
+        """Estimate the cost in USD for this request BEFORE generating it, so
+        the caller can enforce spending limits before any money is committed."""
+
+    @abstractmethod
+    def generate_image(self, request: ImageGenerationRequest, destination_path: str) -> "ImageResult":
+        """Generate the image and save it to destination_path (the caller
+        ensures the parent directory exists). Raise ImageProviderError on
+        failure. Synchronous - returns once the image is ready."""
 
 
 @dataclass

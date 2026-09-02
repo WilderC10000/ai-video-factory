@@ -32,6 +32,24 @@ def db_session():
         session.close()
 
 
+IDEA = "He buried a pink submarine in his backyard and turned it into an underground luxury bunker."
+
+
+@pytest.fixture()
+def ready_shot(db_session):
+    """A project taken all the way to STORYBOARD_READY, returning its first
+    shot (status PROMPT_READY) - the starting point most generation tests need."""
+    from app.providers.llm.mock import MockLLMProvider
+    from app.services import project_service
+
+    llm = MockLLMProvider()
+    project = project_service.create_project(db_session, IDEA)
+    project = project_service.advance_to_concept(db_session, project, llm)
+    project = project_service.advance_to_script(db_session, project, llm)
+    project = project_service.advance_to_storyboard(db_session, project, llm)
+    return project.shots[0]
+
+
 @pytest.fixture()
 def client():
     from fastapi.testclient import TestClient

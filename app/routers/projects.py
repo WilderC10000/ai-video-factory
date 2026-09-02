@@ -4,10 +4,12 @@ from sqlalchemy.orm import Session
 from app.db import get_session
 from app.models.project import Project, Shot
 from app.models.video_job import VideoJob
+from app.providers.base import ImageProviderError
+from app.providers.image.mock import MockImageProvider
 from app.providers.llm.mock import MockLLMProvider
 from app.providers.video.mock import MockVideoProvider
-from app.schemas.project import ProjectCreateRequest, ProjectDetailOut, ProjectSummaryOut, VideoJobOut
-from app.services import project_service, video_job_service
+from app.schemas.project import ProjectCreateRequest, ProjectDetailOut, ProjectSummaryOut, ShotOut, VideoJobOut
+from app.services import image_job_service, project_service, video_job_service
 from app.services.errors import (
     FactoryPausedError,
     InvalidJobStateError,
@@ -19,10 +21,11 @@ from app.services.errors import (
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
-# Milestone 1/2: only mock providers exist. Later these will be chosen by
-# config (which LLM/video provider is active) instead of hard-coded here.
+# Milestone 1/2/3: only mock providers exist. Later these will be chosen by
+# config (which LLM/image/video provider is active) instead of hard-coded here.
 _llm_provider = MockLLMProvider()
 _video_provider = MockVideoProvider()
+_image_provider = MockImageProvider()
 
 
 def _get_project_or_404(db: Session, project_id: str) -> Project:
@@ -86,6 +89,19 @@ def advance_to_script(project_id: str, db: Session = Depends(get_session)):
 @router.post("/{project_id}/storyboard", response_model=ProjectDetailOut)
 def advance_to_storyboard(project_id: str, db: Session = Depends(get_session)):
     return _run_transition(db, project_id, project_service.advance_to_storyboard)
+
+
+@router.post("/{project_id}/shots/{shot_id}/reference-image", response_model=ShotOut)
+def generate_shot_reference_image(project_id: str, shot_id: str, db: Session = Depends(get_session)):
+    shot = _get_shot_or_404(db, project_id, shot_id)
+    try:
+        return image_job_service.generate_shot_reference_image(db, shot, _image_provider)
+    except FactoryPausedError as e:
+        raise HTTPException(status_code=423, detail=str(e))
+    except SpendLimitExceededError as e:
+        raise HTTPException(status_code=402, detail=str(e))
+    except ImageProviderError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @router.post("/{project_id}/shots/{shot_id}/generate", response_model=VideoJobOut)

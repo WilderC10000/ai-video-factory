@@ -114,6 +114,11 @@ class Shot(Base):
 
     target_duration_seconds: Mapped[float] = mapped_column(Float, default=5.0)
 
+    # Reference/keyframe image used for image-to-video generation, generated
+    # once via an ImageProvider and reused across regenerations (regenerating
+    # a shot re-does the video, not the image, to avoid paying for it twice).
+    reference_image_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
     status: Mapped[ShotStatus] = mapped_column(
         Enum(ShotStatus, native_enum=False, length=32), default=ShotStatus.PENDING
     )

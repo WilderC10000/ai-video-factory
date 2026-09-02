@@ -32,7 +32,11 @@ _FIXTURE_CLIP = Path(__file__).resolve().parent / "fixtures" / "mock_clip.mp4"
 class MockVideoProvider(VideoProvider):
     name = "mock-video"
 
-    def __init__(self, cost_per_second: float = 0.10) -> None:
+    def __init__(self, cost_per_second: float = 0.04) -> None:
+        # Default mirrors fal.ai's Wan 2.2 A14B image-to-video at 480p
+        # ($0.04/video-second) - our current cheapest-credible real candidate -
+        # so cost estimates shown locally are a realistic preview, not a
+        # placeholder number.
         self.cost_per_second = cost_per_second
         # In-memory job store. A real provider doesn't need this - the vendor's
         # API is the source of truth - but the mock has to remember what it

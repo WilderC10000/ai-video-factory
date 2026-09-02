@@ -5,9 +5,8 @@ import pytest
 from app.config import settings
 from app.models.project import ShotStatus
 from app.models.video_job import VideoJobStatus
-from app.providers.llm.mock import MockLLMProvider
 from app.providers.video.mock import MockVideoProvider
-from app.services import project_service, video_job_service
+from app.services import video_job_service
 from app.services.errors import (
     FactoryPausedError,
     InvalidJobStateError,
@@ -16,20 +15,6 @@ from app.services.errors import (
     SpendLimitExceededError,
 )
 from app.services.video_job_service import _utcnow
-
-IDEA = "He buried a pink submarine in his backyard and turned it into an underground luxury bunker."
-
-
-@pytest.fixture()
-def ready_shot(db_session):
-    """A project taken all the way to STORYBOARD_READY, returning its first
-    shot (status PROMPT_READY) - the starting point every video job test needs."""
-    llm = MockLLMProvider()
-    project = project_service.create_project(db_session, IDEA)
-    project = project_service.advance_to_concept(db_session, project, llm)
-    project = project_service.advance_to_script(db_session, project, llm)
-    project = project_service.advance_to_storyboard(db_session, project, llm)
-    return project.shots[0]
 
 
 @pytest.fixture()

@@ -90,6 +90,14 @@ def submit_shot_video_job(
     limit BEFORE calling the provider, so a paused factory or an over-budget
     project never spends anything, real or simulated.
 
+    If `reference_image_path` isn't given explicitly, falls back to the
+    shot's own `reference_image_path` (set by image_job_service) if one was
+    generated earlier - this is what turns generation into image-to-video
+    automatically once a shot has a reference image, without every caller
+    needing to know about it. Pass an explicit path (or one is generated
+    fresh) to override; a shot with no reference image at all falls back to
+    plain text-to-video.
+
     `extra_params` is passed straight through to the provider (e.g. the mock
     provider's `mock_behavior` switch for testing, or a real provider's
     vendor-specific knobs) - see VideoGenerationRequest.extra_params.
@@ -99,6 +107,8 @@ def submit_shot_video_job(
             f"Shot {shot.id} is in status {shot.status}, expected {ShotStatus.PROMPT_READY}."
         )
     _check_not_paused()
+
+    reference_image_path = reference_image_path or shot.reference_image_path
 
     request = VideoGenerationRequest(
         prompt=shot.prompt or shot.description,

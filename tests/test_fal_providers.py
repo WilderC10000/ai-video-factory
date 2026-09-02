@@ -94,6 +94,7 @@ def test_full_video_submit_poll_download_cycle(tmp_path):
             assert request.method == "PUT"
             return httpx.Response(200)
 
+        # Submission uses the full path WITH the "turbo" subpath...
         if path == "/fal-ai/wan/v2.2-a14b/image-to-video/turbo" and request.method == "POST":
             body = json.loads(request.content)
             assert body["image_url"] == "https://fake-cdn.example/ref.jpg"
@@ -103,18 +104,23 @@ def test_full_video_submit_poll_download_cycle(tmp_path):
                 200,
                 json={
                     "request_id": "req-123",
-                    "status_url": "https://queue.fal.run/fal-ai/wan/v2.2-a14b/image-to-video/turbo/requests/req-123/status",
-                    "response_url": "https://queue.fal.run/fal-ai/wan/v2.2-a14b/image-to-video/turbo/requests/req-123",
+                    "status_url": "https://queue.fal.run/fal-ai/wan/v2.2-a14b/image-to-video/requests/req-123/status",
+                    "response_url": "https://queue.fal.run/fal-ai/wan/v2.2-a14b/image-to-video/requests/req-123",
                 },
             )
 
-        if path == "/fal-ai/wan/v2.2-a14b/image-to-video/turbo/requests/req-123/status":
+        # ...but status/result routing must NOT include "turbo" - fal.ai's queue
+        # API only uses the subpath for submission, per their own docs. Using
+        # the full submit path here is exactly the bug that produced a real
+        # HTTP 405 on the first live test; these paths (no "/turbo") are the
+        # regression guard for that fix.
+        if path == "/fal-ai/wan/v2.2-a14b/image-to-video/requests/req-123/status":
             status_calls["count"] += 1
             if status_calls["count"] == 1:
                 return httpx.Response(200, json={"status": "IN_PROGRESS"})
             return httpx.Response(200, json={"status": "COMPLETED"})
 
-        if path == "/fal-ai/wan/v2.2-a14b/image-to-video/turbo/requests/req-123" and request.method == "GET":
+        if path == "/fal-ai/wan/v2.2-a14b/image-to-video/requests/req-123" and request.method == "GET":
             return httpx.Response(200, json={"video": {"url": "https://fake-cdn.example/clip.mp4"}})
 
         if str(request.url) == "https://fake-cdn.example/clip.mp4":
@@ -153,7 +159,9 @@ def test_full_video_submit_poll_download_cycle(tmp_path):
 
 def test_video_job_reported_as_failed_by_provider():
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/status"):
+        # Base path only - no "/turbo" - see the regression note in
+        # test_full_video_submit_poll_download_cycle.
+        if request.url.path == "/fal-ai/wan/v2.2-a14b/image-to-video/requests/req-456/status":
             return httpx.Response(200, json={"status": "ERROR", "error": "content policy violation"})
         raise AssertionError(f"Unexpected request: {request.method} {request.url}")
 

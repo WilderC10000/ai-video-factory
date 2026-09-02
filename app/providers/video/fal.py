@@ -36,20 +36,37 @@ FAL_STORAGE_BASE = "https://rest.alpha.fal.ai"
 
 @dataclass
 class FalVideoModelConfig:
-    """One named, swappable fal.ai video model configuration."""
+    """One named, swappable fal.ai video model configuration.
 
-    model_id: str
+    `base_model_id` and `subpath` are deliberately separate fields, not one
+    combined path string - fal.ai's queue API documents this explicitly:
+    "the subpath should be used when making the request, but not when
+    getting request status or results." Turbo is a subpath variant of the
+    same base Wan app, so submission uses base_model_id/subpath together,
+    but status/result checks use base_model_id alone. Getting this wrong
+    (using the full path for status too) returns HTTP 405 - that's the bug
+    this split fixes.
+    """
+
+    base_model_id: str
     billing: str  # "flat" (price_by_resolution) or "per_second" (price_per_second_by_resolution)
+    subpath: str | None = None
     price_by_resolution: dict[str, float] = field(default_factory=dict)
     price_per_second_by_resolution: dict[str, float] = field(default_factory=dict)
     default_resolution: str = "480p"
+
+    @property
+    def submit_path(self) -> str:
+        """The path used ONLY for submitting a new job (includes the subpath, if any)."""
+        return f"{self.base_model_id}/{self.subpath}" if self.subpath else self.base_model_id
 
 
 # Cheapest-first candidate: flat per-video pricing, not per-second. Fixed
 # ~4s output (65 frames @ 16fps); duration is not configurable on this
 # endpoint - resolution is the only cost lever.
 WAN_TURBO = FalVideoModelConfig(
-    model_id="fal-ai/wan/v2.2-a14b/image-to-video/turbo",
+    base_model_id="fal-ai/wan/v2.2-a14b/image-to-video",
+    subpath="turbo",
     billing="flat",
     price_by_resolution={"480p": 0.05, "580p": 0.075, "720p": 0.10},
     default_resolution="480p",
@@ -58,8 +75,9 @@ WAN_TURBO = FalVideoModelConfig(
 # Higher-quality, non-turbo alternative, billed per second of output
 # instead of a flat rate. Kept available so an individual important shot
 # can be upgraded later just by passing this config instead of WAN_TURBO.
+# No subpath - this endpoint IS the base app.
 WAN_STANDARD = FalVideoModelConfig(
-    model_id="fal-ai/wan/v2.2-a14b/image-to-video",
+    base_model_id="fal-ai/wan/v2.2-a14b/image-to-video",
     billing="per_second",
     price_per_second_by_resolution={"480p": 0.04, "580p": 0.06, "720p": 0.08},
     default_resolution="480p",
@@ -82,7 +100,7 @@ class FalVideoProvider(VideoProvider):
         client: httpx.Client | None = None,
     ) -> None:
         self.model_config = model_config
-        self.name = f"fal:{model_config.model_id}"
+        self.name = f"fal:{model_config.submit_path}"
         self.api_key = api_key or settings.fal_api_key
         self._client = client or httpx.Client(timeout=60.0)
 
@@ -105,7 +123,7 @@ class FalVideoProvider(VideoProvider):
             price = per_second * request.duration_seconds if per_second is not None else None
         if price is None:
             raise VideoProviderError(
-                f"No pricing configured for resolution {resolution!r} on {self.model_config.model_id}"
+                f"No pricing configured for resolution {resolution!r} on {self.model_config.submit_path}"
             )
         return round(price, 4)
 
@@ -143,7 +161,7 @@ class FalVideoProvider(VideoProvider):
             "aspect_ratio": request.aspect_ratio,
         }
         resp = self._client.post(
-            f"{FAL_QUEUE_BASE}/{self.model_config.model_id}", headers=self._headers(), json=payload
+            f"{FAL_QUEUE_BASE}/{self.model_config.submit_path}", headers=self._headers(), json=payload
         )
         if resp.status_code >= 400:
             raise VideoProviderError(f"fal.ai submit failed: {resp.status_code} {resp.text}")
@@ -157,7 +175,11 @@ class FalVideoProvider(VideoProvider):
         )
 
     def get_job_status(self, provider_job_id: str) -> VideoJobStatusResult:
-        status_url = f"{FAL_QUEUE_BASE}/{self.model_config.model_id}/requests/{provider_job_id}/status"
+        # NOTE: base_model_id here, deliberately NOT submit_path - fal.ai's
+        # queue API does not use the subpath (e.g. "turbo") for status/result
+        # routing, only for the original submission. Using submit_path here
+        # is exactly the bug that produced a 405 on the first real test.
+        status_url = f"{FAL_QUEUE_BASE}/{self.model_config.base_model_id}/requests/{provider_job_id}/status"
         resp = self._client.get(status_url, headers=self._headers())
         if resp.status_code >= 400:
             raise VideoProviderError(f"fal.ai status check failed: {resp.status_code} {resp.text}")
@@ -168,7 +190,7 @@ class FalVideoProvider(VideoProvider):
             return VideoJobStatusResult(status=ProviderJobState.PROCESSING)
 
         if status == "COMPLETED":
-            result_url = f"{FAL_QUEUE_BASE}/{self.model_config.model_id}/requests/{provider_job_id}"
+            result_url = f"{FAL_QUEUE_BASE}/{self.model_config.base_model_id}/requests/{provider_job_id}"
             result_resp = self._client.get(result_url, headers=self._headers())
             if result_resp.status_code >= 400:
                 raise VideoProviderError(

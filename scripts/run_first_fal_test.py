@@ -98,7 +98,7 @@ def main() -> None:
     print("ONE-SHOT REAL fal.ai TEST - THIS WILL SPEND REAL MONEY")
     print("=" * 70)
     print(f"Image model:    {FLUX_SCHNELL.model_id}")
-    print(f"Video model:    {WAN_TURBO.model_id}")
+    print(f"Video model:    {WAN_TURBO.submit_path}")
     print(f"Resolution:     {RESOLUTION}    Aspect ratio: {ASPECT_RATIO}")
     print(f"Image prompt:   {IMAGE_PROMPT}")
     print(f"Video prompt:   {VIDEO_PROMPT}")
@@ -151,12 +151,19 @@ def main() -> None:
             fail(
                 f"Gave up after {elapsed:.0f}s waiting for the video (job {submitted.provider_job_id} "
                 "may still complete and be billed on fal.ai's side even though we stopped watching it - "
-                "check https://fal.ai/dashboard/billing). We did not retry or resubmit."
+                "check https://fal.ai/dashboard/billing). We did not retry or resubmit.\n"
+                f"      To check on it later without spending anything again, run:\n"
+                f"      python -m scripts.recover_fal_video_job {submitted.provider_job_id}"
             )
         try:
             result = video_provider.get_job_status(submitted.provider_job_id)
         except VideoProviderError as e:
-            fail(f"Status check failed: {e}")
+            fail(
+                f"Status check failed: {e}\n"
+                f"      The job was already submitted (and may be billed) - to check on it later without\n"
+                f"      spending anything again, run:\n"
+                f"      python -m scripts.recover_fal_video_job {submitted.provider_job_id}"
+            )
 
         if result.status == ProviderJobState.PROCESSING:
             print(f"      ...still processing ({elapsed:.0f}s elapsed)")
@@ -174,7 +181,11 @@ def main() -> None:
     try:
         video_provider.download_result(submitted.provider_job_id, result.output_url, str(video_path))
     except VideoProviderError as e:
-        fail(f"Download failed (generation already succeeded and was billed, but the local save failed): {e}")
+        fail(
+            f"Download failed (generation already succeeded and was billed, but the local save failed): {e}\n"
+            f"      To retry just the download without spending anything again, run:\n"
+            f"      python -m scripts.recover_fal_video_job {submitted.provider_job_id}"
+        )
 
     actual_video_cost = result.actual_cost_usd if result.actual_cost_usd is not None else submitted.estimated_cost_usd
     total_actual = round(image_result.cost_usd + actual_video_cost, 4)

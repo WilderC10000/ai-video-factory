@@ -292,33 +292,45 @@ the mocks. They have never been executed against the live API: outbound
 access to fal.ai is blocked from this development environment, so their
 first real invocation will be the approved test itself.
 
-### The one real test - approved, run it locally
+### The one real test - what happened, and a bug it found
 
 **Endpoints:**
 - Video: `fal-ai/wan/v2.2-a14b/image-to-video/turbo`, called with
   `resolution: "480p"` explicitly set
 - Image: `fal-ai/flux/schnell`
 
-**Exact expected cost: $0.053** ($0.003 image + $0.05 video, both flat
-rates with no rounding uncertainty - the reason we like flat billing).
-
-This test is approved (max spend $0.06) but has not been run anywhere yet.
-It can't be run from this development sandbox at all: the sandbox's
+This test is approved (max spend $0.06). It couldn't be run from the
+development sandbox this app was originally built in - that sandbox's
 network egress policy returns a hard 403 policy denial on every fal.ai
-host (`fal.ai`, `fal.run`, `queue.fal.run`, `rest.alpha.fal.ai`), confirmed
-directly (not just inferred from one blocked tool). Per that policy's own
-guidance, we did not retry or attempt to route around it.
+host - so it was run from a local machine that can reach fal.ai instead,
+using `scripts/run_first_fal_test.py`.
 
-Instead, `scripts/run_first_fal_test.py` is a standalone script - not
-routed through the project/database pipeline, just the two adapters
-directly - meant to be run on a machine that *can* reach fal.ai (e.g. your
-own computer). See "Running the one real fal.ai test" below for exact
-commands. Its full request/response logic has been dry-run end-to-end
-against a fake HTTP transport (same technique as the adapter tests) with
-the real cost math, confirming the $0.0530 total and that
-`resolution: "480p"` / `aspect_ratio: "9:16"` are both actually present in
-the outgoing request - only the network call itself is untested, since
-that's the one thing that can't be faked.
+**Result:** the FLUX schnell image succeeded (2.0s, $0.003) and the Wan
+Turbo video job submitted successfully (job accepted, estimated cost
+$0.0500) - but the very first status check failed with **HTTP 405**. The
+script correctly stopped immediately: no retry, no second job submitted,
+exactly as designed.
+
+**Root cause, found and fixed:** fal.ai's queue API documents this
+explicitly - *"the subpath should be used when making the request, but
+not when getting request status or results."* `turbo` is a subpath of the
+base Wan app (`fal-ai/wan/v2.2-a14b/image-to-video`). Our adapter was
+correctly including `/turbo` when submitting, but was **also** including
+it when checking status/result - fal.ai returns 405 for that malformed
+path. `FalVideoModelConfig` now separates `base_model_id` (used for
+status/result) from `submit_path` (`base_model_id` + subpath, used only
+for submission) - see `app/providers/video/fal.py`. Our own adapter tests
+had mocked the *same* incorrect assumption the code made, which is why
+they passed despite the bug - only the real call surfaced it. The tests
+now mock fal.ai's actual documented routing and would fail again if this
+regressed.
+
+**Recovering the orphaned job:** the video job that already succeeded in
+being submitted (job id `01a06472-6d21-7642-b26e-1dbb856b1e87`, likely
+already billed $0.05 by fal.ai regardless of our polling bug) can be
+checked and downloaded - never resubmitted - with
+`scripts/recover_fal_video_job.py`. See "Running the one real fal.ai
+test" below for exact commands for both scripts.
 
 ## Requirements
 
@@ -382,6 +394,27 @@ python -m scripts.run_first_fal_test
 # or, to skip the "type yes to proceed" confirmation prompt:
 python -m scripts.run_first_fal_test --yes
 ```
+
+### Recovering a job if something goes wrong after submission
+
+If the video job was submitted successfully (you have a provider job id)
+but the script then failed for any reason - a status-check bug, a dropped
+connection, closing the terminal - **the job may already be running or
+billed on fal.ai's side regardless.** `scripts/recover_fal_video_job.py`
+checks on and downloads that exact job. It never creates a new job, so
+running it repeatedly costs nothing extra:
+
+```bash
+python -m scripts.recover_fal_video_job <provider_job_id>
+# if the original job used Wan standard instead of Turbo:
+python -m scripts.recover_fal_video_job <provider_job_id> --standard
+# to choose where the clip is saved:
+python -m scripts.recover_fal_video_job <provider_job_id> --out clip.mp4
+```
+
+`run_first_fal_test.py` itself prints this exact command (with your job id
+already filled in) if it fails after a job has been submitted, so you
+don't need to copy the id by hand.
 
 ## Running the API server
 

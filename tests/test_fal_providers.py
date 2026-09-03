@@ -212,6 +212,41 @@ def test_queue_app_id_strips_everything_but_owner_and_alias():
     assert WAN_TURBO.submit_path == "fal-ai/wan/v2.2-a14b/image-to-video/turbo"
 
 
+def test_submit_passes_through_whitelisted_generation_controls(tmp_path):
+    """enable_prompt_expansion=False (and seed) are how a multi-stage
+    continuity chain reduces fal.ai's own prompt rewriting from being an
+    extra source of drift between stages - confirms these reach the actual
+    request body."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/storage/upload/initiate":
+            return httpx.Response(
+                200, json={"upload_url": "https://fake-upload.example/put", "file_url": "https://fake-cdn.example/ref.jpg"}
+            )
+        if str(request.url) == "https://fake-upload.example/put":
+            return httpx.Response(200)
+        if request.url.path == "/fal-ai/wan/v2.2-a14b/image-to-video/turbo":
+            body = json.loads(request.content)
+            assert body["enable_prompt_expansion"] is False
+            assert body["seed"] == 42
+            assert "resolution" not in body or body["resolution"] == "480p"  # not double-set
+            return httpx.Response(200, json={"request_id": "req-1"})
+        raise AssertionError(f"Unexpected request: {request.method} {request.url}")
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = FalVideoProvider(WAN_TURBO, api_key="fake-key", client=client)
+
+    ref_image = tmp_path / "ref.jpg"
+    ref_image.write_bytes(b"fake jpeg bytes")
+
+    request = VideoGenerationRequest(
+        prompt="p",
+        reference_image_path=str(ref_image),
+        extra_params={"resolution": "480p", "enable_prompt_expansion": False, "seed": 42},
+    )
+    provider.submit_video_job(request)
+
+
 def test_full_image_generation_cycle(tmp_path):
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/fal-ai/flux/schnell" and request.method == "POST":

@@ -363,11 +363,14 @@ for both scripts.
 ## Requirements
 
 - Python 3.11+
-- `ffmpeg` (used only to pre-generate the mock providers' tiny placeholder
-  files, already committed to the repo at `app/providers/video/fixtures/mock_clip.mp4`
-  and `app/providers/image/fixtures/mock_reference.jpg` - you don't need
-  ffmpeg installed just to run the app, only if you want to regenerate those fixtures)
-- No paid API keys needed through Milestone 2.
+- `ffmpeg` on PATH - required to run `scripts/run_continuity_test.py`
+  (extracts a propagated reference frame from each clip between stages;
+  see "Running the continuity test" below) or to regenerate the mock
+  providers' placeholder fixtures. Not required for anything else -
+  the mock/API/demo flows don't need it. Install from
+  https://ffmpeg.org/download.html, or on Windows: `winget install ffmpeg`.
+- No paid API keys needed through Milestone 2 for anything except the
+  real fal.ai test scripts, which are opt-in and always ask for confirmation.
 
 ## Setup
 
@@ -444,6 +447,68 @@ python -m scripts.recover_fal_video_job <provider_job_id> --out clip.mp4
 already filled in) if it fails after a job has been submitted, so you
 don't need to copy the id by hand.
 
+## Running the continuity test (spends real money - max $0.20)
+
+A research probe, not the final architecture: does chronological
+construction *continuity* survive across several sequential Wan
+generations, and how much visual drift accumulates? `scripts/run_continuity_test.py`
+generates 3 shots of the same construction project (a lone builder in a
+sea cave: site prep -> floor/platform built -> wall framing erected),
+using **last-frame propagation** instead of independent generations:
+
+```
+Shot 1: FLUX schnell reference image (the only image call)
+        -> Wan Turbo animates it -> clip 1
+Shot 2: ffmpeg extracts the actual last frame of clip 1 (free, local,
+        no API call) -> that frame becomes shot 2's reference image
+        directly -> Wan Turbo animates it -> clip 2
+Shot 3: same idea, seeded from clip 2's last frame -> clip 3
+```
+
+Each stage inherits the literal pixels of the previous one (the same
+cave, the same worker, whatever was already built), not a fresh
+text-to-image reinterpretation - see "Continuity bible" below for why
+that matters, and the cost model section above for why this is also the
+cheapest option available with our current FLUX + Wan Turbo setup. A
+shared **continuity bible** text fragment (worker appearance, cave
+geometry, material palette, camera style) is repeated in every prompt on
+top of the propagated image, and each stage's prompt explicitly prohibits
+later-stage elements (e.g. shot 2 must show no walls/furniture/interior;
+shot 3 must show no insulation/cabinetry/decor) to fight drift from both
+directions.
+
+**Safety, same pattern as the other real-call scripts:**
+- Exactly 1 FLUX call + exactly 3 Wan Turbo calls - hard-coded, no loop
+  that could ever submit a 4th, no regeneration path.
+- Total cost computed and checked against the $0.20 cap before any call;
+  one `yes` confirmation gates the whole chain.
+- No automatic retries - any failure at any stage (image, submit, status
+  check, download, frame extraction) stops the script immediately.
+- `manifest.json` is written incrementally after every step - even a
+  failure partway through leaves a complete diagnostic record (every
+  prompt, which image fed which stage and how it was obtained, extraction
+  offset, provider job id, status/result URLs, costs, timestamps) and a
+  recoverable job (`recover_fal_video_job.py` still works on any of the 3
+  job ids).
+
+Requires `FAL_API_KEY` in `.env` (like the other real-call scripts) and
+`ffmpeg` on PATH (only script that actually needs it to run, not just to
+regenerate fixtures):
+
+```bash
+python -m scripts.run_continuity_test
+# adjust how many seconds before each clip's end the propagated frame is taken from:
+python -m scripts.run_continuity_test --frame-offset 0.5
+# skip the "type yes" confirmation prompt:
+python -m scripts.run_continuity_test --yes
+```
+
+Outputs land in `data/fal_continuity_test/` (gitignored): the FLUX
+reference image, all 3 clips, both propagated frames, and `manifest.json`.
+Review the 3 clips yourself afterward for continuity and drift - that's
+the actual experiment; this tooling only gets you the clips and the data
+to judge them by.
+
 ## Running the API server
 
 ```bash
@@ -512,16 +577,20 @@ provider-level rate limiting.
 
 ## What's next
 
-- **Milestone 2, remaining**: the real fal.ai `VideoProvider` (Wan 2.2 A14B
-  Turbo) and `ImageProvider` (FLUX schnell) adapters are written and locally
-  tested against simulated responses (see "Cost model" above), and the
-  single approved $0.06-capped test is packaged as a standalone script
-  (`scripts/run_first_fal_test.py`) - not yet run anywhere, since the dev
-  sandbox can't reach fal.ai. Next is running it from a machine that can
-  (e.g. your own computer) and reviewing the result.
-- **Milestone 3+**: full multi-shot async generation across an entire
-  project, voiceover, FFmpeg assembly, captions, AI QA, ChatGPT+Claude
-  collaboration, a review dashboard, and eventually publishing - see the
-  project plan for the full list. Upgrading specific important shots to a
-  premium provider (Kling/Veo/etc.) later is a config change, not a
-  rewrite, thanks to the provider interface.
+- **Milestone 2, complete**: the real fal.ai `VideoProvider` (Wan 2.2 A14B
+  Turbo) and `ImageProvider` (FLUX schnell) adapters work end-to-end - a
+  real image + video generation succeeded (`scripts/run_first_fal_test.py`,
+  after fixing two queue-routing bugs the live call surfaced - see "Cost
+  model" above).
+- **Continuity probe (current)**: `scripts/run_continuity_test.py` tests
+  whether last-frame propagation holds a construction project visually
+  consistent (same worker, same location, same developing structure)
+  across 3 sequential Wan Turbo generations, and how much drift shows up.
+  Not yet run for real - built and verified offline only. Next is running
+  it locally and reviewing the 3 clips for continuity/drift.
+- **Milestone 3+**: once continuity is validated at 3 shots, scale to the
+  full ~60-75s / 13-16 shot architecture, add voiceover, FFmpeg assembly,
+  captions, AI QA, ChatGPT+Claude collaboration, a review dashboard, and
+  eventually publishing - see the project plan for the full list.
+  Upgrading specific important shots to a premium provider (Kling/Veo/etc.)
+  later is a config change, not a rewrite, thanks to the provider interface.

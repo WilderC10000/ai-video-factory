@@ -186,6 +186,16 @@ class FalVideoProvider(VideoProvider):
             "resolution": self._resolution(request),
             "aspect_ratio": request.aspect_ratio,
         }
+        # A small whitelist of documented Wan Turbo knobs a caller can set
+        # via extra_params, e.g. {"enable_prompt_expansion": False} to stop
+        # fal.ai's own LLM-based prompt rewriting from introducing drift in
+        # a multi-stage continuity chain, or {"seed": 123} for reproducible
+        # generations. Anything else in extra_params (like "resolution",
+        # already consumed above) is deliberately not passed through blind.
+        for key in ("enable_prompt_expansion", "seed", "acceleration"):
+            if key in request.extra_params:
+                payload[key] = request.extra_params[key]
+
         submit_url = f"{FAL_QUEUE_BASE}/{self.model_config.submit_path}"
         self._diag("POST", submit_url)
         resp = self._client.post(submit_url, headers=self._headers(), json=payload)

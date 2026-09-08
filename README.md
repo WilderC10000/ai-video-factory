@@ -1242,6 +1242,66 @@ benchmark language and the 15s multi-stage extension, queue routing
 resolves to `alibaba/wan-3.0` (owner/alias only), and the cost lands at
 exactly $0.75.
 
+**Result: ran for real, PASSED technically, FAILED creatively.** Visual
+quality was good enough and the corrected `start_image_url` field worked
+(see below), but construction read as continuous and too slow -
+not the extreme, hard-cut timelapse feel of the liked Seedance benchmark.
+Root cause suspected: importing the Seedance prompt's own phrasing
+("works continuously and rapidly," "moves quickly but plausibly between
+tasks") plausibly nudged the model toward one continuous action instead
+of discontinuous time-lapse jumps. See "Running the Wan 3.0 15s timelapse
+test V2" below for the fix.
+
+### The real schema bug this test found
+
+The first live submission was rejected with fal.ai's own HTTP 422 -
+`"body -> start_image_url: Field required"` - while the payload sent
+`image_url`. No charge occurred; fal.ai validates a request's schema
+before any billable work starts. Fixed via the existing per-model
+`image_param_name` mechanism (the same one `KLING_2_6_PRO` already uses
+for its own `start_image_url` field) - confirmed by a real error, not
+secondhand research. `duration`/`resolution`/`aspect_ratio` were not
+flagged as errors in that same 422, so they're now believed correct.
+
+## Running the Wan 3.0 15s timelapse test V2 (spends real money - max $0.75)
+
+V1 succeeded technically but failed the central creative requirement:
+the construction read as slow and continuous, not an extreme time-lapse.
+`scripts/run_wan3_15s_timelapse_v2_test.py` keeps every technical
+parameter from V1 identical (model, 480p, 15s, 9:16, source image,
+`start_image_url`, no audio field, $0.75) and changes **only the
+prompt** - rewritten from scratch rather than appended to V1's
+Seedance-derived prompt, since that base prompt's own phrasing is the
+suspected cause of the pacing problem.
+
+The new prompt is built around ~6 explicit "HARD TIME JUMP" transitions
+across the 15s (sparse framing -> many more studs already exist -> walls
+substantially framed -> upper beams/header -> roof framing appears ->
+roof substantially developed -> dramatically more complete cabin), with
+only brief activity bursts described between jumps rather than
+continuous work, and an explicit "NOT continuous real-time footage"
+framing up front.
+
+**Exactly 1 video call, $0 image cost, own dedicated output directory**
+(V1's result is never overwritten):
+- Hard cap set exactly equal to the computed estimate ($0.75) - no
+  margin, same as V1.
+- No retries, no alternate model, no additional generations.
+
+```bash
+python -m scripts.run_wan3_15s_timelapse_v2_test
+python -m scripts.run_wan3_15s_timelapse_v2_test --yes
+```
+
+Outputs land in `data/fal_wan3_15s_timelapse_v2_test/` (gitignored):
+`wan3_15s_timelapse_v2.mp4`, `manifest.json`. Verified entirely offline:
+a mocked-transport dry run confirms no image-generation or other-model
+endpoint is ever touched, exactly one submission happens with the
+confirmed-correct `start_image_url` field (no `image_url`), the prompt
+contains the new hard-time-jump language and explicitly does NOT contain
+the V1/Seedance phrases suspected of causing the continuous-motion
+pacing problem, and the cost lands at exactly $0.75.
+
 ## Running the API server
 
 ```bash
@@ -1455,26 +1515,29 @@ provider-level rate limiting.
   benchmark (accelerated montage, natural jump/cut-like progression) is
   now the explicit creative template for all subsequent cost-down
   candidates, not either Wan Turbo test.
-- **Wan 3.0 15s timelapse test (current)**: `scripts/run_wan3_15s_timelapse_test.py`
-  tests whether a single continuous ~15s generation on a cheaper model
-  (`alibaba/wan-3.0/image-to-video`, 480p, $0.05/s = $0.75 total) can
-  reproduce the Seedance benchmark's accelerated-montage feel at roughly
-  1/5th its cost. Imports the Seedance benchmark's own prompt directly
-  (not retyped) as the creative base, extended for 15s of *more*
-  progression across an explicit multi-stage structure (early framing ->
-  denser wall framing -> upper framing -> roof/bracing -> substantially
-  more complete), with natural jump-cut-like transitions called out as
-  desirable. First real submission attempt hit exactly the kind of gap
-  this project's "verify before spending" discipline is built to catch
-  safely: rejected with fal.ai's own HTTP 422 (`start_image_url` required,
-  not the `image_url` the payload sent) - no charge occurred, fixed via
-  the existing `image_param_name` mechanism, confirmed by a real error
-  rather than research. The audio-field question remains genuinely
-  unresolved and stays deliberately omitted from the payload, failing the
-  same safe way if wrong. Exactly 1 video call, $0 image cost, no
-  retries, no alternate model, hard cap set exactly equal to the computed
-  estimate (no margin). Not yet run for real - a corrected offline dry
-  run passes; next is the real (now schema-corrected) submission.
+- **Wan 3.0 15s timelapse test V1, run for real - technical PASS, creative
+  FAIL**: `scripts/run_wan3_15s_timelapse_test.py` tested whether a single
+  continuous ~15s generation on a cheaper model (`alibaba/wan-3.0/image-to-video`,
+  480p, $0.75 total) could reproduce the Seedance benchmark's accelerated-
+  montage feel at roughly 1/5th its cost. First real submission hit
+  exactly the kind of gap this project's "verify before spending"
+  discipline is built to catch safely: rejected with fal.ai's own HTTP
+  422 (`start_image_url` required, not the `image_url` the payload sent) -
+  no charge occurred, fixed via the existing `image_param_name` mechanism.
+  The corrected resubmission succeeded and visual quality was good enough,
+  but the construction read as continuous and too slow - not the extreme,
+  hard-cut timelapse feel that made the Seedance benchmark work. Root
+  cause suspected: the imported Seedance prompt's own continuous-motion
+  phrasing.
+- **Wan 3.0 15s timelapse test V2 (current)**: `scripts/run_wan3_15s_timelapse_v2_test.py`
+  keeps every technical parameter from V1 identical and changes only the
+  prompt - rewritten from scratch (not appended to V1's Seedance-derived
+  prompt) around ~6 explicit "HARD TIME JUMP" transitions across the 15s,
+  each showing a meaningfully more advanced construction state, with only
+  brief activity bursts between jumps rather than continuous work. Same
+  $0.75 cost, same zero-margin cap, own dedicated output directory so
+  V1's result is preserved for direct comparison. Not yet run for real -
+  built and verified offline only.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

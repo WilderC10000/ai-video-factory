@@ -19,7 +19,13 @@ from app.providers.base import (
     VideoGenerationRequest,
     VideoProviderError,
 )
-from app.providers.image.fal import FLUX_PRO, FLUX_SCHNELL, NANO_BANANA_PRO_EDIT, FalImageProvider
+from app.providers.image.fal import (
+    FLUX_PRO,
+    FLUX_SCHNELL,
+    NANO_BANANA_PRO_EDIT,
+    NANO_BANANA_PRO_GENERATE,
+    FalImageProvider,
+)
 from app.providers.video.fal import KLING_2_6_PRO, VEO_3_1_FAST, WAN_STANDARD, WAN_TURBO, FalVideoProvider
 
 
@@ -449,3 +455,43 @@ def test_full_image_edit_cycle_uploads_then_edits_then_downloads(tmp_path):
 
     assert result.cost_usd == pytest.approx(0.15)
     assert dest.read_bytes() == b"fake edited png bytes"
+
+
+# ---------------------------------------------------------------------------
+# Nano Banana Pro Generate: text-to-image (composition test), a genuinely
+# different request shape from FLUX (aspect_ratio + resolution, not
+# image_size: {width, height}) - and from NANO_BANANA_PRO_EDIT (no input
+# image / upload step at all).
+# ---------------------------------------------------------------------------
+
+
+def test_nano_banana_generate_pricing_is_flat_per_image():
+    provider = FalImageProvider(NANO_BANANA_PRO_GENERATE, api_key="fake-key")
+    request = ImageGenerationRequest(prompt="p")
+    assert provider.estimate_cost(request) == pytest.approx(0.15)
+
+
+def test_full_nano_banana_generate_cycle_uses_aspect_ratio_not_image_size(tmp_path):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/fal-ai/nano-banana-pro" and request.method == "POST":
+            body = json.loads(request.content)
+            assert body["prompt"] == "candid documentary construction shot"
+            assert body["aspect_ratio"] == "9:16"
+            assert body["resolution"] == "1K"
+            assert body["num_images"] == 1
+            assert body["limit_generations"] is True
+            assert "image_size" not in body
+            return httpx.Response(200, json={"images": [{"url": "https://fake-cdn.example/gen.png"}]})
+        if str(request.url) == "https://fake-cdn.example/gen.png":
+            return httpx.Response(200, content=b"fake generated png bytes")
+        raise AssertionError(f"Unexpected request: {request.method} {request.url}")
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = FalImageProvider(NANO_BANANA_PRO_GENERATE, api_key="fake-key", client=client)
+
+    request = ImageGenerationRequest(prompt="candid documentary construction shot")
+    dest = tmp_path / "out.jpg"
+    result = provider.generate_image(request, str(dest))
+
+    assert result.cost_usd == pytest.approx(0.15)
+    assert dest.read_bytes() == b"fake generated png bytes"

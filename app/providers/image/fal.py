@@ -29,6 +29,17 @@ fal.ai's documented 2-step upload (signed URL, then PUT the bytes), the
 same mechanism `FalVideoProvider._upload_reference_image` already uses for
 video reference images; FLUX text-to-image never needed this since it has
 no input image at all.
+
+NANO_BANANA_PRO_GENERATE is Nano Banana Pro's separate text-to-image
+endpoint (`fal-ai/nano-banana-pro`, no `/edit` suffix) - same $0.15/image
+flat billing, but a genuinely different request shape from FLUX: it takes
+`aspect_ratio` (an enum like "9:16") and `resolution` ("1K"/"2K"/"4K")
+instead of explicit `image_size: {width, height}` - verified against
+fal.ai's own documented example request. `FalImageModelConfig.
+uses_aspect_ratio` selects which payload shape `generate_image()` builds,
+the same per-model-differences pattern already used for video (Kling's
+`image_param_name`, `supports_resolution_param`). We only ever request
+"1K" resolution here, which keeps the flat rate at $0.15 (4K is $0.30).
 """
 import math
 from dataclasses import dataclass
@@ -53,10 +64,16 @@ FAL_STORAGE_BASE = "https://rest.alpha.fal.ai"
 class FalImageModelConfig:
     model_id: str
     price_per_megapixel: float = 0.0
-    # Flat per-call price (e.g. Nano Banana Pro Edit's $0.15/image regardless
-    # of size) - overrides the megapixel calculation in estimate_edit_cost()
-    # when set. None for the FLUX configs below, which bill per-megapixel.
+    # Flat per-call price (e.g. Nano Banana Pro's $0.15/image regardless of
+    # size) - overrides the megapixel calculation in estimate_cost()/
+    # estimate_edit_cost() when set. None for the FLUX configs below, which
+    # bill per-megapixel.
     price_per_image: float | None = None
+    # True for models whose text-to-image endpoint takes aspect_ratio +
+    # resolution instead of explicit image_size: {width, height} (e.g. Nano
+    # Banana Pro's generation endpoint). Selects the payload shape
+    # generate_image() builds - see module docstring.
+    uses_aspect_ratio: bool = False
 
 
 # Cheapest credible text-to-image on fal.ai; supports 9:16 via width/height.
@@ -74,6 +91,15 @@ FLUX_PRO = FalImageModelConfig(model_id="fal-ai/flux-pro/v1.1", price_per_megapi
 # (1K/2K) resolution; $0.30/image at 4K (not used here - we never request
 # 4K, so num_images/resolution defaults keep this at the $0.15 rate).
 NANO_BANANA_PRO_EDIT = FalImageModelConfig(model_id="fal-ai/nano-banana-pro/edit", price_per_image=0.15)
+
+# Nano Banana Pro's text-to-image endpoint (not /edit) - used when the
+# composition itself needs to be generated fresh rather than repaired via
+# a local edit (see scripts/run_composition_test.py). Same $0.15/image
+# flat rate as the edit endpoint; different request shape (aspect_ratio,
+# not width/height) - see module docstring.
+NANO_BANANA_PRO_GENERATE = FalImageModelConfig(
+    model_id="fal-ai/nano-banana-pro", price_per_image=0.15, uses_aspect_ratio=True
+)
 
 
 class FalImageProvider(ImageProvider):
@@ -99,16 +125,27 @@ class FalImageProvider(ImageProvider):
         return {"Authorization": f"Key {self.api_key}"}
 
     def estimate_cost(self, request: ImageGenerationRequest) -> float:
+        if self.model_config.price_per_image is not None:
+            return round(self.model_config.price_per_image, 4)
         megapixels = (request.width * request.height) / 1_000_000
         billed_megapixels = max(1, math.ceil(megapixels))
         return round(billed_megapixels * self.model_config.price_per_megapixel, 4)
 
     def generate_image(self, request: ImageGenerationRequest, destination_path: str) -> ImageResult:
-        payload = {
-            "prompt": request.prompt,
-            "image_size": {"width": request.width, "height": request.height},
-            "num_images": 1,
-        }
+        if self.model_config.uses_aspect_ratio:
+            payload = {
+                "prompt": request.prompt,
+                "aspect_ratio": request.extra_params.get("aspect_ratio", "9:16"),
+                "resolution": request.extra_params.get("resolution", "1K"),
+                "num_images": 1,
+                "limit_generations": True,  # defensive: never let prompt text imply >1 image
+            }
+        else:
+            payload = {
+                "prompt": request.prompt,
+                "image_size": {"width": request.width, "height": request.height},
+                "num_images": 1,
+            }
         resp = self._client.post(
             f"{FAL_SYNC_BASE}/{self.model_config.model_id}", headers=self._headers(), json=payload
         )

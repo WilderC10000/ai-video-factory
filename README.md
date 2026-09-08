@@ -141,6 +141,52 @@ built by combining this bible with that shot's specific beat description
 randomly drift (e.g. a jet becoming an airliner). Later, AI visual QA will
 compare generated footage against this same bible.
 
+### Permanent visual rules (builder attention / camera behavior)
+
+Discovered from the V2A keyframe experiment: a reference image generated
+with no explicit camera-angle instruction defaults to a centered,
+front-facing "portrait of a construction worker" composition - the
+statistically dominant framing for "person + tool" prompts - and an
+*edit* pass cannot reliably fix that afterward, because editing models are
+built for small local corrections, not full pose/camera reorientation
+("change as little else as possible" actively works against a fix this
+large). The rules below are now a standing part of prompt generation and
+(eventually) automated QA, not a one-off fix - not yet implemented in
+code, but binding on every future prompt this project writes:
+
+**BUILDER ATTENTION RULE** - During construction, the builder is absorbed
+in his work and never acknowledges the camera. His gaze follows the
+active tool/material/work area. Direct eye contact with the camera is a
+QA failure unless a future storyboard explicitly requests it. Facial
+visibility is NOT required in every shot - character consistency comes
+from overall appearance, clothing, build, hair, beard, and silhouette,
+not constant frontal facial visibility. Don't force the recurring
+character's face into every frame.
+
+**OBSERVATIONAL CAMERA RULE** - Construction footage should resemble
+candid documentary footage captured by someone observing a real builder,
+camera positioned roughly 30-120 degrees off his frontal direction. Favor
+side, three-quarter-rear, and over-the-shoulder viewpoints, medium-wide
+construction framing, and occasional closer action detail. An
+occasional slightly elevated observational angle is fine. Avoid
+portrait/presenter framing, symmetrical hero poses, commercial/product-ad
+staging, and fashion/influencer posing. Documentary/imperfect framing is
+fine - these should not look like polished advertising photography.
+
+**COMPOSITIONAL HIERARCHY RULE** - The builder is not automatically the
+dominant, centered subject of every frame. Depending on the shot, the
+hierarchy should read as ACTION/BUILD -> BUILDER -> ENVIRONMENT or
+BUILD+BUILDER -> ENVIRONMENT, not BUILDER -> everything else. The viewer
+needs to watch construction happening ("candid footage of a man actually
+building a cabin"), not admire a portrait of the character ("portrait of
+a construction worker with a cabin behind him"). The landscape stays
+visible for scale and atmosphere but is not used as a portrait backdrop -
+the builder should read as genuinely occupying and working within the
+environment.
+
+**QA flags** (conceptual - not yet implemented): `builder_looking_at_camera`,
+`portrait_pose`, `action_body_mechanics_implausible`, `tool_interaction_obscured`.
+
 ## Cost tracking
 
 Every provider call writes a `CostRecord` row (provider name, operation
@@ -279,17 +325,23 @@ FalVideoProvider(WAN_TURBO)      # cheapest baseline - $0.05/video flat @480p
 FalVideoProvider(WAN_STANDARD)   # per-second alternative, e.g. for one important shot
 FalVideoProvider(KLING_2_6_PRO)  # quality bake-off candidate - $0.07/s, no resolution tiers
 FalVideoProvider(VEO_3_1_FAST)   # quality bake-off candidate - $0.10/s, 1080p
-FalImageProvider(FLUX_SCHNELL)        # cheapest reference image - $0.003/MP
-FalImageProvider(FLUX_PRO)            # higher-fidelity reference image - $0.04/MP
-FalImageProvider(NANO_BANANA_PRO_EDIT)  # EDITS an existing image (not text-to-image) - $0.15/image flat
+FalImageProvider(FLUX_SCHNELL)            # cheapest reference image - $0.003/MP
+FalImageProvider(FLUX_PRO)                # higher-fidelity reference image - $0.04/MP
+FalImageProvider(NANO_BANANA_PRO_GENERATE)  # fresh text-to-image, aspect_ratio-based - $0.15/image flat
+FalImageProvider(NANO_BANANA_PRO_EDIT)      # EDITS an existing image (not text-to-image) - $0.15/image flat
 ```
 
-`NANO_BANANA_PRO_EDIT` is a different kind of call from the two FLUX
-configs - it edits an *existing* image via `edit_image()`/`ImageEditRequest`
-rather than generating from a text prompt via `generate_image()`/
-`ImageGenerationRequest`, and bills a flat per-image price
-(`price_per_image`) instead of per-megapixel. See "Running the V2A keyframe
-experiment" below for what it's used for.
+`NANO_BANANA_PRO_EDIT` and `NANO_BANANA_PRO_GENERATE` are both different
+from the two FLUX configs, and from each other: `NANO_BANANA_PRO_EDIT`
+edits an *existing* image via `edit_image()`/`ImageEditRequest`;
+`NANO_BANANA_PRO_GENERATE` generates fresh from a text prompt via
+`generate_image()`/`ImageGenerationRequest` like FLUX, but with a
+different request shape (`aspect_ratio`/`resolution`, not `image_size:
+{width, height}` - `FalImageModelConfig.uses_aspect_ratio` selects which
+shape `generate_image()` builds). Both bill a flat per-image price
+(`price_per_image`) instead of per-megapixel. See "Running the V2A
+keyframe experiment" and "Running the composition test" below for what
+each is used for.
 
 Adding a future fal.ai model (or upgrading one shot to a premium provider
 later) means adding one more named config, not touching
@@ -318,14 +370,16 @@ explicit width/height as FLUX_SCHNELL, keeping every candidate's cost
 exactly pre-computable, consistent with every other provider in this
 codebase.
 
-**These real adapters are written and locally tested (23 tests in
+**These real adapters are written and locally tested (25 tests in
 `tests/test_fal_providers.py`, using `httpx.MockTransport` to simulate
 fal.ai's documented request/response shapes with zero network calls and
 zero cost) but are NOT wired in as the active provider anywhere in the
-app** - `routers/projects.py` still uses the mocks. Wan Turbo has been
-executed against the live API (see below); Kling, Veo, and Nano Banana Pro
-Edit have not yet - their first real invocations are the approved quality
-bake-off and V2A keyframe experiment, respectively.
+app** - `routers/projects.py` still uses the mocks. Wan Turbo, Kling, and
+Veo have all been executed against the live API in the quality bake-off;
+Nano Banana Pro Edit has too, in V2A (its frames were rejected for
+composition, not for the adapter itself - see "Permanent visual rules"
+above). Nano Banana Pro Generate has not yet - its first real invocation
+is the approved composition test.
 
 ### The one real test - what happened, and a bug it found
 
@@ -739,6 +793,54 @@ frame-conditioned video model (candidates researched: Wan 2.1 FLF2V,
 Kling O1) - see the project's own research notes for the fuller comparison
 against motion-transfer approaches (Kling 3.0 Motion Control, Wan Motion).
 
+**V2A was run for real and rejected** - not for mechanical saw accuracy
+(the actual target of that experiment) but for a different, more
+fundamental problem: the builder read as centered, front-facing, and
+posed for the camera, like a portrait rather than candid footage. Root
+cause and fix: see "Permanent visual rules" above and "Running the
+composition test" below - V2A will be re-run against a correctly-composed
+base image once the composition test passes.
+
+## Running the composition test (spends real money - max $0.20)
+
+V2A's rejection traced back further than V2A itself: the *bake-off's*
+original reference image had no camera-angle instruction in its prompt,
+so it defaulted to a centered, front-facing "hero shot" - and V2A's edit
+pass inherited and preserved that (edit models make small local
+corrections; a full pose/camera reorientation is a global change that
+"change as little else as possible" actively works against). The fix has
+to happen at generation time, not edit time.
+
+`scripts/run_composition_test.py` tests that fix in isolation, before
+spending anything on mechanical correction or video: **one freshly
+generated** (not edited) base action image, using `NANO_BANANA_PRO_GENERATE`
+(`fal-ai/nano-banana-pro`'s text-to-image endpoint, not `/edit` - a
+different request shape, `aspect_ratio` + `resolution` instead of
+`image_size: {width, height}`), with the observational-camera and
+builder-attention rules above written directly into the prompt from the
+start, rather than requested as changes to an existing image.
+
+**Exactly 1 call, no reference image, no edit call, no video call:**
+- Total cost ($0.15 estimated) checked against the $0.20 cap before the
+  call; one `yes` confirmation gates it.
+- No retries, no auto-regeneration.
+- `manifest.json` records the prompt, cost, and output path.
+
+```bash
+python -m scripts.run_composition_test
+python -m scripts.run_composition_test --yes
+```
+
+Outputs land in `data/fal_composition_test/` (gitignored): `action_base_frame.jpg`,
+`manifest.json`. Verified entirely offline: a mocked-transport dry run
+confirms no `/edit` or video endpoint is ever touched, exactly 1 call
+happens, the payload uses `aspect_ratio`/`resolution` (not `image_size`),
+and the cost lands at exactly $0.15. Mechanical saw accuracy is
+deliberately NOT a pass/fail criterion for this step - only composition,
+gaze, and working posture are; mechanical correction is the next, later
+stage, reusing V2A's existing `NANO_BANANA_PRO_EDIT` capability against
+whatever this test produces once approved.
+
 ## Running the API server
 
 ```bash
@@ -864,24 +966,36 @@ provider-level rate limiting.
   identity, not props/tools - so tool-geometry consistency isn't solved by
   motion transfer alone. Sora 2/Pro ruled out (fal.ai/OpenAI API sunsets
   September 24, 2026, no successor announced).
-- **V2A keyframe experiment (current)**: `scripts/run_v2a_keyframes_test.py`
-  gates the next step behind a cheaper, narrower question - can a
-  circular-saw start/end frame pair be edited into mechanical correctness
-  (base plate flush, blade aligned, plausible grip/stance, five fingers per
-  hand) at all, before spending anything on animating them? Exactly 2
-  Nano Banana Pro Edit calls ($0.15/image), zero video calls, human-gated:
-  the two output frames must be manually approved before any V2B
-  (animation) step is even designed. Not yet run for real - built and
-  verified offline only. **V2B (not yet built)**: only after V2A's frames
-  are approved, animate them with a first/last-frame model (Wan 2.1 FLF2V
-  or Kling O1 are the current candidates) - a separate, later, explicitly
-  gated decision.
-- **Milestone 3+**: once the physical-interaction problem is solved well
-  enough (V2A/V2B or a motion-transfer follow-up) and a production model
-  is chosen, implement the Stage/Clip architecture, the hybrid continuity
-  system (structured build state + reference frames + occasional
-  re-anchoring), sound/ASMR metadata, per-shot model/budget tiers,
-  voiceover, FFmpeg assembly with aggressive trimming, captions, AI QA
-  (frame-sampled morphing/continuity checks), a review dashboard, and
+- **V2A keyframe experiment, complete (rejected on composition)**:
+  `scripts/run_v2a_keyframes_test.py` tested whether a circular-saw
+  start/end frame pair could be edited into mechanical correctness. Run
+  for real: the mechanical edit largely worked, but both frames exposed a
+  different, more fundamental problem - the builder read as centered,
+  front-facing, and posed for the camera, like a portrait rather than
+  candid footage. Traced to the source: the bake-off's original reference
+  image had no camera-angle instruction, defaulted to a "hero shot," and
+  V2A's edit pass preserved that framing (edit models make small local
+  corrections; full pose/camera reorientation is a global change actively
+  suppressed by "change as little else as possible"). Produced the
+  "Permanent visual rules" above (BUILDER ATTENTION / OBSERVATIONAL CAMERA
+  / COMPOSITIONAL HIERARCHY) as standing prompting rules, not a one-off fix.
+- **Composition test (current)**: `scripts/run_composition_test.py` tests
+  the fix in isolation, before spending on mechanical correction or video -
+  can a *freshly generated* (not edited) base action image get the
+  camera/attention relationship right when the rules above are written
+  into the prompt from the start? One `NANO_BANANA_PRO_GENERATE` call
+  ($0.15), no edit, no video. Not yet run for real - built and verified
+  offline only. If it passes, V2A's mechanical-edit stage re-runs against
+  this corrected base image; then V2B (animation, first/last-frame model -
+  Wan 2.1 FLF2V or Kling O1) remains a separate, later, explicitly gated
+  decision. One variable at a time: composition, then mechanical setup,
+  then start/end interpolation, then usable motion.
+- **Milestone 3+**: once the physical-interaction and composition problems
+  are solved well enough and a production model is chosen, implement the
+  Stage/Clip architecture, the hybrid continuity system (structured build
+  state + reference frames + occasional re-anchoring), sound/ASMR
+  metadata, per-shot model/budget tiers, voiceover, FFmpeg assembly with
+  aggressive trimming, captions, AI QA (frame-sampled morphing/continuity/
+  composition checks against the flags above), a review dashboard, and
   eventually publishing - see the project plan for the full list. None of
   this is implemented yet.

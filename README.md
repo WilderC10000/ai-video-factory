@@ -275,22 +275,48 @@ not the full $0.053:
 constructor:
 
 ```python
-FalVideoProvider(WAN_TURBO)      # default - $0.05/video flat @480p
+FalVideoProvider(WAN_TURBO)      # cheapest baseline - $0.05/video flat @480p
 FalVideoProvider(WAN_STANDARD)   # per-second alternative, e.g. for one important shot
-FalImageProvider(FLUX_SCHNELL)   # default
+FalVideoProvider(KLING_2_6_PRO)  # quality bake-off candidate - $0.07/s, no resolution tiers
+FalVideoProvider(VEO_3_1_FAST)   # quality bake-off candidate - $0.10/s, 1080p
+FalImageProvider(FLUX_SCHNELL)   # cheapest reference image - $0.003/MP
+FalImageProvider(FLUX_PRO)       # higher-fidelity reference image - $0.04/MP
 ```
 
-Adding a future fal.ai model (or upgrading one shot to Kling/Veo later)
-means adding one more named config, not touching `video_job_service.py`,
-the routers, or anything else that calls `VideoProvider`.
+Adding a future fal.ai model (or upgrading one shot to a premium provider
+later) means adding one more named config, not touching
+`video_job_service.py`, the routers, or anything else that calls
+`VideoProvider`.
 
-**These real adapters are written and locally tested (10 tests, using
-`httpx.MockTransport` to simulate fal.ai's documented request/response
-shapes with zero network calls and zero cost) but are NOT wired in as the
-active provider anywhere in the app** - `routers/projects.py` still uses
-the mocks. They have never been executed against the live API: outbound
-access to fal.ai is blocked from this development environment, so their
-first real invocation will be the approved test itself.
+`FalVideoModelConfig` also carries the per-model request-shape differences
+discovered while verifying Kling and Veo against their own docs (not
+assumed from Wan's shape): `image_param_name` (Kling uses
+`start_image_url`, not `image_url`), `supports_resolution_param` (Kling has
+no selectable resolution - quality is inherent to the pro tier), and
+`extra_payload` (static fields always sent for that model, e.g. Kling's
+fixed `duration`/`generate_audio`/`negative_prompt`, Veo's fixed
+`duration`/`generate_audio`). Kling's `cfg_scale` is deliberately left
+unset so fal.ai's own documented default applies, rather than us pushing it
+toward an extreme - the bake-off is meant to be a fair comparison of each
+model's own out-of-the-box behavior.
+
+FLUX_PRO (not "ultra") was deliberately chosen over FLUX pro Ultra for the
+bake-off's reference image: Ultra's billing was ambiguous between two
+conflicting figures across sources ($0.06/image vs. $0.05/megapixel), and
+Ultra sizes its output via `aspect_ratio` rather than explicit
+width/height, which would make the exact megapixel count - and so the
+exact cost - impossible to know before the call. FLUX_PRO takes the same
+explicit width/height as FLUX_SCHNELL, keeping every candidate's cost
+exactly pre-computable, consistent with every other provider in this
+codebase.
+
+**These real adapters are written and locally tested (20 tests in
+`tests/test_fal_providers.py`, using `httpx.MockTransport` to simulate
+fal.ai's documented request/response shapes with zero network calls and
+zero cost) but are NOT wired in as the active provider anywhere in the
+app** - `routers/projects.py` still uses the mocks. Wan Turbo has been
+executed against the live API (see below); Kling and Veo have not yet -
+their first real invocation will be the approved quality bake-off.
 
 ### The one real test - what happened, and a bug it found
 
@@ -509,6 +535,66 @@ Review the 3 clips yourself afterward for continuity and drift - that's
 the actual experiment; this tooling only gets you the clips and the data
 to judge them by.
 
+## Running the quality bake-off (spends real money - max $1.25)
+
+The continuity probe validated the pipeline mechanics at Wan Turbo 480p;
+this test asks the actual product question from the current creative
+spec - which video model is worth paying for? `scripts/run_bakeoff_test.py`
+sends the **same reference image** and the **same construction action**
+through 3 candidates, so any difference in the output reflects model
+quality, not different creative direction:
+
+| Candidate | Endpoint | Resolution | Duration | Billing |
+|---|---|---|---|---|
+| `wan_turbo_480p` | `fal-ai/wan/v2.2-a14b/image-to-video/turbo` | 480p | 4s (fixed) | $0.05 flat |
+| `kling_2.6_pro` | `fal-ai/kling-video/v2.6/pro/image-to-video` | n/a (inherent) | 5s | $0.07/s = $0.35 |
+| `veo_3.1_fast` | `fal-ai/veo3.1/fast/image-to-video` | 1080p | 6s | $0.10/s = $0.60 |
+
+Reference image: one `FLUX_PRO` (`fal-ai/flux-pro/v1.1`) generation of the
+recurring builder mid-construction on a beautiful natural site ($0.04).
+Estimated total: **$1.04**, against a **$1.25** hard cap.
+
+**Test action, chosen deliberately to stress the models** (per the current
+creative spec's priority order - hand/tool realism and structural
+continuity over raw prettiness): the builder cuts a timber board with a
+circular saw, then carries and fastens it onto an incomplete wall frame on
+an ocean-cliff building site. Both the reference-image prompt and the
+action prompt are shared verbatim across all 3 candidates - the only
+controlled variable is the video model itself.
+
+**Safety, same pattern as every other real-call script:**
+- Exactly 1 image call + exactly 3 video calls - hard-coded, no loop that
+  could ever submit a 4th of anything, no regeneration path.
+- Total cost computed and checked against the $1.25 cap before any call;
+  one `yes` confirmation gates the whole run.
+- No automatic retries - any failure at any stage stops the script
+  immediately, printing a `recover_fal_video_job.py <job_id>` hint for any
+  candidate that had already been submitted.
+- `manifest.json` written incrementally after every step: exact prompt,
+  model/endpoint, resolution, duration, estimated cost, actual cost, job
+  id, status/response URLs, timestamps, and output path for every
+  candidate - even a partial failure leaves a full diagnostic trail.
+
+Requires `FAL_API_KEY` in `.env` (like the other real-call scripts):
+
+```bash
+python -m scripts.run_bakeoff_test
+# skip the "type yes" confirmation prompt:
+python -m scripts.run_bakeoff_test --yes
+```
+
+Outputs land in `data/fal_bakeoff_test/` (gitignored): the shared
+reference image, all 3 candidate clips (clearly labeled by filename -
+`wan_turbo_480p.mp4`, `kling_2.6_pro.mp4`, `veo_3.1_fast.mp4`), and
+`manifest.json`. Verified entirely offline before any real call: a full
+mocked-transport dry run exercises the image generation, all 3 submit/
+poll/download cycles, and the manifest write, asserting each candidate's
+request payload matches its model's documented shape (e.g. Kling's
+`start_image_url` with no `resolution` key, Veo's `duration: "6s"` string)
+and that the total cost math lands at $1.04. Review the 3 clips yourself
+afterward against the bake-off's comparison criteria - this tooling only
+gets you the clips and the data to judge them by.
+
 ## Running the API server
 
 ```bash
@@ -582,15 +668,31 @@ provider-level rate limiting.
   real image + video generation succeeded (`scripts/run_first_fal_test.py`,
   after fixing two queue-routing bugs the live call surfaced - see "Cost
   model" above).
-- **Continuity probe (current)**: `scripts/run_continuity_test.py` tests
+- **Continuity probe, complete**: `scripts/run_continuity_test.py` tested
   whether last-frame propagation holds a construction project visually
   consistent (same worker, same location, same developing structure)
-  across 3 sequential Wan Turbo generations, and how much drift shows up.
-  Not yet run for real - built and verified offline only. Next is running
-  it locally and reviewing the 3 clips for continuity/drift.
-- **Milestone 3+**: once continuity is validated at 3 shots, scale to the
-  full ~60-75s / 13-16 shot architecture, add voiceover, FFmpeg assembly,
-  captions, AI QA, ChatGPT+Claude collaboration, a review dashboard, and
-  eventually publishing - see the project plan for the full list.
-  Upgrading specific important shots to a premium provider (Kling/Veo/etc.)
-  later is a config change, not a rewrite, thanks to the provider interface.
+  across 3 sequential Wan Turbo generations. Run for real by the user;
+  successful enough to proceed to model selection.
+- **Creative specification, current**: the full product direction (recurring
+  builder character, compact one-person projects in beautiful natural
+  settings, ~14-18 stage chronological progression, loosened continuity
+  philosophy, retention-driven pacing, documentary camera style, sound as a
+  future core requirement, per-shot model/budget flexibility) is now the
+  standing spec governing engineering decisions - see the project's own
+  notes/history for the full text. Model selection now weighs realistic
+  human/tool motion and reference/continuity adherence well above cost.
+- **Quality bake-off (current)**: `scripts/run_bakeoff_test.py` compares
+  Wan Turbo 480p (proven baseline) against Kling 2.6 Pro and Veo 3.1 Fast
+  from the same reference image and action prompt, to pick a production
+  video model against the creative spec's priorities rather than cost
+  alone. Not yet run for real - built and verified offline only (20 unit
+  tests for the new adapters/configs + a full mocked-transport dry run of
+  the script itself). Next is running it locally and reviewing the 3 clips
+  against the bake-off's comparison criteria.
+- **Milestone 3+**: once a production video model is chosen, scale to the
+  full ~60-70s / 14-18 shot architecture, add the hybrid continuity system
+  (structured build-state + reference frames + occasional re-anchoring),
+  sound/ASMR metadata, per-shot model/budget tiers, voiceover, FFmpeg
+  assembly with aggressive trimming, captions, AI QA, a review dashboard,
+  and eventually publishing - see the project plan for the full list. None
+  of this is implemented yet; it's noted for when the bake-off concludes.

@@ -13,8 +13,8 @@ import httpx
 import pytest
 
 from app.providers.base import ImageGenerationRequest, ImageProviderError, VideoGenerationRequest, VideoProviderError
-from app.providers.image.fal import FLUX_SCHNELL, FalImageProvider
-from app.providers.video.fal import WAN_STANDARD, WAN_TURBO, FalVideoProvider
+from app.providers.image.fal import FLUX_PRO, FLUX_SCHNELL, FalImageProvider
+from app.providers.video.fal import KLING_2_6_PRO, VEO_3_1_FAST, WAN_STANDARD, WAN_TURBO, FalVideoProvider
 
 
 def _refuse_any_request(request: httpx.Request) -> httpx.Response:
@@ -275,3 +275,111 @@ def test_full_image_generation_cycle(tmp_path):
     assert result.cost_usd == pytest.approx(0.003)
     assert dest.read_bytes() == b"fake jpeg bytes"
     assert result.meta["seed"] == 42
+
+
+# ---------------------------------------------------------------------------
+# Quality bake-off candidates: Kling 2.6 Pro and Veo 3.1 Fast. Each has real,
+# verified differences from Wan's request shape (image field name, whether
+# resolution is even selectable, duration format) - these tests exist
+# specifically to catch getting any of those wrong before a real call.
+# ---------------------------------------------------------------------------
+
+
+def test_flux_pro_pricing_uses_higher_rate_than_schnell():
+    provider = FalImageProvider(FLUX_PRO, api_key="fake-key")
+    request = ImageGenerationRequest(prompt="p", width=576, height=1024)  # 0.59MP -> rounds up to 1MP
+    assert provider.estimate_cost(request) == pytest.approx(0.04)
+
+
+def test_kling_pricing_is_per_second_with_no_resolution_tiers():
+    provider = FalVideoProvider(KLING_2_6_PRO, api_key="fake-key")
+    request = VideoGenerationRequest(prompt="p", duration_seconds=5.0)
+    assert provider.estimate_cost(request) == pytest.approx(0.35)
+
+
+def test_veo_pricing_identical_at_720p_and_1080p():
+    provider = FalVideoProvider(VEO_3_1_FAST, api_key="fake-key")
+    request_720 = VideoGenerationRequest(prompt="p", duration_seconds=6.0, extra_params={"resolution": "720p"})
+    request_1080 = VideoGenerationRequest(prompt="p", duration_seconds=6.0, extra_params={"resolution": "1080p"})
+    assert provider.estimate_cost(request_720) == pytest.approx(0.60)
+    assert provider.estimate_cost(request_1080) == pytest.approx(0.60)
+
+
+def test_kling_submit_uses_start_image_url_and_omits_resolution(tmp_path):
+    """Kling's image field is named differently from Wan's, and it has no
+    selectable resolution param at all - both are genuine differences this
+    test exists to lock in, not assumptions carried over from Wan."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/storage/upload/initiate":
+            return httpx.Response(
+                200, json={"upload_url": "https://fake-upload.example/put", "file_url": "https://fake-cdn.example/ref.jpg"}
+            )
+        if str(request.url) == "https://fake-upload.example/put":
+            return httpx.Response(200)
+        if request.url.path == "/fal-ai/kling-video/v2.6/pro/image-to-video" and request.method == "POST":
+            body = json.loads(request.content)
+            assert body["start_image_url"] == "https://fake-cdn.example/ref.jpg"
+            assert "image_url" not in body
+            assert "resolution" not in body
+            assert body["duration"] == "5"
+            assert body["generate_audio"] is False
+            assert body["negative_prompt"] == "blur, distort, low quality"
+            assert "cfg_scale" not in body  # documented default (0.5) applies; we don't override it
+            return httpx.Response(200, json={"request_id": "kling-req-1"})
+        raise AssertionError(f"Unexpected request: {request.method} {request.url}")
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = FalVideoProvider(KLING_2_6_PRO, api_key="fake-key", client=client)
+
+    ref_image = tmp_path / "ref.jpg"
+    ref_image.write_bytes(b"fake jpeg bytes")
+    request = VideoGenerationRequest(
+        prompt="p", reference_image_path=str(ref_image), aspect_ratio="9:16", duration_seconds=5.0
+    )
+    submitted = provider.submit_video_job(request)
+    assert submitted.provider_job_id == "kling-req-1"
+    assert submitted.estimated_cost_usd == pytest.approx(0.35)
+
+
+def test_veo_submit_uses_image_url_and_duration_with_s_suffix(tmp_path):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/storage/upload/initiate":
+            return httpx.Response(
+                200, json={"upload_url": "https://fake-upload.example/put", "file_url": "https://fake-cdn.example/ref.jpg"}
+            )
+        if str(request.url) == "https://fake-upload.example/put":
+            return httpx.Response(200)
+        if request.url.path == "/fal-ai/veo3.1/fast/image-to-video" and request.method == "POST":
+            body = json.loads(request.content)
+            assert body["image_url"] == "https://fake-cdn.example/ref.jpg"
+            assert body["resolution"] == "1080p"
+            assert body["duration"] == "6s"
+            assert body["generate_audio"] is False
+            assert body["aspect_ratio"] == "9:16"
+            return httpx.Response(200, json={"request_id": "veo-req-1"})
+        raise AssertionError(f"Unexpected request: {request.method} {request.url}")
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = FalVideoProvider(VEO_3_1_FAST, api_key="fake-key", client=client)
+
+    ref_image = tmp_path / "ref.jpg"
+    ref_image.write_bytes(b"fake jpeg bytes")
+    request = VideoGenerationRequest(
+        prompt="p", reference_image_path=str(ref_image), aspect_ratio="9:16", duration_seconds=6.0
+    )
+    submitted = provider.submit_video_job(request)
+    assert submitted.provider_job_id == "veo-req-1"
+    assert submitted.estimated_cost_usd == pytest.approx(0.60)
+
+
+@pytest.mark.parametrize(
+    "config,expected_queue_app_id",
+    [(KLING_2_6_PRO, "fal-ai/kling-video"), (VEO_3_1_FAST, "fal-ai/veo3.1")],
+)
+def test_new_candidates_queue_routing_is_owner_alias_only(config, expected_queue_app_id):
+    """Same owner/alias-only rule already verified against fal.ai's official
+    client source for Wan - confirms it's applied consistently to the new
+    candidates too, not re-guessed per model."""
+    assert config.queue_app_id == expected_queue_app_id
+    assert config.submit_path == config.base_model_id  # neither candidate uses a subpath

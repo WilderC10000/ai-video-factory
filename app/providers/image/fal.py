@@ -1,13 +1,21 @@
-"""Real fal.ai-backed ImageProvider for FLUX.1 [schnell].
+"""Real fal.ai-backed ImageProvider for the FLUX.1 family.
 
 Same caveat as providers/video/fal.py: written from fal.ai's documentation
-and model page (synchronous inference at https://fal.run/{model_id}, not
-the async queue - schnell is fast enough that fal.ai serves it directly),
-not yet executed against the live API from this sandbox.
+and model pages (synchronous inference at https://fal.run/{model_id}, not
+the async queue - FLUX images are fast enough that fal.ai serves them
+directly), verified against multiple sources but not yet executed against
+the live API from this sandbox.
 
 Configurable via `FalImageModelConfig` the same way the video adapter is,
 so a different fal.ai image model can be swapped in later without touching
-this class.
+this class. FLUX_PRO (not "ultra") was deliberately chosen over FLUX pro
+Ultra for the quality bake-off's reference image: Ultra's billing was
+ambiguous between two conflicting figures across sources ($0.06/image vs.
+$0.05/megapixel), and Ultra sizes its output via `aspect_ratio` rather than
+explicit width/height, which would make the megapixel count - and so the
+exact cost - impossible to know before the call. FLUX_PRO takes the same
+explicit width/height as FLUX_SCHNELL, so its cost is exactly
+pre-computable, consistent with every other provider in this codebase.
 """
 import math
 from dataclasses import dataclass
@@ -29,6 +37,12 @@ class FalImageModelConfig:
 
 # Cheapest credible text-to-image on fal.ai; supports 9:16 via width/height.
 FLUX_SCHNELL = FalImageModelConfig(model_id="fal-ai/flux/schnell", price_per_megapixel=0.003)
+
+# Higher-fidelity tier for when the reference image is worth spending more
+# on (e.g. it seeds an entire propagated shot chain, so its quality matters
+# more than any single downstream shot's). $0.04/MP vs schnell's $0.003/MP -
+# still a rounding error next to any video generation cost.
+FLUX_PRO = FalImageModelConfig(model_id="fal-ai/flux-pro/v1.1", price_per_megapixel=0.04)
 
 
 class FalImageProvider(ImageProvider):

@@ -57,6 +57,13 @@ class FalVideoModelConfig:
     price_per_second_by_resolution: dict[str, float] = field(default_factory=dict)
     default_resolution: str = "480p"
 
+    # Per-model request-shape differences, verified against each model's own
+    # docs before use (see the bake-off research) rather than assumed from
+    # Wan's shape:
+    image_param_name: str = "image_url"  # Kling uses "start_image_url" instead
+    supports_resolution_param: bool = True  # Kling has no selectable resolution param
+    extra_payload: dict = field(default_factory=dict)  # static fields always sent, e.g. duration, generate_audio
+
     @property
     def submit_path(self) -> str:
         """The path used ONLY for submitting a new job (includes the subpath, if any)."""
@@ -99,6 +106,44 @@ WAN_STANDARD = FalVideoModelConfig(
     billing="per_second",
     price_per_second_by_resolution={"480p": 0.04, "580p": 0.06, "720p": 0.08},
     default_resolution="480p",
+)
+
+# Quality bake-off candidate. No subpath - the whole path is the app itself,
+# so queue_app_id = "fal-ai/kling-video" (owner/alias only, same rule as Wan).
+# Verified: no selectable "resolution" param (quality is inherent to the
+# pro tier, described as "up to 1080p"), so billing uses a single synthetic
+# "default" resolution key rather than a real tier. Image field is
+# "start_image_url", not "image_url" - a genuine per-model difference from
+# Wan, confirmed via fal.ai's own docs before use. cfg_scale is deliberately
+# NOT set here - fal.ai's documented default (0.5) applies, per instruction
+# not to push it toward an extreme for a fair bake-off comparison.
+KLING_2_6_PRO = FalVideoModelConfig(
+    base_model_id="fal-ai/kling-video/v2.6/pro/image-to-video",
+    billing="per_second",
+    price_per_second_by_resolution={"default": 0.07},
+    default_resolution="default",
+    image_param_name="start_image_url",
+    supports_resolution_param=False,
+    extra_payload={
+        "duration": "5",  # must match VideoGenerationRequest.duration_seconds=5.0 for cost math to agree
+        "generate_audio": False,
+        "negative_prompt": "blur, distort, low quality",  # fal's own documented example usage
+    },
+)
+
+# Quality bake-off candidate. No subpath - queue_app_id = "fal-ai/veo3.1".
+# Price is identical at 720p and 1080p for the Fast tier, so 1080p is a free
+# quality upgrade. duration is a string like "6s", not a bare number -
+# another genuine per-model difference from both Wan and Kling.
+VEO_3_1_FAST = FalVideoModelConfig(
+    base_model_id="fal-ai/veo3.1/fast/image-to-video",
+    billing="per_second",
+    price_per_second_by_resolution={"720p": 0.10, "1080p": 0.10},
+    default_resolution="1080p",
+    extra_payload={
+        "duration": "6s",  # must match VideoGenerationRequest.duration_seconds=6.0 for cost math to agree
+        "generate_audio": False,
+    },
 )
 
 
@@ -181,11 +226,17 @@ class FalVideoProvider(VideoProvider):
 
         image_url = self._upload_reference_image(request.reference_image_path)
         payload = {
-            "image_url": image_url,
+            self.model_config.image_param_name: image_url,
             "prompt": request.prompt,
-            "resolution": self._resolution(request),
             "aspect_ratio": request.aspect_ratio,
         }
+        if self.model_config.supports_resolution_param:
+            payload["resolution"] = self._resolution(request)
+        # Static fields specific to this model config (e.g. Kling's fixed
+        # duration/negative_prompt, Veo's fixed duration) - set once in the
+        # named config, not per-request.
+        payload.update(self.model_config.extra_payload)
+
         # A small whitelist of documented Wan Turbo knobs a caller can set
         # via extra_params, e.g. {"enable_prompt_expansion": False} to stop
         # fal.ai's own LLM-based prompt rewriting from introducing drift in

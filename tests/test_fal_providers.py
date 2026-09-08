@@ -26,7 +26,14 @@ from app.providers.image.fal import (
     NANO_BANANA_PRO_GENERATE,
     FalImageProvider,
 )
-from app.providers.video.fal import KLING_2_6_PRO, VEO_3_1_FAST, WAN_STANDARD, WAN_TURBO, FalVideoProvider
+from app.providers.video.fal import (
+    KLING_2_6_PRO,
+    SEEDANCE_2_0_FAST,
+    VEO_3_1_FAST,
+    WAN_STANDARD,
+    WAN_TURBO,
+    FalVideoProvider,
+)
 
 
 def _refuse_any_request(request: httpx.Request) -> httpx.Response:
@@ -495,3 +502,58 @@ def test_full_nano_banana_generate_cycle_uses_aspect_ratio_not_image_size(tmp_pa
 
     assert result.cost_usd == pytest.approx(0.15)
     assert dest.read_bytes() == b"fake generated png bytes"
+
+
+# ---------------------------------------------------------------------------
+# Seedance 2.0 Fast: one-time premium benchmark candidate, verified against
+# fal.ai's own seedance-2.0-api repository schema. Flat per-second billing
+# regardless of 480p/720p (unlike Wan's per-resolution tiers), "duration" as
+# a plain digit string (not "8s" like Veo), and an owner ("bytedance")
+# genuinely different from every other candidate so far - these tests
+# exist to confirm queue routing generalizes correctly to a new owner, not
+# just a new alias under "fal-ai".
+# ---------------------------------------------------------------------------
+
+
+def test_seedance_pricing_is_flat_per_second_regardless_of_resolution():
+    provider = FalVideoProvider(SEEDANCE_2_0_FAST, api_key="fake-key")
+    request_480 = VideoGenerationRequest(prompt="p", duration_seconds=8.0, extra_params={"resolution": "480p"})
+    request_720 = VideoGenerationRequest(prompt="p", duration_seconds=8.0, extra_params={"resolution": "720p"})
+    assert provider.estimate_cost(request_480) == pytest.approx(1.9352)
+    assert provider.estimate_cost(request_720) == pytest.approx(1.9352)
+
+
+def test_seedance_queue_routing_is_owner_alias_only():
+    assert SEEDANCE_2_0_FAST.queue_app_id == "bytedance/seedance-2.0"
+    assert SEEDANCE_2_0_FAST.submit_path == "bytedance/seedance-2.0/fast/image-to-video"
+
+
+def test_seedance_submit_uses_image_url_plain_digit_duration_and_audio_on(tmp_path):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/storage/upload/initiate":
+            return httpx.Response(
+                200, json={"upload_url": "https://fake-upload.example/put", "file_url": "https://fake-cdn.example/ref.jpg"}
+            )
+        if str(request.url) == "https://fake-upload.example/put":
+            return httpx.Response(200)
+        if request.url.path == "/bytedance/seedance-2.0/fast/image-to-video" and request.method == "POST":
+            body = json.loads(request.content)
+            assert body["image_url"] == "https://fake-cdn.example/ref.jpg"
+            assert body["resolution"] == "720p"
+            assert body["duration"] == "8"
+            assert body["generate_audio"] is True
+            assert body["aspect_ratio"] == "9:16"
+            return httpx.Response(200, json={"request_id": "seedance-req-1"})
+        raise AssertionError(f"Unexpected request: {request.method} {request.url}")
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = FalVideoProvider(SEEDANCE_2_0_FAST, api_key="fake-key", client=client)
+
+    ref_image = tmp_path / "ref.jpg"
+    ref_image.write_bytes(b"fake jpeg bytes")
+    request = VideoGenerationRequest(
+        prompt="p", reference_image_path=str(ref_image), aspect_ratio="9:16", duration_seconds=8.0
+    )
+    submitted = provider.submit_video_job(request)
+    assert submitted.provider_job_id == "seedance-req-1"
+    assert submitted.estimated_cost_usd == pytest.approx(1.9352)

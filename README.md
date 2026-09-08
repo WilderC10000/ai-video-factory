@@ -325,6 +325,7 @@ FalVideoProvider(WAN_TURBO)      # cheapest baseline - $0.05/video flat @480p
 FalVideoProvider(WAN_STANDARD)   # per-second alternative, e.g. for one important shot
 FalVideoProvider(KLING_2_6_PRO)  # quality bake-off candidate - $0.07/s, no resolution tiers
 FalVideoProvider(VEO_3_1_FAST)   # quality bake-off candidate - $0.10/s, 1080p
+FalVideoProvider(SEEDANCE_2_0_FAST)  # one-time premium benchmark - $0.2419/s flat, 480p/720p
 FalImageProvider(FLUX_SCHNELL)            # cheapest reference image - $0.003/MP
 FalImageProvider(FLUX_PRO)                # higher-fidelity reference image - $0.04/MP
 FalImageProvider(NANO_BANANA_PRO_GENERATE)  # fresh text-to-image, aspect_ratio-based - $0.15/image flat
@@ -370,7 +371,7 @@ explicit width/height as FLUX_SCHNELL, keeping every candidate's cost
 exactly pre-computable, consistent with every other provider in this
 codebase.
 
-**These real adapters are written and locally tested (25 tests in
+**These real adapters are written and locally tested (28 tests in
 `tests/test_fal_providers.py`, using `httpx.MockTransport` to simulate
 fal.ai's documented request/response shapes with zero network calls and
 zero cost) but are NOT wired in as the active provider anywhere in the
@@ -958,6 +959,68 @@ Once both frames are approved together, the first/last-frame video-
 interpolation test (candidates: Wan 2.1 FLF2V, Kling O1) becomes its own
 separate, later, explicitly gated experiment.
 
+## Running the Seedance 2.0 benchmark (spends real money - max $2.30)
+
+A deliberately different kind of test from every still-image gate above: a
+**one-time quality-ceiling benchmark**, not a step toward a production
+model. The still-image gates ask whether a workflow can fix one specific
+mechanical detail (the saw); this asks a bigger question - using a current
+premium model, what does the upper bound of "exciting, believable
+accelerated construction progression" actually look like across a full
+8-second clip? Once that ceiling is established, cheaper models (Wan,
+etc.) get judged against a concrete target instead of a vague one, and
+premium generation stays reserved for hook/reveal/hard-interaction shots
+in the eventual tiered production system - not every second of a final
+video.
+
+**Model: `SEEDANCE_2_0_FAST`** (`bytedance/seedance-2.0/fast/image-to-video`,
+`app/providers/video/fal.py`) - verified against fal.ai's own
+`seedance-2.0-api` repository schema (request params, pricing, resolution/
+duration/aspect-ratio options) rather than assumed. Chosen over Standard:
+the only capability difference is a 1080p ceiling (Fast tops out at
+720p) at a higher flat per-second rate ($0.3024/s vs. Fast's $0.2419/s) -
+not something a motion/progression benchmark needs, so Fast is the right
+call rather than paying for a resolution ceiling this test doesn't use.
+Audio (`generate_audio: true`) is left on because fal.ai's documented
+pricing does not change whether audio is requested or not.
+
+This is also the first candidate under a genuinely different fal.ai owner
+(`bytedance`, not `fal-ai`) - a real test of whether the owner/alias-only
+queue-routing rule (verified for Wan, then confirmed for Kling/Veo) holds
+for a different vendor entirely, not just a new alias under the same
+owner. `FalVideoProvider.get_job_status()`'s preference for the
+server-returned `status_url`/`response_url` (the fix from the original
+Wan 405 bugs) is what actually matters in practice here - the owner/alias
+reconstruction is only ever a fallback.
+
+**Source image: reused, $0 cost.** `data/fal_mechanical_start_test/mechanical_start_frame.jpg` -
+the most refined approved frame available (correct composition *and*
+corrected saw mechanics layered on top of it) - read from its own
+manifest.json, same reuse pattern as every prior script. This benchmark
+makes **no image call at all**.
+
+**Exactly 1 video call:**
+- Duration 8s, resolution 720p, aspect ratio 9:16.
+- Total cost ($1.9352 estimated: $0.2419/s x 8s) checked against the
+  $2.30 cap before the call; one `yes` confirmation gates it.
+- No retries, no alternate model, no additional generations of any kind.
+- `manifest.json` records the prompt, model, duration, resolution, job id,
+  status/response URLs, cost, and output path.
+
+```bash
+python -m scripts.run_seedance_benchmark_test
+python -m scripts.run_seedance_benchmark_test --yes
+```
+
+Outputs land in `data/fal_seedance_benchmark_test/` (gitignored):
+`seedance_benchmark.mp4`, `manifest.json`. Verified entirely offline: a
+mocked-transport dry run confirms no image-generation endpoint is ever
+touched, exactly one submission happens, the payload matches the
+documented schema (`image_url`, `resolution: "720p"`, `duration: "8"`,
+`generate_audio: true`, `aspect_ratio: "9:16"`), queue routing resolves to
+`bytedance/seedance-2.0` (owner/alias only), and the cost lands at exactly
+$1.9352.
+
 ## Running the API server
 
 ```bash
@@ -1114,19 +1177,33 @@ provider-level rate limiting.
   cabin/landscape/framing) while making the saw/body interaction materially
   more believable - confirming the local-edit approach works when the
   source composition is already correct.
-- **Mechanical end-frame test (current)**: `scripts/run_mechanical_end_frame_test.py`
-  asks the narrowest possible next question - can a second frame (the same
-  cut progressed ~40-60% further along the same cut line) be produced from
-  the approved start frame while staying visually consistent with it? Board
-  stays rigid/supported/unchanged in size - no separation or sagging (that
-  stays a separate, later atomic-action test). Exactly 1 edit call ($0.15),
-  no video call. Success requires progression, board rigidity, AND the full
-  composition preserve-list to all hold together. Not yet run for real -
-  built and verified offline only. If both frames are approved together,
-  the first/last-frame video-interpolation test (Wan 2.1 FLF2V or Kling O1)
-  becomes its own separate, later, explicitly gated experiment. One
-  variable at a time: composition, then mechanical setup, then start/end
-  consistency, then interpolation, then usable motion.
+- **Mechanical end-frame test, run for real (result pending review)**:
+  `scripts/run_mechanical_end_frame_test.py` asked the narrowest possible
+  next question - can a second frame (the same cut progressed ~40-60%
+  further along the same cut line) be produced from the approved start
+  frame while staying visually consistent with it? Board stays
+  rigid/supported/unchanged in size - no separation or sagging (that stays
+  a separate, later atomic-action test). Exactly 1 edit call ($0.15), no
+  video call. Success requires progression, board rigidity, AND the full
+  composition preserve-list to all hold together. If both frames are
+  approved together, the first/last-frame video-interpolation test (Wan
+  2.1 FLF2V or Kling O1) becomes its own separate, later, explicitly gated
+  experiment.
+- **Seedance 2.0 benchmark (current, parallel track)**: `scripts/run_seedance_benchmark_test.py`
+  is a one-time quality-ceiling benchmark, not a step toward a production
+  model - independent of the still-image mechanical gates above (it
+  reuses `mechanical_start_frame.jpg` directly, not the end frame). Using
+  a current premium model (Seedance 2.0 Fast, $0.2419/s), what does the
+  upper bound of "exciting, believable accelerated construction
+  progression" look like across a full 8-second clip? Exactly 1 video
+  call ($1.9352 estimated), $0 image cost (source reused), no retries, no
+  alternate model. Once this establishes a quality ceiling, cheaper models
+  get judged against a concrete target rather than a vague one; premium
+  generation stays reserved for hook/reveal/hard-interaction shots in the
+  eventual tiered production system, not every second of a final video.
+  Not yet run for real - built and verified offline only, including a
+  first test of owner/alias queue routing against a non-`fal-ai` owner
+  (`bytedance`).
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

@@ -146,6 +146,29 @@ VEO_3_1_FAST = FalVideoModelConfig(
     },
 )
 
+# One-time premium benchmark candidate (not a production model) - verified
+# against fal.ai's own seedance-2.0-api repository schema. No subpath split
+# on resolution the way Wan is - Fast bills a flat $0.2419/s regardless of
+# whether "480p" or "720p" is requested (the two tiers differ by resolution
+# CEILING, not by price: Standard adds 1080p access at a higher $0.3024/s
+# flat rate, not used here). queue_app_id = "bytedance/seedance-2.0" by the
+# same owner/alias-only rule verified for Wan/Kling/Veo - not yet exercised
+# against the live queue for this specific app, so get_job_status()'s
+# preference for the server-returned status_url/response_url (see
+# FalVideoProvider.get_job_status) is what actually matters in practice,
+# not this reconstruction fallback.
+SEEDANCE_2_0_FAST = FalVideoModelConfig(
+    base_model_id="bytedance/seedance-2.0",
+    subpath="fast/image-to-video",
+    billing="per_second",
+    price_per_second_by_resolution={"480p": 0.2419, "720p": 0.2419},
+    default_resolution="720p",
+    extra_payload={
+        "duration": "8",  # plain digit string, not "8s" - must match duration_seconds=8.0
+        "generate_audio": True,  # verified: fal.ai bills the same whether audio is on or off
+    },
+)
+
 
 class FalVideoProvider(VideoProvider):
     """Talks to fal.ai's queue API for Wan 2.2 A14B (Turbo or standard).

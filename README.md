@@ -901,6 +901,63 @@ and the cost lands at exactly $0.15. No provider/adapter code changed for
 this step - it's a new script reusing `NANO_BANANA_PRO_EDIT` exactly as
 V2A already established and tested it.
 
+**Result: PASSED and approved.** `mechanical_start_frame.jpg` preserved
+every approved composition quality (no eye contact, downward gaze,
+observational angle, posture, cabin/landscape/framing) while making the
+saw/body interaction materially more believable - confirming the local
+mechanical-edit approach works when the source composition is already
+correct.
+
+## Running the mechanical end-frame test (spends real money - max $0.20)
+
+The narrowest possible next gate: can the same edit approach produce a
+SECOND frame - the same cut progressed further - that stays visually
+consistent with the approved start frame? This is deliberately not yet a
+video test; it only asks whether two mechanically plausible *endpoints* of
+one physical action can be created at all, since that's the actual
+prerequisite for a first/last-frame interpolation experiment later.
+
+`scripts/run_mechanical_end_frame_test.py` reads the approved start
+frame's path out of `data/fal_mechanical_start_test/manifest.json` (fails
+safely, no call made, if that stage hasn't been run/approved yet) and
+makes exactly ONE edit call, asking for the cut to progress ~40-60%
+further along the same cut line - kerf and light sawdust to show it,
+saw/blade advanced but base plate still seated - while explicitly keeping
+the board rigid, fully supported, and unchanged in size/shape. Board
+separation or a sagging waste side is deliberately out of scope here -
+that's its own future atomic-action test, not conflated with this one.
+Everything from the still-image test's preserve-list (camera, builder
+orientation/gaze/posture, identity, cabin, landscape, lighting, framing)
+carries over unchanged, plus the saw's own identity/appearance.
+
+**Success requires ALL of:** visible progression along the same cut, board
+rigidity preserved (not cut through/separated/sagging), and the full
+composition preserve-list from the start-frame stage. Any one of these
+failing is a failure, even if the others succeed.
+
+**Exactly 1 call, no video call:**
+- Total cost ($0.15 estimated) checked against the $0.20 cap before the
+  call; one `yes` confirmation gates it.
+- No retries, no automatic regeneration of a bad result.
+- `manifest.json` records the source frame path, prompt, cost, and output path.
+
+```bash
+python -m scripts.run_mechanical_end_frame_test
+python -m scripts.run_mechanical_end_frame_test --yes
+```
+
+Outputs land in `data/fal_mechanical_end_test/` (gitignored):
+`mechanical_end_frame.jpg`, `manifest.json`. Verified entirely offline: a
+mocked-transport dry run against a fake pre-existing start-frame manifest
+confirms no video endpoint and no 2nd edit call ever happens, the prompt
+carries both the progression language and the rigidity/preserve language,
+and the cost lands at exactly $0.15. No provider/adapter code changed -
+reuses `NANO_BANANA_PRO_EDIT` exactly as the prior two image stages did.
+
+Once both frames are approved together, the first/last-frame video-
+interpolation test (candidates: Wan 2.1 FLF2V, Kling O1) becomes its own
+separate, later, explicitly gated experiment.
+
 ## Running the API server
 
 ```bash
@@ -1048,20 +1105,28 @@ provider-level rate limiting.
   contact, natural working posture, cabin reading as an active project).
   Subsequent stages must preserve this composition, not regenerate or
   reangle it.
-- **Mechanical still-image test (current)**: `scripts/run_mechanical_start_frame_test.py`
-  asks a narrower question on top of the now-approved composition - can
-  `NANO_BANANA_PRO_EDIT` correct the saw's mechanics (base plate flush,
-  blade aligned, plausible grip, five fingers per hand) on
-  `action_base_frame.jpg` without regressing the composition itself? Exactly
-  1 edit call ($0.15), start frame only - no end frame yet, no video call.
-  Success requires both mechanical improvement AND composition preservation;
-  either one alone is a failure. Not yet run for real - built and verified
-  offline only. If it passes: an end-frame stage (board rigid and stable,
-  progression shown via saw position/kerf depth/sawdust only - no board
-  separation, tested as its own later atomic action) follows as a separate
-  gate; then V2B (animation, first/last-frame model - Wan 2.1 FLF2V or
-  Kling O1) remains later still. One variable at a time: composition, then
-  mechanical setup, then start/end interpolation, then usable motion.
+- **Mechanical still-image test, complete and PASSED**:
+  `scripts/run_mechanical_start_frame_test.py` tested whether
+  `NANO_BANANA_PRO_EDIT` could correct the saw's mechanics on the approved
+  `action_base_frame.jpg` without regressing the composition. Run for real
+  and approved: `mechanical_start_frame.jpg` preserved every composition
+  quality (no eye contact, downward gaze, observational angle, posture,
+  cabin/landscape/framing) while making the saw/body interaction materially
+  more believable - confirming the local-edit approach works when the
+  source composition is already correct.
+- **Mechanical end-frame test (current)**: `scripts/run_mechanical_end_frame_test.py`
+  asks the narrowest possible next question - can a second frame (the same
+  cut progressed ~40-60% further along the same cut line) be produced from
+  the approved start frame while staying visually consistent with it? Board
+  stays rigid/supported/unchanged in size - no separation or sagging (that
+  stays a separate, later atomic-action test). Exactly 1 edit call ($0.15),
+  no video call. Success requires progression, board rigidity, AND the full
+  composition preserve-list to all hold together. Not yet run for real -
+  built and verified offline only. If both frames are approved together,
+  the first/last-frame video-interpolation test (Wan 2.1 FLF2V or Kling O1)
+  becomes its own separate, later, explicitly gated experiment. One
+  variable at a time: composition, then mechanical setup, then start/end
+  consistency, then interpolation, then usable motion.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

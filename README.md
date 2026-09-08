@@ -1302,6 +1302,111 @@ contains the new hard-time-jump language and explicitly does NOT contain
 the V1/Seedance phrases suspected of causing the continuous-motion
 pacing problem, and the cost lands at exactly $0.75.
 
+## Running the cross-angle continuity test (spends real money - max $0.30)
+
+With Wan 3.0 V2 validated as the core generation approach, planning has
+moved to the first full ~65-70s production video, using 6 different stable
+camera positions across 6 segments. Last-frame propagation (the mechanism
+that keeps continuity between clips *at a fixed camera angle*) cannot
+itself change the camera position - a fresh reference image must be
+generated for every angle change, conditioned on a shared "continuity
+bible" text description plus an angle-specific framing clause. Before
+generating any video for the full production, this test isolates and
+checks that mechanism on its own: can two independently generated still
+images, shot from two clearly different camera angles, convincingly depict
+the same builder, same cabin, same construction state, and same
+ocean-cliff location?
+
+`scripts/run_cross_angle_continuity_test.py` makes **exactly 2** Nano
+Banana Pro Generate calls (`fal-ai/nano-banana-pro`, text-to-image, no
+source/reference image for either call - both are fresh generations), each
+built from the identical continuity-bible text plus a different
+camera-angle clause. No video call is made. For this test, continuity is
+deliberately prioritized over beauty: both prompts over-specify shared
+landmarks (a distinctive boulder, cabin dimensions, framing state, ocean
+orientation, lighting) precisely so they can be directly checked against
+each other afterward.
+
+**Continuity bible** (identical text in both prompts):
+
+> A rugged male builder in his mid-40s, with slightly messy dark brown
+> hair, a short dark beard/stubble, and a medium athletic build, wearing
+> worn faded blue-grey jeans, a plain heather-grey crew-neck work shirt
+> with no visible logo or branding, and brown leather work boots. He is
+> building a small single-story timber cabin under construction on a flat
+> rocky clifftop clearing. The cabin has a rectangular footprint roughly 5
+> meters wide by 4 meters deep, with eaves about 1.5 times the builder's
+> standing height. The timber floor deck is fully complete and level. Wall
+> framing is already built on two adjacent sides - one landward-facing
+> side and one side-facing wall - using evenly spaced raw, unfinished,
+> pale-yellow structural timber studs. The third side, facing the ocean,
+> is completely open with no framing at all. There is no roof yet and no
+> windows or doors yet. The clifftop clearing is roughly triangular,
+> narrowing toward the cliff edge, which drops sharply about 8-10 meters
+> beyond the open ocean-facing side of the cabin; the ocean and horizon are
+> visible directly beyond that open side. A distinctive large flat grey
+> boulder sits near the rear corner of the platform, on the same side as
+> the landward-facing framed wall. Sparse wind-bent low shrubs and scrub
+> grass line the cliff edge, and a narrow dirt access path approaches from
+> the landward side. The lighting is warm, low-angle, late-afternoon
+> golden hour sunlight coming from the landward side of the cabin, casting
+> long soft shadows. Candid documentary/observational photography style,
+> vertical 9:16 aspect ratio.
+
+**Image 1 angle clause** (wide three-quarter-rear):
+
+> Camera view: a wide three-quarter-rear observational angle, positioned
+> behind and to one side of the builder, looking past him toward the open
+> ocean-facing side of the structure - the shot shows the timber floor
+> deck, both framed walls, the open ocean-facing side, the large flat grey
+> boulder near the rear corner on the builder's side of the frame, and the
+> ocean and cliff edge beyond. The builder is working naturally - handling
+> a length of timber near the wall framing, his weight engaged in the task
+> - facing away from the camera and never looking toward it. No posing, no
+> presenter stance, no eye contact with the camera.
+
+**Image 2 angle clause** (opposite-side three-quarter):
+
+> Camera view: an opposite-side three-quarter observational angle -
+> positioned on the OTHER side of the structure from a companion shot,
+> roughly diagonally across the platform from that position, looking
+> across the floor deck toward the framed walls from this new direction.
+> The shot still shows the open ocean-facing side and the ocean and cliff
+> edge beyond, with the large flat grey boulder now appearing on the
+> opposite side of the frame compared to a three-quarter-rear view,
+> consistent with the camera having moved around to the other side of the
+> same site. The builder is working naturally on the wall framing, body
+> oriented toward his work, never looking toward the camera. No posing, no
+> presenter stance, no eye contact with the camera.
+
+```bash
+python -m scripts.run_cross_angle_continuity_test
+python -m scripts.run_cross_angle_continuity_test --yes
+```
+
+Outputs land in `data/fal_cross_angle_continuity_test/` (gitignored):
+`angle_1_wide_three_quarter_rear.jpg`, `angle_2_opposite_three_quarter.jpg`,
+`manifest.json`. Exactly 2 calls, $0.15 each, $0.30 total = the hard cap
+with zero margin (flat per-image billing makes this exactly precomputable).
+Verified entirely offline: a mocked-transport dry run confirms Nano Banana
+Pro Generate's endpoint is synchronous (`https://fal.run/fal-ai/nano-banana-pro`,
+not the queue-based flow the video providers use, and no reference-image
+upload happens for either call), that no `/edit` or video/other-image-model
+endpoint is ever touched, that exactly 2 submissions are made (not 1, not
+3+), that both payloads use the `aspect_ratio`/`resolution` shape (not
+`image_size`), that both prompts start with the byte-identical continuity
+bible and differ only in their angle clause, and that the total cost lands
+at exactly $0.30.
+
+After generation, compare the two images on: builder identity/clothing,
+cabin dimensions, framing geometry, door/window positions, ocean direction,
+cliff/terrain geometry, recognizable landmarks (the boulder, access path,
+shrubs), lighting, and overall impression - would a viewer immediately
+believe these are two cameras filming the same construction project? This
+script does not generate any video; it stops after the two images so they
+can be manually reviewed before any segment of the full production video is
+attempted.
+
 ## Running the API server
 
 ```bash
@@ -1529,15 +1634,48 @@ provider-level rate limiting.
   hard-cut timelapse feel that made the Seedance benchmark work. Root
   cause suspected: the imported Seedance prompt's own continuous-motion
   phrasing.
-- **Wan 3.0 15s timelapse test V2 (current)**: `scripts/run_wan3_15s_timelapse_v2_test.py`
-  keeps every technical parameter from V1 identical and changes only the
-  prompt - rewritten from scratch (not appended to V1's Seedance-derived
-  prompt) around ~6 explicit "HARD TIME JUMP" transitions across the 15s,
-  each showing a meaningfully more advanced construction state, with only
-  brief activity bursts between jumps rather than continuous work. Same
-  $0.75 cost, same zero-margin cap, own dedicated output directory so
-  V1's result is preserved for direct comparison. Not yet run for real -
-  built and verified offline only.
+- **Wan 3.0 15s timelapse test V2, run for real - VALIDATED as the core
+  generation approach**: `scripts/run_wan3_15s_timelapse_v2_test.py` kept
+  every technical parameter from V1 identical and changed only the prompt -
+  rewritten from scratch (not appended to V1's Seedance-derived prompt)
+  around ~6 explicit "HARD TIME JUMP" transitions across the 15s, each
+  showing a meaningfully more advanced construction state, with only brief
+  activity bursts between jumps rather than continuous work. This fixed
+  the pacing problem: the user confirmed Wan 3.0 standard 480p, prompted
+  with an explicit hard-time-jump structure, is now the validated core
+  generation method for the production video (superseding Wan Turbo
+  entirely, and matching the Seedance benchmark's creative feel at roughly
+  1/5th its cost).
+- **First full production video, planning (current)**: with Wan 3.0 V2
+  validated, planning has moved to the first full ~65-70s production
+  video: a 6-segment shot plan (raw site & clearing -> foundation & early
+  framing -> wall framing advances -> roof & enclosure -> exterior details
+  & interior glimpse -> final cinematic reveal), each segment using a
+  distinct stable observational camera position (the camera always watches
+  the builder; the builder never watches the camera), builder movement
+  speed increased ~25-30% over V2, and the video beginning from a
+  completely untouched site rather than any existing framing. The revised
+  opening pacing is: 0-2s untouched/raw site, 2-6s rapid satisfying
+  clearing, 6-10s ground/footprint/material preparation, ~10s onward
+  construction begins. Five segments are planned on Wan 3.0 480p; the
+  final reveal segment is the one candidate for a premium model (Seedance
+  2.0 Fast). Estimated total raw generation cost across all 6 segments
+  plus re-anchor images: ~$5.79. The single biggest unproven risk in this
+  plan is **cross-angle continuity**: whether independently generated
+  reference images for 6 different camera angles can convincingly depict
+  the same builder, cabin, and location - this has never been tested, so
+  it is being isolated and tested first (see "Running the cross-angle
+  continuity test" below) before any segment of the full video is
+  generated.
+- **Cross-angle continuity test, built and offline-verified (result
+  pending review)**: `scripts/run_cross_angle_continuity_test.py` isolates
+  the continuity risk above from every other variable (no video, no
+  motion, no construction-progress prompt language) by generating exactly
+  two still images - a wide three-quarter-rear view and an opposite-side
+  three-quarter view - from a single fixed "continuity bible" text block
+  describing the builder, cabin, terrain, and lighting, with only a
+  camera-angle clause differing between the two prompts. See "Running the
+  cross-angle continuity test" below for the full bible and both prompts.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

@@ -1134,6 +1134,50 @@ exactly two submissions happen, clip 2's source is the path ffmpeg
 actually extracted from clip 1 (not the original mechanical start frame
 reused again), and the total cost lands at exactly $0.10.
 
+## Running the Wan Turbo 2-clip 720p test (spends real money - max $0.20)
+
+A deliberately controlled, single-variable comparison against the 480p
+test above: same source image, same two-clip structure, same last-frame
+propagation, same prompts - **only resolution changes, 480p -> 720p**
+($0.05 -> $0.10 per clip). The question it answers: does paying double
+per clip buy enough visible improvement to make 720p (not 480p) the
+high-volume production tier - not to beat the Seedance benchmark, just to
+find the cheapest tier that doesn't read as obviously low-quality inside
+a fast-paced final video.
+
+`scripts/run_wan_turbo_2clip_timelapse_720p_test.py` imports
+`CLIP_1_PROMPT`/`CLIP_2_PROMPT` directly from
+`scripts/run_wan_turbo_2clip_timelapse_test.py` (the 480p script) rather
+than retyping them - a controlled comparison would be undermined by even
+a small copy-paste drift between the two prompt sets, so byte-identity is
+enforced by import, not convention. Re-verified before writing this
+script: 720p on this endpoint is $0.10/video flat (matches
+`WAN_TURBO.price_by_resolution["720p"]` already in this codebase - no
+config change needed), and the `num_frames` pinning (81, ~5.06s) already
+established for 480p applies the same way at 720p.
+
+**Exactly 2 video calls, $0 image cost, own dedicated output directory**
+(so the 480p results are never overwritten - both stay on disk for direct
+side-by-side comparison):
+- 81 frames, 720p each; total cost $0.20 (two flat, deterministic $0.10
+  charges) checked against the $0.20 cap before either call; one `yes`
+  confirmation gates the whole run.
+- No retries, no alternate model, no additional generations.
+
+```bash
+python -m scripts.run_wan_turbo_2clip_timelapse_720p_test
+python -m scripts.run_wan_turbo_2clip_timelapse_720p_test --yes
+```
+
+Outputs land in `data/fal_wan_turbo_2clip_720p_timelapse_test/`
+(gitignored, separate from the 480p test's own directory): `clip1.mp4`,
+`clip1_last_frame.jpg`, `clip2.mp4`, `combined_review.mp4`,
+`manifest.json`. Verified entirely offline: a mocked-transport dry run
+confirms the imported prompts are byte-identical to the 480p script's own
+constants, no image-generation endpoint is touched, exactly two
+submissions happen with `resolution: "720p"`, and the total cost lands at
+exactly $0.20.
+
 ## Running the API server
 
 ```bash
@@ -1321,22 +1365,32 @@ provider-level rate limiting.
   config) as the closest valid alternative at exactly $0.05. Prompt
   optimized for Wan Turbo's strengths (broad progression) rather than
   fine tool mechanics.
-- **Wan Turbo 2-clip timelapse test (current)**: `scripts/run_wan_turbo_2clip_timelapse_test.py`
-  extends the single-clip test to ~10s while staying strictly on the
-  $0.05 flat-rate tier - two clips instead of one longer (more expensive)
-  clip. Clip 2 is generated from clip 1's own last frame (extracted
-  locally via `app/services/frame_extraction`, no image-generation call),
-  so it continues clip 1's actual visual state rather than restarting
+- **Wan Turbo 2-clip 480p timelapse test, run for real (result pending
+  review)**: `scripts/run_wan_turbo_2clip_timelapse_test.py` extended the
+  single-clip test to ~10s while staying strictly on the $0.05 flat-rate
+  tier - two clips instead of one longer (more expensive) clip. Clip 2 is
+  generated from clip 1's own last frame (extracted locally via
+  `app/services/frame_extraction`, no image-generation call), so it
+  continues clip 1's actual visual state rather than restarting
   independently; both clips share identical camera/attention/identity
   language, with clip 2's prompt targeting a visibly later structural
   stage than clip 1 and explicitly forbidding any reset. A new
   `app/services/video_assembly.concatenate_videos()` utility (ffmpeg
   concat filter) produces one review file from the two clips - a small,
   reusable piece of the eventual real assembly system, not the whole
-  thing. Exactly 2 video calls ($0.10 total), $0 image cost, no retries,
-  no alternate model. Not yet run for real - built and verified offline
-  only, including real ffmpeg frame extraction and concatenation against
-  a real fixture clip.
+  thing.
+- **Wan Turbo 2-clip 720p timelapse test (current)**: `scripts/run_wan_turbo_2clip_timelapse_720p_test.py`
+  is a deliberately controlled, single-variable comparison against the
+  480p test - same source image, same two-clip structure, same last-frame
+  propagation, same prompts (imported directly from the 480p script for
+  guaranteed byte-identity, not retyped) - only resolution changes
+  (480p->720p, $0.05->$0.10/clip). Answers whether paying double per clip
+  buys enough visible improvement to make 720p (not 480p) the high-volume
+  production tier - not to beat Seedance, just to find the cheapest tier
+  that doesn't read as obviously low-quality. Own dedicated output
+  directory so the 480p results are never overwritten. Exactly 2 video
+  calls ($0.20 total), $0 image cost, no retries, no alternate model. Not
+  yet run for real - built and verified offline only.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

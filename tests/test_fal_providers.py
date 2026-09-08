@@ -12,8 +12,14 @@ import json
 import httpx
 import pytest
 
-from app.providers.base import ImageGenerationRequest, ImageProviderError, VideoGenerationRequest, VideoProviderError
-from app.providers.image.fal import FLUX_PRO, FLUX_SCHNELL, FalImageProvider
+from app.providers.base import (
+    ImageEditRequest,
+    ImageGenerationRequest,
+    ImageProviderError,
+    VideoGenerationRequest,
+    VideoProviderError,
+)
+from app.providers.image.fal import FLUX_PRO, FLUX_SCHNELL, NANO_BANANA_PRO_EDIT, FalImageProvider
 from app.providers.video.fal import KLING_2_6_PRO, VEO_3_1_FAST, WAN_STANDARD, WAN_TURBO, FalVideoProvider
 
 
@@ -383,3 +389,63 @@ def test_new_candidates_queue_routing_is_owner_alias_only(config, expected_queue
     candidates too, not re-guessed per model."""
     assert config.queue_app_id == expected_queue_app_id
     assert config.submit_path == config.base_model_id  # neither candidate uses a subpath
+
+
+# ---------------------------------------------------------------------------
+# Nano Banana Pro Edit: prompt-guided editing of an EXISTING image (V2A
+# keyframe experiment), not text-to-image generation. Flat per-image
+# pricing, needs an upload step FLUX never needed, and its own method
+# (edit_image) rather than generate_image.
+# ---------------------------------------------------------------------------
+
+
+def test_nano_banana_edit_pricing_is_flat_per_image():
+    provider = FalImageProvider(NANO_BANANA_PRO_EDIT, api_key="fake-key")
+    assert provider.estimate_edit_cost() == pytest.approx(0.15)
+
+
+def test_estimate_edit_cost_rejects_configs_without_flat_price():
+    provider = FalImageProvider(FLUX_PRO, api_key="fake-key")
+    with pytest.raises(ImageProviderError):
+        provider.estimate_edit_cost()
+
+
+def test_full_image_edit_cycle_uploads_then_edits_then_downloads(tmp_path):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/storage/upload/initiate" and request.method == "POST":
+            body = json.loads(request.content)
+            assert body["content_type"] == "image/jpeg"
+            return httpx.Response(
+                200,
+                json={"upload_url": "https://fake-upload.example/put", "file_url": "https://fake-cdn.example/src.jpg"},
+            )
+        if str(request.url) == "https://fake-upload.example/put" and request.method == "PUT":
+            return httpx.Response(200)
+        if request.url.path == "/fal-ai/nano-banana-pro/edit" and request.method == "POST":
+            body = json.loads(request.content)
+            assert body["prompt"] == "make the saw blade touch the board"
+            assert body["image_urls"] == ["https://fake-cdn.example/src.jpg"]
+            assert body["num_images"] == 1
+            return httpx.Response(
+                200,
+                json={
+                    "images": [{"url": "https://fake-cdn.example/edited.png", "content_type": "image/png"}],
+                    "description": "",
+                },
+            )
+        if str(request.url) == "https://fake-cdn.example/edited.png":
+            return httpx.Response(200, content=b"fake edited png bytes")
+        raise AssertionError(f"Unexpected request: {request.method} {request.url}")
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = FalImageProvider(NANO_BANANA_PRO_EDIT, api_key="fake-key", client=client)
+
+    src = tmp_path / "src.jpg"
+    src.write_bytes(b"fake source jpeg bytes")
+    dest = tmp_path / "out.png"
+
+    request = ImageEditRequest(prompt="make the saw blade touch the board", reference_image_paths=[str(src)])
+    result = provider.edit_image(request, str(dest))
+
+    assert result.cost_usd == pytest.approx(0.15)
+    assert dest.read_bytes() == b"fake edited png bytes"

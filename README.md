@@ -279,9 +279,17 @@ FalVideoProvider(WAN_TURBO)      # cheapest baseline - $0.05/video flat @480p
 FalVideoProvider(WAN_STANDARD)   # per-second alternative, e.g. for one important shot
 FalVideoProvider(KLING_2_6_PRO)  # quality bake-off candidate - $0.07/s, no resolution tiers
 FalVideoProvider(VEO_3_1_FAST)   # quality bake-off candidate - $0.10/s, 1080p
-FalImageProvider(FLUX_SCHNELL)   # cheapest reference image - $0.003/MP
-FalImageProvider(FLUX_PRO)       # higher-fidelity reference image - $0.04/MP
+FalImageProvider(FLUX_SCHNELL)        # cheapest reference image - $0.003/MP
+FalImageProvider(FLUX_PRO)            # higher-fidelity reference image - $0.04/MP
+FalImageProvider(NANO_BANANA_PRO_EDIT)  # EDITS an existing image (not text-to-image) - $0.15/image flat
 ```
+
+`NANO_BANANA_PRO_EDIT` is a different kind of call from the two FLUX
+configs - it edits an *existing* image via `edit_image()`/`ImageEditRequest`
+rather than generating from a text prompt via `generate_image()`/
+`ImageGenerationRequest`, and bills a flat per-image price
+(`price_per_image`) instead of per-megapixel. See "Running the V2A keyframe
+experiment" below for what it's used for.
 
 Adding a future fal.ai model (or upgrading one shot to a premium provider
 later) means adding one more named config, not touching
@@ -310,13 +318,14 @@ explicit width/height as FLUX_SCHNELL, keeping every candidate's cost
 exactly pre-computable, consistent with every other provider in this
 codebase.
 
-**These real adapters are written and locally tested (20 tests in
+**These real adapters are written and locally tested (23 tests in
 `tests/test_fal_providers.py`, using `httpx.MockTransport` to simulate
 fal.ai's documented request/response shapes with zero network calls and
 zero cost) but are NOT wired in as the active provider anywhere in the
 app** - `routers/projects.py` still uses the mocks. Wan Turbo has been
-executed against the live API (see below); Kling and Veo have not yet -
-their first real invocation will be the approved quality bake-off.
+executed against the live API (see below); Kling, Veo, and Nano Banana Pro
+Edit have not yet - their first real invocations are the approved quality
+bake-off and V2A keyframe experiment, respectively.
 
 ### The one real test - what happened, and a bug it found
 
@@ -662,6 +671,74 @@ the morphing is a model-level limitation rather than a prompt-complexity
 problem, and model choice/reference conditioning need another look before
 any architecture change.
 
+## Running the V2A keyframe experiment (spends real money - max $0.35)
+
+Atomic V1 confirmed one-action-per-clip helps, but not enough on its own -
+hand placement, saw orientation, and blade/wood contact still looked
+AI-generated across all 3 models. `scripts/run_v2a_keyframes_test.py`
+tests a narrower hypothesis first, **before spending anything on video**:
+can a start/end frame pair be made mechanically correct enough to be worth
+animating at all?
+
+It makes exactly 2 **image-edit** calls (`NANO_BANANA_PRO_EDIT` -
+`fal-ai/nano-banana-pro/edit`, $0.15/image flat) against the existing
+bake-off reference image - **no video generation happens in this step**:
+
+- `saw_start_frame.jpg` - the bake-off reference image edited so the saw's
+  base plate sits flat against the board, the blade is aligned with the
+  cut and just touching the wood, and the builder's hand/tool grip and
+  stance are anatomically plausible (five fingers per hand, no merged
+  hand/tool geometry).
+- `saw_end_frame.jpg` - edited **from the start frame's own output** (not
+  independently from the base image), showing the same setup with the cut
+  visibly progressed (kerf, light sawdust) - chaining keeps both frames
+  describing one continuous physical configuration rather than two
+  separately-invented ones, the same forward-propagation principle used
+  elsewhere in this project.
+
+This needed one small, scoped provider addition (not the Stage/Clip
+architecture): `ImageEditRequest` (`app/providers/base.py`) and
+`FalImageProvider.edit_image()`/`estimate_edit_cost()` plus the
+`NANO_BANANA_PRO_EDIT` config (`app/providers/image/fal.py`) - prompt-
+guided editing of an *existing* image is a different capability from
+FLUX's text-to-image generation, needing its own upload step (the same
+2-step upload `FalVideoProvider` already uses for video reference images)
+and flat per-image billing instead of per-megapixel. Covered by 3 new
+unit tests (mocked transport) alongside the existing 60.
+
+**This script does not generate video and never will on its own** - it
+stops after the 2 image edits so you can inspect them by eye against the
+mechanical-correctness checklist above. **No automatic regeneration**: if
+either frame is physically wrong, the script does not retry or fix it -
+that decision belongs to you, informed by looking at the images.
+
+**Safety, same pattern as every other real-call script:**
+- Exactly 2 image-edit calls, zero video calls - hard-coded.
+- Total cost ($0.30 estimated) checked against the $0.35 cap before any
+  call; one `yes` confirmation gates the run.
+- No automatic retries.
+- `manifest.json` records both prompts, costs, and output paths.
+
+Requires `FAL_API_KEY` in `.env` and a completed `run_bakeoff_test.py` run:
+
+```bash
+python -m scripts.run_v2a_keyframes_test
+python -m scripts.run_v2a_keyframes_test --yes
+```
+
+Outputs land in `data/fal_v2a_keyframes_test/` (gitignored):
+`saw_start_frame.jpg`, `saw_end_frame.jpg`, `manifest.json`. Verified
+entirely offline: a mocked-transport dry run confirms no video endpoint is
+ever touched, exactly 2 edit calls happen, the end frame is chained from
+the start frame's own output (not the base image), and the total lands at
+exactly $0.30.
+
+**V2B (a separate, later, human-gated step, not yet built)**: only after
+these keyframes are manually approved, animate them with a first/last-
+frame-conditioned video model (candidates researched: Wan 2.1 FLF2V,
+Kling O1) - see the project's own research notes for the fuller comparison
+against motion-transfer approaches (Kling 3.0 Motion Control, Wan Motion).
+
 ## Running the API server
 
 ```bash
@@ -769,22 +846,39 @@ provider-level rate limiting.
   `ConstructionStage` (a build phase, holding structured `BUILD_STATE`)
   and `Shot`-as-atomic-clip (one dominant action each, with its own
   continuity strategy and model tier).
-- **Atomic-action experiment V1 (current)**: `scripts/run_atomic_cut_test.py`
-  tests the format spec's central hypothesis in isolation before any
-  architecture work - does restricting a clip to one dominant action
-  (continuous saw-cutting only) reduce the morphing seen in the bake-off's
-  compound prompt? A single-variable experiment: same 3 models, same
-  reused reference image, same settings as the bake-off - only the prompt
-  changes - producing 3 clips directly comparable one-to-one against their
-  bake-off counterparts. Not yet run for real - built and verified offline
-  only (a mocked-transport dry run against a fake pre-existing bake-off
-  manifest, confirming no image call happens and each payload carries the
-  atomic prompt). If at least 2 of 3 models improve substantially, next is
-  V2 (testing the installation/fastening action) and then the Stage/Clip
-  architecture; if none improve, model choice/reference conditioning need
-  another look first.
-- **Milestone 3+**: once the atomic-action hypothesis and model choice are
-  validated, implement the Stage/Clip architecture, the hybrid continuity
+- **Atomic-action experiment V1, complete**: `scripts/run_atomic_cut_test.py`
+  tested whether restricting a clip to one dominant action (continuous
+  saw-cutting only) reduces the morphing seen in the bake-off's compound
+  prompt. Run for real and reviewed: it simplified the scene but did not
+  solve the core problem - hand placement, saw orientation, and blade/wood
+  contact still looked AI-generated across all 3 models. Conclusion: prompt
+  complexity was a real but secondary lever; the bottleneck is upstream of
+  prompting (model choice, or what the model is conditioned on).
+  Model-selection research since V1 (not yet spent on): Kling 3.0 Pro
+  supersedes Kling 2.6 Pro on fal.ai with a "physics-first" tradeoff
+  profile; first/last-frame-conditioned models (Kling O1, Wan 2.1 FLF2V)
+  let a video model interpolate between two already-correct frames instead
+  of inventing one from scratch; motion-transfer models (Kling 3.0 Motion
+  Control, Wan Motion) can retarget a real driving video's motion onto our
+  character, though research found Kling's Element Binding only locks face
+  identity, not props/tools - so tool-geometry consistency isn't solved by
+  motion transfer alone. Sora 2/Pro ruled out (fal.ai/OpenAI API sunsets
+  September 24, 2026, no successor announced).
+- **V2A keyframe experiment (current)**: `scripts/run_v2a_keyframes_test.py`
+  gates the next step behind a cheaper, narrower question - can a
+  circular-saw start/end frame pair be edited into mechanical correctness
+  (base plate flush, blade aligned, plausible grip/stance, five fingers per
+  hand) at all, before spending anything on animating them? Exactly 2
+  Nano Banana Pro Edit calls ($0.15/image), zero video calls, human-gated:
+  the two output frames must be manually approved before any V2B
+  (animation) step is even designed. Not yet run for real - built and
+  verified offline only. **V2B (not yet built)**: only after V2A's frames
+  are approved, animate them with a first/last-frame model (Wan 2.1 FLF2V
+  or Kling O1 are the current candidates) - a separate, later, explicitly
+  gated decision.
+- **Milestone 3+**: once the physical-interaction problem is solved well
+  enough (V2A/V2B or a motion-transfer follow-up) and a production model
+  is chosen, implement the Stage/Clip architecture, the hybrid continuity
   system (structured build state + reference frames + occasional
   re-anchoring), sound/ASMR metadata, per-shot model/budget tiers,
   voiceover, FFmpeg assembly with aggressive trimming, captions, AI QA

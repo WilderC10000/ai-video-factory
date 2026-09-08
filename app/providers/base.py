@@ -192,6 +192,23 @@ class ImageGenerationRequest:
     extra_params: dict = field(default_factory=dict)
 
 
+@dataclass
+class ImageEditRequest:
+    """A prompt-guided edit of one or more EXISTING images (e.g. correcting a
+    hand/tool pose in an already-generated reference image) - as opposed to
+    ImageGenerationRequest, which generates from a text prompt alone with no
+    input image. Not part of the ImageProvider ABC below: editing is a
+    fal.ai-specific capability (Nano Banana Pro Edit) with no mock/other
+    provider implementation yet, so it lives as a concrete-only method on
+    FalImageProvider - same pattern as FalVideoProvider's reference-image
+    upload helper, which also isn't part of the VideoProvider ABC.
+    """
+
+    prompt: str
+    reference_image_paths: list[str]
+    extra_params: dict = field(default_factory=dict)
+
+
 class ImageProvider(ABC):
     """AI keyframe/reference image provider (used to give a video provider a
     consistent starting frame for image-to-video generation)."""

@@ -585,7 +585,13 @@ def test_wan_3_0_queue_routing_is_owner_alias_only():
     assert WAN_3_0_STANDARD.submit_path == "alibaba/wan-3.0/image-to-video"
 
 
-def test_wan_3_0_submit_uses_bare_int_duration_and_no_audio_field(tmp_path):
+def test_wan_3_0_submit_uses_start_image_url_bare_int_duration_and_no_audio_field(tmp_path):
+    """image_param_name="start_image_url" is not secondhand research - it's
+    confirmed by a real live 422 from fal.ai itself: the first real
+    submission attempt was rejected with "body -> start_image_url: Field
+    required" while our payload sent "image_url". This is the regression
+    guard for that real bug."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/storage/upload/initiate":
             return httpx.Response(
@@ -595,7 +601,8 @@ def test_wan_3_0_submit_uses_bare_int_duration_and_no_audio_field(tmp_path):
             return httpx.Response(200)
         if request.url.path == "/alibaba/wan-3.0/image-to-video" and request.method == "POST":
             body = json.loads(request.content)
-            assert body["image_url"] == "https://fake-cdn.example/ref.jpg"
+            assert body["start_image_url"] == "https://fake-cdn.example/ref.jpg"
+            assert "image_url" not in body
             assert body["resolution"] == "480p"
             assert body["duration"] == 15
             assert isinstance(body["duration"], int)
@@ -615,3 +622,21 @@ def test_wan_3_0_submit_uses_bare_int_duration_and_no_audio_field(tmp_path):
     submitted = provider.submit_video_job(request)
     assert submitted.provider_job_id == "wan3-req-1"
     assert submitted.estimated_cost_usd == pytest.approx(0.75)
+
+
+@pytest.mark.parametrize(
+    "config,expected_image_param_name",
+    [
+        (WAN_TURBO, "image_url"),
+        (WAN_STANDARD, "image_url"),
+        (VEO_3_1_FAST, "image_url"),
+        (KLING_2_6_PRO, "start_image_url"),
+        (SEEDANCE_2_0_FAST, "image_url"),
+        (WAN_3_0_STANDARD, "start_image_url"),
+    ],
+)
+def test_image_param_name_unaffected_by_wan_3_0_fix(config, expected_image_param_name):
+    """Fixing Wan 3.0's image field (real 422 -> start_image_url) must not
+    have touched any other model's config - each of these was independently
+    verified against its own docs/schema and must keep its own value."""
+    assert config.image_param_name == expected_image_param_name

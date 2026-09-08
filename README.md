@@ -377,7 +377,7 @@ explicit width/height as FLUX_SCHNELL, keeping every candidate's cost
 exactly pre-computable, consistent with every other provider in this
 codebase.
 
-**These real adapters are written and locally tested (33 tests in
+**These real adapters are written and locally tested (35 tests in
 `tests/test_fal_providers.py`, using `httpx.MockTransport` to simulate
 fal.ai's documented request/response shapes with zero network calls and
 zero cost) but are NOT wired in as the active provider anywhere in the
@@ -1194,23 +1194,29 @@ a flaw to avoid.
 
 **Model: `WAN_3_0_STANDARD`** (`alibaba/wan-3.0/image-to-video`, 480p) -
 a third distinct fal.ai owner (`alibaba`, after `fal-ai` and `bytedance`),
-confirming queue routing generalizes across vendors. Verification here is
-**partial, and documented as such** rather than presented as complete:
-cross-confirmed across multiple fal.ai model-page searches are the
-endpoint path, 2-30s duration range (comfortably covers 15s), 480p/720p/
-1080p tiers, 9:16 support, and per-second pricing ($0.05/s at 480p). **Not
-resolved despite 7 search attempts** (fal.ai itself is unreachable from
-this sandbox, unlike for Seedance, which had an actual schema repo to
-check against): the exact audio-control field's name and type - sources
-disagreed between a boolean flag and prompt-implicit control. Resolved by
-sending **no audio field at all** (every source agreed audio is either
-on-by-default or doesn't affect price, and this experiment doesn't need
-it) and by sending `duration` as a bare int (`15`), the one concrete shape
-found in an example, rather than a string like Kling/Veo/Seedance use.
-Both choices fail safely: a wrong field name/type produces an immediate
-4xx at submission time, before any billable work starts - not a paid
-generation - so the existing zero-retry `fail()` pattern already handles
-that risk with no code changes needed.
+confirming queue routing generalizes across vendors. Verification here
+was **partial before the first real attempt**: endpoint path, 2-30s
+duration range (comfortably covers 15s), 480p/720p/1080p tiers, 9:16
+support, and per-second pricing ($0.05/s at 480p) were cross-confirmed
+across multiple fal.ai model-page searches; the exact image-field name
+was not (fal.ai itself is unreachable from this sandbox, unlike for
+Seedance, which had an actual schema repo to check against).
+
+**That gap surfaced for real, safely, exactly as designed**: the first
+live submission was rejected with fal.ai's own HTTP 422 - `"body ->
+start_image_url: Field required"` - while the payload sent `image_url`.
+No charge occurred; fal.ai validates a request's schema before any
+billable work starts. This is now fixed using this project's existing
+per-model `image_param_name` mechanism (the same one `KLING_2_6_PRO`
+already uses for its own `start_image_url` field) - `WAN_3_0_STANDARD`
+now sends `start_image_url`, confirmed by this live 422, not secondhand
+research. The `duration`/`resolution`/`aspect_ratio` fields were not
+flagged as errors in that same 422, so they're now believed correct -
+though a 422 only confirms what's wrong, not everything that's right, so
+this remains slightly less certain than a fully successful call would
+make it. The audio-field question remains genuinely unresolved and is
+still deliberately omitted from the payload for the same reason as
+before - it fails the same safe way (immediate 4xx, no charge) if wrong.
 
 **Exactly 1 video call, $0 image cost (source reused):**
 - 480p, 15s, 9:16. Hard cap is set **exactly equal to the computed
@@ -1458,15 +1464,17 @@ provider-level rate limiting.
   progression across an explicit multi-stage structure (early framing ->
   denser wall framing -> upper framing -> roof/bracing -> substantially
   more complete), with natural jump-cut-like transitions called out as
-  desirable. Schema verification is honestly partial - endpoint, duration
-  range, resolution tiers, 9:16 support, and pricing are cross-confirmed,
-  but the exact audio-control field name/type could not be pinned down
-  despite 7 search attempts (fal.ai itself is unreachable from this
-  sandbox); resolved by omitting any audio field entirely, which fails
-  safely (an immediate 4xx at submission, no charge) if wrong. Exactly 1
-  video call, $0 image cost, no retries, no alternate model, hard cap set
-  exactly equal to the computed estimate (no margin). Not yet run for
-  real - built and verified offline only.
+  desirable. First real submission attempt hit exactly the kind of gap
+  this project's "verify before spending" discipline is built to catch
+  safely: rejected with fal.ai's own HTTP 422 (`start_image_url` required,
+  not the `image_url` the payload sent) - no charge occurred, fixed via
+  the existing `image_param_name` mechanism, confirmed by a real error
+  rather than research. The audio-field question remains genuinely
+  unresolved and stays deliberately omitted from the payload, failing the
+  same safe way if wrong. Exactly 1 video call, $0 image cost, no
+  retries, no alternate model, hard cap set exactly equal to the computed
+  estimate (no margin). Not yet run for real - a corrected offline dry
+  run passes; next is the real (now schema-corrected) submission.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

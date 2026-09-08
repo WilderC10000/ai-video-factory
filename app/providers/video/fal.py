@@ -202,12 +202,25 @@ SEEDANCE_2_0_FAST = FalVideoModelConfig(
 # generation - the same zero-retry `fail()` pattern every script in this
 # project already uses would simply stop with a clear diagnostic and
 # nothing charged.
+#
+# CONFIRMED BY A REAL LIVE 422 (not secondhand research): the first real
+# submission attempt was rejected with fal's own validation error - "body
+# -> start_image_url: Field required" - while our payload sent "image_url".
+# This endpoint uses "start_image_url", the same field name Kling uses
+# (KLING_2_6_PRO below), NOT the "image_url" every Wan A14B/Veo config
+# uses. Fixed via image_param_name, the same mechanism that already
+# handles this exact kind of per-model difference - no new code needed,
+# just the correct value for this field. duration/resolution/aspect_ratio
+# were not flagged as errors in that same 422, so they're now believed
+# correct (still not "confirmed" the way a successful submission would
+# be - a 422 lists what's wrong, not everything that's right).
 WAN_3_0_STANDARD = FalVideoModelConfig(
     base_model_id="alibaba/wan-3.0",
     subpath="image-to-video",
     billing="per_second",
     price_per_second_by_resolution={"480p": 0.05, "720p": 0.10, "1080p": 0.20},
     default_resolution="480p",
+    image_param_name="start_image_url",  # confirmed via live 422 - see note above
     extra_payload={
         "duration": 15,  # bare int, not a string - see note above
     },

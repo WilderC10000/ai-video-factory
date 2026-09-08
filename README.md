@@ -460,9 +460,10 @@ for both scripts.
 - Python 3.11+
 - `ffmpeg` on PATH - required to run `scripts/run_continuity_test.py`
   (extracts a propagated reference frame from each clip between stages;
-  see "Running the continuity test" below) or to regenerate the mock
-  providers' placeholder fixtures. Not required for anything else -
-  the mock/API/demo flows don't need it. Install from
+  see "Running the continuity test" below), `scripts/run_wan_turbo_2clip_timelapse_test.py`
+  (same last-frame extraction, plus final concatenation), or to
+  regenerate the mock providers' placeholder fixtures. Not required for
+  anything else - the mock/API/demo flows don't need it. Install from
   https://ffmpeg.org/download.html, or on Windows: `winget install ffmpeg`.
 - No paid API keys needed through Milestone 2 for anything except the
   real fal.ai test scripts, which are opt-in and always ask for confirmation.
@@ -1075,6 +1076,64 @@ touched, exactly one submission happens, the payload carries
 no audio field, and the prompt favors broad progression language over
 fine tool-mechanics language - and the cost lands at exactly $0.05.
 
+## Running the Wan Turbo 2-clip timelapse test (spends real money - max $0.10)
+
+Since the $0.05 Turbo endpoint can't produce a single ~10s clip (see
+above - its ceiling is ~6.25s and only at a higher 1.25x-multiplier
+price), this tests the alternative: **two** $0.05 clips chained into one
+~10s sequence, staying strictly on the flat-rate tier throughout.
+`scripts/run_wan_turbo_2clip_timelapse_test.py` generates clip 1 from the
+approved `mechanical_start_frame.jpg` (same as every prior gate), then
+generates clip 2 from **clip 1's own last frame** - extracted locally with
+ffmpeg (`app/services/frame_extraction.extract_last_frame`, the same
+last-frame-propagation mechanism proven in the original 3-shot continuity
+experiment), not a new image generation. This is what makes clip 2 a
+continuation of clip 1's actual pixels rather than an independently
+imagined restart.
+
+Both clips share identical camera/attention/identity language; only the
+construction-stage goal differs - clip 1 targets framing progress (lumber
+carried/positioned, more studs/bracing), clip 2 explicitly targets a
+*later* structural stage (upper framing, roof framing, cross-bracing)
+built on top of what clip 1 already established, with the prompt
+explicitly forbidding any reset or disappearance of existing structure.
+
+A new small, reusable utility was added for this:
+`app/services/video_assembly.concatenate_videos()` - ffmpeg's `concat`
+*filter* (re-encodes, robust to minor stream differences between two
+separately generated clips, unlike the `concat` demuxer's `-c copy`) -
+used here purely to produce one file for human review, not as the
+project's real trim-aware assembly system (that's still future work).
+Covered by 4 new tests using the same real-ffmpeg-against-a-real-fixture-
+clip approach as `frame_extraction`'s own tests.
+
+**Exactly 2 video calls, $0 image cost (clip 1's source reused, clip 2's
+source extracted locally):**
+- 81 frames, 480p each; total cost $0.10 (two flat, deterministic $0.05
+  charges - no per-second variability) checked against the $0.10 cap
+  before either call; one `yes` confirmation gates the whole run.
+- No retries, no alternate model, no additional generations.
+- `manifest.json` records both clips' prompt/cost/job id/output path, the
+  extracted mid-sequence frame, and the final concatenated review file.
+
+```bash
+python -m scripts.run_wan_turbo_2clip_timelapse_test
+python -m scripts.run_wan_turbo_2clip_timelapse_test --yes
+```
+
+Requires `ffmpeg` on PATH (for the last-frame extraction and the final
+concatenation - same requirement as `run_continuity_test.py`).
+
+Outputs land in `data/fal_wan_turbo_2clip_timelapse_test/` (gitignored):
+`clip1.mp4`, `clip1_last_frame.jpg`, `clip2.mp4`, `combined_review.mp4`,
+`manifest.json`. Verified entirely offline: a mocked-transport dry run -
+using the *real* committed fixture clip's bytes as the fake download
+response, so the ffmpeg steps run against a genuinely valid video, not
+fake garbage - confirms no image-generation endpoint is ever touched,
+exactly two submissions happen, clip 2's source is the path ffmpeg
+actually extracted from clip 1 (not the original mechanical start frame
+reused again), and the total cost lands at exactly $0.10.
+
 ## Running the API server
 
 ```bash
@@ -1250,18 +1309,34 @@ provider-level rate limiting.
   environmental motion (waves), and reading as a genuine construction
   timelapse rather than a cinematic AI demo. Not a production-model
   decision - a one-time ceiling-setting benchmark.
-- **Wan Turbo cost-down timelapse test (current)**: `scripts/run_wan_turbo_timelapse_test.py`
-  asks how much of that feel survives at ~1/40th the cost on the existing
-  $0.05 production-candidate baseline. Re-verification (explicitly
-  requested, not assumed) found the Turbo endpoint's actual duration
-  behavior differs from this project's original research: `num_frames`
-  81-100, default 81 (~5.06s), >81 billing at 1.25x - 15 seconds is not
-  achievable on this endpoint at any price, so the experiment targets ~5s
-  (81 frames, pinned explicitly in `WAN_TURBO`'s config) as the closest
-  valid alternative at exactly $0.05. Prompt optimized for Wan Turbo's
-  strengths (broad progression) rather than fine tool mechanics. Exactly
-  1 video call, $0 image cost (source reused), no retries, no alternate
-  model. Not yet run for real - built and verified offline only.
+- **Wan Turbo cost-down timelapse test, run for real (result pending
+  review)**: `scripts/run_wan_turbo_timelapse_test.py` asked how much of
+  the Seedance benchmark's feel survives at ~1/40th the cost on the
+  existing $0.05 production-candidate baseline. Re-verification
+  (explicitly requested, not assumed) found the Turbo endpoint's actual
+  duration behavior differs from this project's original research:
+  `num_frames` 81-100, default 81 (~5.06s), >81 billing at 1.25x - 15
+  seconds is not achievable on this endpoint at any price, so the
+  experiment targeted ~5s (81 frames, pinned explicitly in `WAN_TURBO`'s
+  config) as the closest valid alternative at exactly $0.05. Prompt
+  optimized for Wan Turbo's strengths (broad progression) rather than
+  fine tool mechanics.
+- **Wan Turbo 2-clip timelapse test (current)**: `scripts/run_wan_turbo_2clip_timelapse_test.py`
+  extends the single-clip test to ~10s while staying strictly on the
+  $0.05 flat-rate tier - two clips instead of one longer (more expensive)
+  clip. Clip 2 is generated from clip 1's own last frame (extracted
+  locally via `app/services/frame_extraction`, no image-generation call),
+  so it continues clip 1's actual visual state rather than restarting
+  independently; both clips share identical camera/attention/identity
+  language, with clip 2's prompt targeting a visibly later structural
+  stage than clip 1 and explicitly forbidding any reset. A new
+  `app/services/video_assembly.concatenate_videos()` utility (ffmpeg
+  concat filter) produces one review file from the two clips - a small,
+  reusable piece of the eventual real assembly system, not the whole
+  thing. Exactly 2 video calls ($0.10 total), $0 image cost, no retries,
+  no alternate model. Not yet run for real - built and verified offline
+  only, including real ffmpeg frame extraction and concatenation against
+  a real fixture clip.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

@@ -595,6 +595,73 @@ and that the total cost math lands at $1.04. Review the 3 clips yourself
 afterward against the bake-off's comparison criteria - this tooling only
 gets you the clips and the data to judge them by.
 
+## Running the atomic-cut experiment (spends real money - max $1.15)
+
+The bake-off's clips all shared one weakness: rigid-object/tool morphing
+in the timber, most visible where the prompt asked for several physical
+state changes in one generation (pick up saw -> cut -> lift board -> carry
+-> position -> fasten). `scripts/run_atomic_cut_test.py` tests a specific
+hypothesis - does restricting a clip to ONE dominant physical action
+(continuous saw-cutting, nothing else) materially reduce that morphing? -
+as a **single-variable experiment** against the bake-off, so the model
+comparison stays valid:
+
+- **Reuses the bake-off's own reference image** - reads its path straight
+  out of `data/fal_bakeoff_test/manifest.json` and fails immediately if
+  that file doesn't exist yet (run `run_bakeoff_test.py` first). No new
+  image generation, no image cost.
+- **Same 3 models, same configs** as the bake-off (`WAN_TURBO` 480p/4s,
+  `KLING_2_6_PRO` 5s, `VEO_3_1_FAST` 1080p/6s) - nothing about resolution,
+  duration, or provider settings changed.
+- **The only thing that changes is the prompt** - a new `ATOMIC_CUT_PROMPT`
+  restricted to continuous circular-saw cutting, explicitly forbidding any
+  second action (picking up/carrying/installing the board, changing tools,
+  walking away) - sent identically to all 3 candidates, no per-model
+  rewriting, so model choice stays the only real variable.
+
+This makes a direct, one-to-one comparison possible per model: `wan_turbo_480p.mp4`
+(compound) vs. `wan_atomic_cut.mp4` (atomic), and likewise for Kling and
+Veo - same model, same reference image, same environment/builder/structure,
+only the action's complexity changed.
+
+**Safety, same pattern as every other real-call script:**
+- Exactly 3 video calls, zero image calls - hard-coded, no loop that could
+  ever submit a 4th of anything or regenerate the reference image.
+- Total cost computed and checked against the $1.15 cap before any call
+  (estimated $1.00: $0.05 + $0.35 + $0.60); one `yes` confirmation gates
+  the whole run.
+- No automatic retries - any failure stops the script immediately, with a
+  `recover_fal_video_job.py <job_id>` hint for any candidate already
+  submitted.
+- `manifest.json` written incrementally, including which bake-off
+  manifest/image path it reused, for full traceability.
+
+Requires `FAL_API_KEY` in `.env` and a completed `run_bakeoff_test.py` run
+(its `manifest.json` and `reference_image.jpg` must already exist):
+
+```bash
+python -m scripts.run_atomic_cut_test
+python -m scripts.run_atomic_cut_test --yes
+```
+
+Outputs land in `data/fal_atomic_cut_test/` (gitignored): `wan_atomic_cut.mp4`,
+`kling_atomic_cut.mp4`, `veo_atomic_cut.mp4`, and `manifest.json`. Verified
+entirely offline before any real call: a mocked-transport dry run (using a
+fake pre-existing bake-off manifest/image so the "reuse, don't regenerate"
+path is actually exercised) asserts no image endpoint is ever called, each
+candidate's payload carries the atomic-cut prompt and not the old
+compound-action one, and the total cost lands at exactly $1.00. A second
+check confirms the script fails safely (no call made) if the bake-off
+manifest is missing.
+
+If at least 2 of the 3 models show substantially less morphing/more
+believable tool-object interaction on the atomic clip than their compound
+counterpart, that validates the atomic-action hypothesis and the next step
+is the Stage/Clip storyboard architecture (see "What's next"). If none do,
+the morphing is a model-level limitation rather than a prompt-complexity
+problem, and model choice/reference conditioning need another look before
+any architecture change.
+
 ## Running the API server
 
 ```bash
@@ -681,18 +748,46 @@ provider-level rate limiting.
   standing spec governing engineering decisions - see the project's own
   notes/history for the full text. Model selection now weighs realistic
   human/tool motion and reference/continuity adherence well above cost.
-- **Quality bake-off (current)**: `scripts/run_bakeoff_test.py` compares
-  Wan Turbo 480p (proven baseline) against Kling 2.6 Pro and Veo 3.1 Fast
-  from the same reference image and action prompt, to pick a production
-  video model against the creative spec's priorities rather than cost
-  alone. Not yet run for real - built and verified offline only (20 unit
-  tests for the new adapters/configs + a full mocked-transport dry run of
-  the script itself). Next is running it locally and reviewing the 3 clips
-  against the bake-off's comparison criteria.
-- **Milestone 3+**: once a production video model is chosen, scale to the
-  full ~60-70s / 14-18 shot architecture, add the hybrid continuity system
-  (structured build-state + reference frames + occasional re-anchoring),
-  sound/ASMR metadata, per-shot model/budget tiers, voiceover, FFmpeg
-  assembly with aggressive trimming, captions, AI QA, a review dashboard,
-  and eventually publishing - see the project plan for the full list. None
-  of this is implemented yet; it's noted for when the bake-off concludes.
+- **Quality bake-off, complete**: `scripts/run_bakeoff_test.py` compared
+  Wan Turbo 480p against Kling 2.6 Pro and Veo 3.1 Fast from the same
+  reference image and a compound action prompt. Run for real by the user
+  and reviewed against reference TikToks; the main finding was rigid-object/
+  tool morphing in the timber across all three, worst where the prompt
+  asked for several physical state changes in one generation (pick up saw
+  -> cut -> lift board -> carry -> position -> fasten). This directly
+  reshaped the production format - see "Format specification" below.
+- **Format specification, current**: the bake-off review produced a
+  definitive, more specific product spec on top of the earlier creative
+  spec - the finished video is an edited assembly of many short, atomic,
+  single-action clips (one dominant verb each: cut, drill, hammer, sand,
+  paint, install...) stitched into a chronological build via editing, not
+  one continuously simulated construction; continuity is defined as
+  forward-only believable build state, not pixel-perfect frame matching;
+  model selection and continuity strategy can vary per clip; sound and
+  editing/trimming are represented as metadata now, built later. Full
+  architecture direction (not yet implemented): split today's `Shot` into
+  `ConstructionStage` (a build phase, holding structured `BUILD_STATE`)
+  and `Shot`-as-atomic-clip (one dominant action each, with its own
+  continuity strategy and model tier).
+- **Atomic-action experiment V1 (current)**: `scripts/run_atomic_cut_test.py`
+  tests the format spec's central hypothesis in isolation before any
+  architecture work - does restricting a clip to one dominant action
+  (continuous saw-cutting only) reduce the morphing seen in the bake-off's
+  compound prompt? A single-variable experiment: same 3 models, same
+  reused reference image, same settings as the bake-off - only the prompt
+  changes - producing 3 clips directly comparable one-to-one against their
+  bake-off counterparts. Not yet run for real - built and verified offline
+  only (a mocked-transport dry run against a fake pre-existing bake-off
+  manifest, confirming no image call happens and each payload carries the
+  atomic prompt). If at least 2 of 3 models improve substantially, next is
+  V2 (testing the installation/fastening action) and then the Stage/Clip
+  architecture; if none improve, model choice/reference conditioning need
+  another look first.
+- **Milestone 3+**: once the atomic-action hypothesis and model choice are
+  validated, implement the Stage/Clip architecture, the hybrid continuity
+  system (structured build state + reference frames + occasional
+  re-anchoring), sound/ASMR metadata, per-shot model/budget tiers,
+  voiceover, FFmpeg assembly with aggressive trimming, captions, AI QA
+  (frame-sampled morphing/continuity checks), a review dashboard, and
+  eventually publishing - see the project plan for the full list. None of
+  this is implemented yet.

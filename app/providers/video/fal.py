@@ -86,15 +86,22 @@ class FalVideoModelConfig:
         return "/".join(segments[:2])
 
 
-# Cheapest-first candidate: flat per-video pricing, not per-second. Fixed
-# ~4s output (65 frames @ 16fps); duration is not configurable on this
-# endpoint - resolution is the only cost lever.
+# Cheapest-first candidate: flat per-video pricing, not per-second.
+# Re-verified (Sept 2026): the endpoint takes a `num_frames` param, 81-100
+# inclusive, default 81 (~5.06s @ 16fps) - >81 frames bills at a 1.25x
+# multiplier, breaking the flat price_by_resolution rate below. `num_frames`
+# is pinned to 81 explicitly here (not left to the API's own default) so
+# this config can never silently drift onto the 1.25x tier if fal.ai ever
+# changes its default - resolution stays the only cost lever we intend to
+# vary. (Earlier project notes assumed a fixed ~4s/65-frame output; this
+# supersedes that - 81 frames is fal.ai's own current documented default.)
 WAN_TURBO = FalVideoModelConfig(
     base_model_id="fal-ai/wan/v2.2-a14b/image-to-video",
     subpath="turbo",
     billing="flat",
     price_by_resolution={"480p": 0.05, "580p": 0.075, "720p": 0.10},
     default_resolution="480p",
+    extra_payload={"num_frames": 81},
 )
 
 # Higher-quality, non-turbo alternative, billed per second of output

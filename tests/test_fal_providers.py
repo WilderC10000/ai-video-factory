@@ -119,6 +119,7 @@ def test_full_video_submit_poll_download_cycle(tmp_path):
             assert body["image_url"] == "https://fake-cdn.example/ref.jpg"
             assert body["resolution"] == "480p"
             assert body["prompt"] == "a pink submarine backyard bunker"
+            assert body["num_frames"] == 81  # pinned explicitly - keeps billing at the flat rate, not the 1.25x tier
             return httpx.Response(
                 200,
                 json={

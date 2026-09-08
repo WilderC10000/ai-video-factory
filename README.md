@@ -227,13 +227,18 @@ image-to-video flow needs:
 | Selectable cheap resolution | `resolution` param: 480p/580p/720p | Yes - **but defaults to 720p ($0.10) if not set**, so our adapter must always pass `resolution: "480p"` explicitly |
 | Async submit/poll (matches our `VideoProvider` interface) | fal.ai's standard queue API (submit -> poll status -> fetch result) | Yes |
 
-One real difference from the standard model: **Turbo's output is a fixed
-~4 seconds (65 frames), not the ~5 seconds we'd been assuming** - duration
-isn't a parameter you can set on this endpoint, only resolution is. That's
-a minor pacing change (a 12-shot video becomes ~48s instead of ~60s) and no
-architectural problem - `Shot.target_duration_seconds` stays a planning
-value; what a provider actually delivered is on the `VideoJob` row. No
-technical reason not to use Turbo.
+One real difference from the standard model: Turbo's output length is
+governed by a `num_frames` param (81-100 inclusive, default 81 - **not the
+fixed ~4s/65-frame output originally assumed here**, corrected after
+re-verification in the Wan Turbo cost-down timelapse test below).
+Frame counts above 81 bill at a 1.25x multiplier, so `WAN_TURBO`'s config
+pins `num_frames: 81` explicitly (~5.06s @ 16fps) rather than trusting the
+API's own default to stay put - resolution remains the only cost lever we
+intend to vary. That's a minor pacing change (a 12-shot video becomes
+~61s instead of ~48s) and no architectural problem -
+`Shot.target_duration_seconds` stays a planning value; what a provider
+actually delivered is on the `VideoJob` row. No technical reason not to
+use Turbo.
 
 ### The cheapest credible pair, updated
 
@@ -321,7 +326,7 @@ not the full $0.053:
 constructor:
 
 ```python
-FalVideoProvider(WAN_TURBO)      # cheapest baseline - $0.05/video flat @480p
+FalVideoProvider(WAN_TURBO)      # cheapest baseline - $0.05/video flat @480p, ~5s (81 frames, pinned)
 FalVideoProvider(WAN_STANDARD)   # per-second alternative, e.g. for one important shot
 FalVideoProvider(KLING_2_6_PRO)  # quality bake-off candidate - $0.07/s, no resolution tiers
 FalVideoProvider(VEO_3_1_FAST)   # quality bake-off candidate - $0.10/s, 1080p
@@ -371,7 +376,7 @@ explicit width/height as FLUX_SCHNELL, keeping every candidate's cost
 exactly pre-computable, consistent with every other provider in this
 codebase.
 
-**These real adapters are written and locally tested (28 tests in
+**These real adapters are written and locally tested (30 tests in
 `tests/test_fal_providers.py`, using `httpx.MockTransport` to simulate
 fal.ai's documented request/response shapes with zero network calls and
 zero cost) but are NOT wired in as the active provider anywhere in the
@@ -610,7 +615,7 @@ quality, not different creative direction:
 
 | Candidate | Endpoint | Resolution | Duration | Billing |
 |---|---|---|---|---|
-| `wan_turbo_480p` | `fal-ai/wan/v2.2-a14b/image-to-video/turbo` | 480p | 4s (fixed) | $0.05 flat |
+| `wan_turbo_480p` | `fal-ai/wan/v2.2-a14b/image-to-video/turbo` | 480p | ~5s (81 frames, fal.ai's default - `num_frames` wasn't yet pinned explicitly at the time; corrected below) | $0.05 flat |
 | `kling_2.6_pro` | `fal-ai/kling-video/v2.6/pro/image-to-video` | n/a (inherent) | 5s | $0.07/s = $0.35 |
 | `veo_3.1_fast` | `fal-ai/veo3.1/fast/image-to-video` | 1080p | 6s | $0.10/s = $0.60 |
 
@@ -1021,6 +1026,55 @@ documented schema (`image_url`, `resolution: "720p"`, `duration: "8"`,
 `bytedance/seedance-2.0` (owner/alias only), and the cost lands at exactly
 $1.9352.
 
+## Running the Wan Turbo cost-down timelapse test (spends real money - max $0.05)
+
+Once the Seedance benchmark established a quality ceiling, the natural
+next question is: how much of that feel survives at roughly 1/40th the
+cost, on the model we already use as the cheap production baseline?
+`scripts/run_wan_turbo_timelapse_test.py` reuses the same source image and
+creative goal as the Seedance benchmark, optimized for Wan Turbo's actual
+strengths rather than a scaled-down copy of the Seedance prompt - broad,
+visible construction progression (carrying lumber, adding studs/bracing,
+the cabin getting denser) instead of demanding precise continuous tool
+physics.
+
+**Re-verified before writing this script** (the request was explicit: do
+not assume old research still holds): the Turbo endpoint's duration is
+governed by `num_frames`, 81-100 inclusive, default 81 (~5.06s @ 16fps) -
+counts above 81 bill at a 1.25x multiplier. **15 seconds is not achievable
+on this endpoint at any price** - the absolute ceiling is 100 frames
+(~6.25s), and even that costs more than the flat $0.05 rate. So this
+experiment targets the closest valid alternative: ~5 seconds (81 frames),
+pinned explicitly via `WAN_TURBO.extra_payload["num_frames"] = 81` (see
+`app/providers/video/fal.py`) rather than left to the API's own default -
+this also corrects an earlier project assumption of a fixed ~4s/65-frame
+output (see "Cost model" above). Also re-verified: this endpoint has no
+native audio parameter (Wan's audio-capable sibling is a separate
+Speech-to-Video model requiring an input audio file - a different
+capability) - no audio is requested here; SFX stays a future editing-
+pipeline concern.
+
+**Exactly 1 video call, $0 image cost (source reused):**
+- Total cost ($0.05 - flat, deterministic, no per-second variability)
+  checked against the $0.05 cap before the call; one `yes` confirmation
+  gates it.
+- No retries, no alternate model, no additional generations.
+- `manifest.json` records the prompt, model, resolution, frame count,
+  cost, job id, and output path.
+
+```bash
+python -m scripts.run_wan_turbo_timelapse_test
+python -m scripts.run_wan_turbo_timelapse_test --yes
+```
+
+Outputs land in `data/fal_wan_turbo_timelapse_test/` (gitignored):
+`wan_turbo_timelapse.mp4`, `manifest.json`. Verified entirely offline: a
+mocked-transport dry run confirms no image-generation endpoint is ever
+touched, exactly one submission happens, the payload carries
+`num_frames: 81` (pinned, not the bare API default), `resolution: "480p"`,
+no audio field, and the prompt favors broad progression language over
+fine tool-mechanics language - and the cost lands at exactly $0.05.
+
 ## Running the API server
 
 ```bash
@@ -1189,21 +1243,25 @@ provider-level rate limiting.
   approved together, the first/last-frame video-interpolation test (Wan
   2.1 FLF2V or Kling O1) becomes its own separate, later, explicitly gated
   experiment.
-- **Seedance 2.0 benchmark (current, parallel track)**: `scripts/run_seedance_benchmark_test.py`
-  is a one-time quality-ceiling benchmark, not a step toward a production
-  model - independent of the still-image mechanical gates above (it
-  reuses `mechanical_start_frame.jpg` directly, not the end frame). Using
-  a current premium model (Seedance 2.0 Fast, $0.2419/s), what does the
-  upper bound of "exciting, believable accelerated construction
-  progression" look like across a full 8-second clip? Exactly 1 video
-  call ($1.9352 estimated), $0 image cost (source reused), no retries, no
-  alternate model. Once this establishes a quality ceiling, cheaper models
-  get judged against a concrete target rather than a vague one; premium
-  generation stays reserved for hook/reveal/hard-interaction shots in the
-  eventual tiered production system, not every second of a final video.
-  Not yet run for real - built and verified offline only, including a
-  first test of owner/alias queue routing against a non-`fal-ai` owner
-  (`bytedance`).
+- **Seedance 2.0 benchmark, complete and PASSED**: `scripts/run_seedance_benchmark_test.py`
+  established the quality ceiling this project is now benchmarking cheaper
+  models against. Run for real: strong pass on accelerated construction
+  progression, builder engagement, the ocean-cliff environment, natural
+  environmental motion (waves), and reading as a genuine construction
+  timelapse rather than a cinematic AI demo. Not a production-model
+  decision - a one-time ceiling-setting benchmark.
+- **Wan Turbo cost-down timelapse test (current)**: `scripts/run_wan_turbo_timelapse_test.py`
+  asks how much of that feel survives at ~1/40th the cost on the existing
+  $0.05 production-candidate baseline. Re-verification (explicitly
+  requested, not assumed) found the Turbo endpoint's actual duration
+  behavior differs from this project's original research: `num_frames`
+  81-100, default 81 (~5.06s), >81 billing at 1.25x - 15 seconds is not
+  achievable on this endpoint at any price, so the experiment targets ~5s
+  (81 frames, pinned explicitly in `WAN_TURBO`'s config) as the closest
+  valid alternative at exactly $0.05. Prompt optimized for Wan Turbo's
+  strengths (broad progression) rather than fine tool mechanics. Exactly
+  1 video call, $0 image cost (source reused), no retries, no alternate
+  model. Not yet run for real - built and verified offline only.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

@@ -841,6 +841,66 @@ gaze, and working posture are; mechanical correction is the next, later
 stage, reusing V2A's existing `NANO_BANANA_PRO_EDIT` capability against
 whatever this test produces once approved.
 
+**Result: PASSED and approved.** `action_base_frame.jpg` is now the target
+visual language for construction-action shots - side/three-quarter-rear
+observational angle, zero eye contact, natural working posture, cabin
+reading as an active project rather than a backdrop. Subsequent stages
+must preserve this composition exactly, not regenerate or reangle it -
+see "Running the mechanical still-image test" below.
+
+## Running the mechanical still-image test (spends real money - max $0.20)
+
+The composition is now locked in as approved - this next gate asks a
+narrower question on top of it: can `NANO_BANANA_PRO_EDIT` correct the
+saw's mechanics on the *approved* `action_base_frame.jpg` **without**
+regressing the composition it took two prior experiments to get right?
+This is the opposite failure mode from V2A: V2A edited a *wrong*
+composition and asked for mechanical + implicit pose changes together;
+this test edits an *already-correct* composition and asks for mechanical
+changes only, with an explicit, exhaustive preserve-list (camera
+angle/position, body orientation, downward gaze, posture, cabin,
+landscape, lighting, framing, clothing) - the kind of small, local
+correction edit models are actually good at.
+
+`scripts/run_mechanical_start_frame_test.py` reads the approved frame's
+path straight out of `data/fal_composition_test/manifest.json` (fails
+safely, no call made, if that experiment hasn't been run/approved yet) and
+makes exactly ONE edit call - **start frame only, no end frame yet**. The
+next end-frame stage is a deliberately separate, later, human-gated step
+once this one is reviewed.
+
+**Success requires BOTH, not either:**
+- **A. Mechanical improvement** - base plate flush, blade aligned,
+  plausible grip, five fingers per hand, hands clear of the blade path,
+  board properly supported.
+- **B. Composition preserved** - camera angle, body orientation, gaze,
+  posture, cabin, landscape, lighting, framing, and clothing all
+  unchanged from the approved frame.
+
+A saw fix that breaks the composition is a **failure**, even if the
+mechanics improved - the script does not judge this itself, it produces
+one image for manual review against both criteria.
+
+**Exactly 1 call, no reused end-frame chaining, no video call:**
+- Total cost ($0.15 estimated) checked against the $0.20 cap before the
+  call; one `yes` confirmation gates it.
+- No retries, no automatic regeneration of a bad result.
+- `manifest.json` records the source frame path, prompt, cost, and output path.
+
+```bash
+python -m scripts.run_mechanical_start_frame_test
+python -m scripts.run_mechanical_start_frame_test --yes
+```
+
+Outputs land in `data/fal_mechanical_start_test/` (gitignored):
+`mechanical_start_frame.jpg`, `manifest.json`. Verified entirely offline: a
+mocked-transport dry run against a fake pre-existing composition manifest
+confirms no video endpoint and no 2nd edit call ever happens, the prompt
+carries both the mechanical-fix language and the exhaustive preserve-list,
+and the cost lands at exactly $0.15. No provider/adapter code changed for
+this step - it's a new script reusing `NANO_BANANA_PRO_EDIT` exactly as
+V2A already established and tested it.
+
 ## Running the API server
 
 ```bash
@@ -979,17 +1039,29 @@ provider-level rate limiting.
   suppressed by "change as little else as possible"). Produced the
   "Permanent visual rules" above (BUILDER ATTENTION / OBSERVATIONAL CAMERA
   / COMPOSITIONAL HIERARCHY) as standing prompting rules, not a one-off fix.
-- **Composition test (current)**: `scripts/run_composition_test.py` tests
-  the fix in isolation, before spending on mechanical correction or video -
-  can a *freshly generated* (not edited) base action image get the
-  camera/attention relationship right when the rules above are written
-  into the prompt from the start? One `NANO_BANANA_PRO_GENERATE` call
-  ($0.15), no edit, no video. Not yet run for real - built and verified
-  offline only. If it passes, V2A's mechanical-edit stage re-runs against
-  this corrected base image; then V2B (animation, first/last-frame model -
-  Wan 2.1 FLF2V or Kling O1) remains a separate, later, explicitly gated
-  decision. One variable at a time: composition, then mechanical setup,
-  then start/end interpolation, then usable motion.
+- **Composition test, complete and PASSED**: `scripts/run_composition_test.py`
+  tested whether a *freshly generated* (not edited) base action image could
+  get the camera/attention relationship right when the permanent visual
+  rules are written into the prompt from the start. Run for real and
+  approved: `action_base_frame.jpg` is now the target visual language for
+  construction-action shots (side/three-quarter-rear angle, zero eye
+  contact, natural working posture, cabin reading as an active project).
+  Subsequent stages must preserve this composition, not regenerate or
+  reangle it.
+- **Mechanical still-image test (current)**: `scripts/run_mechanical_start_frame_test.py`
+  asks a narrower question on top of the now-approved composition - can
+  `NANO_BANANA_PRO_EDIT` correct the saw's mechanics (base plate flush,
+  blade aligned, plausible grip, five fingers per hand) on
+  `action_base_frame.jpg` without regressing the composition itself? Exactly
+  1 edit call ($0.15), start frame only - no end frame yet, no video call.
+  Success requires both mechanical improvement AND composition preservation;
+  either one alone is a failure. Not yet run for real - built and verified
+  offline only. If it passes: an end-frame stage (board rigid and stable,
+  progression shown via saw position/kerf depth/sawdust only - no board
+  separation, tested as its own later atomic action) follows as a separate
+  gate; then V2B (animation, first/last-frame model - Wan 2.1 FLF2V or
+  Kling O1) remains later still. One variable at a time: composition, then
+  mechanical setup, then start/end interpolation, then usable motion.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

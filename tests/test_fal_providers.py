@@ -30,6 +30,7 @@ from app.providers.video.fal import (
     KLING_2_6_PRO,
     SEEDANCE_2_0_FAST,
     VEO_3_1_FAST,
+    WAN_3_0_STANDARD,
     WAN_STANDARD,
     WAN_TURBO,
     FalVideoProvider,
@@ -558,3 +559,59 @@ def test_seedance_submit_uses_image_url_plain_digit_duration_and_audio_on(tmp_pa
     submitted = provider.submit_video_job(request)
     assert submitted.provider_job_id == "seedance-req-1"
     assert submitted.estimated_cost_usd == pytest.approx(1.9352)
+
+
+# ---------------------------------------------------------------------------
+# Wan 3.0 (standard tier): cost-down 15s candidate. Third distinct fal.ai
+# owner after "fal-ai" and "bytedance" - confirms queue routing generalizes
+# to yet another vendor. duration is a bare int (15), not a string like
+# Kling/Veo/Seedance - a genuine, if less certainly verified, per-model
+# difference (see WAN_3_0_STANDARD's docstring for what remains unresolved).
+# ---------------------------------------------------------------------------
+
+
+def test_wan_3_0_pricing_scales_by_resolution():
+    provider = FalVideoProvider(WAN_3_0_STANDARD, api_key="fake-key")
+    req_480 = VideoGenerationRequest(prompt="p", duration_seconds=15.0, extra_params={"resolution": "480p"})
+    req_720 = VideoGenerationRequest(prompt="p", duration_seconds=15.0, extra_params={"resolution": "720p"})
+    req_1080 = VideoGenerationRequest(prompt="p", duration_seconds=15.0, extra_params={"resolution": "1080p"})
+    assert provider.estimate_cost(req_480) == pytest.approx(0.75)
+    assert provider.estimate_cost(req_720) == pytest.approx(1.50)
+    assert provider.estimate_cost(req_1080) == pytest.approx(3.00)
+
+
+def test_wan_3_0_queue_routing_is_owner_alias_only():
+    assert WAN_3_0_STANDARD.queue_app_id == "alibaba/wan-3.0"
+    assert WAN_3_0_STANDARD.submit_path == "alibaba/wan-3.0/image-to-video"
+
+
+def test_wan_3_0_submit_uses_bare_int_duration_and_no_audio_field(tmp_path):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/storage/upload/initiate":
+            return httpx.Response(
+                200, json={"upload_url": "https://fake-upload.example/put", "file_url": "https://fake-cdn.example/ref.jpg"}
+            )
+        if str(request.url) == "https://fake-upload.example/put":
+            return httpx.Response(200)
+        if request.url.path == "/alibaba/wan-3.0/image-to-video" and request.method == "POST":
+            body = json.loads(request.content)
+            assert body["image_url"] == "https://fake-cdn.example/ref.jpg"
+            assert body["resolution"] == "480p"
+            assert body["duration"] == 15
+            assert isinstance(body["duration"], int)
+            assert "generate_audio" not in body and "sound" not in body and "enable_audio" not in body
+            assert body["aspect_ratio"] == "9:16"
+            return httpx.Response(200, json={"request_id": "wan3-req-1"})
+        raise AssertionError(f"Unexpected request: {request.method} {request.url}")
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = FalVideoProvider(WAN_3_0_STANDARD, api_key="fake-key", client=client)
+
+    ref_image = tmp_path / "ref.jpg"
+    ref_image.write_bytes(b"fake jpeg bytes")
+    request = VideoGenerationRequest(
+        prompt="p", reference_image_path=str(ref_image), aspect_ratio="9:16", duration_seconds=15.0
+    )
+    submitted = provider.submit_video_job(request)
+    assert submitted.provider_job_id == "wan3-req-1"
+    assert submitted.estimated_cost_usd == pytest.approx(0.75)

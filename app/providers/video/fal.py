@@ -176,6 +176,43 @@ SEEDANCE_2_0_FAST = FalVideoModelConfig(
     },
 )
 
+# Cost-down candidate for a single ~15s continuous generation (owner
+# "alibaba", a third distinct owner after "fal-ai" and "bytedance" - queue
+# routing again resolves to owner/alias only: "alibaba/wan-3.0"). HIGH
+# CONFIDENCE, cross-confirmed across multiple fal.ai model-page searches:
+# endpoint path, 2-30s duration range (15s comfortably inside it),
+# 480p/720p/1080p resolution tiers, 9:16 aspect ratio support, and
+# per-second pricing ($0.05/$0.10/$0.20 at 480p/720p/1080p for the
+# standard - not "Prime" - tier).
+#
+# UNRESOLVED despite 7 search attempts (fal.ai itself is unreachable from
+# this sandbox - egress-blocked - so this could not be confirmed the way
+# Seedance's was, against an actual schema repo): the exact audio-control
+# field's name and type. Sources disagree on whether it's a boolean flag
+# (some call it "sound", others "enable_audio") or governed implicitly by
+# the prompt text itself. Resolved here by NOT setting any audio field at
+# all - omitting it avoids guessing a wrong field name, and every source
+# agrees audio is either on-by-default or free either way, so omission
+# doesn't cost anything or contradict the experiment's needs (no audio
+# required). `duration` is sent as a bare int (`15`, not `"15"` or
+# `"15s"`) based on the one concrete code example found using this shape -
+# also not fully certain. Both choices fail safely: fal.ai validates a
+# submission's schema before any billable work starts, so a wrong field
+# name/type here means an immediate 4xx at submission time, not a paid
+# generation - the same zero-retry `fail()` pattern every script in this
+# project already uses would simply stop with a clear diagnostic and
+# nothing charged.
+WAN_3_0_STANDARD = FalVideoModelConfig(
+    base_model_id="alibaba/wan-3.0",
+    subpath="image-to-video",
+    billing="per_second",
+    price_per_second_by_resolution={"480p": 0.05, "720p": 0.10, "1080p": 0.20},
+    default_resolution="480p",
+    extra_payload={
+        "duration": 15,  # bare int, not a string - see note above
+    },
+)
+
 
 class FalVideoProvider(VideoProvider):
     """Talks to fal.ai's queue API for Wan 2.2 A14B (Turbo or standard).

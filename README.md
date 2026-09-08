@@ -331,6 +331,7 @@ FalVideoProvider(WAN_STANDARD)   # per-second alternative, e.g. for one importan
 FalVideoProvider(KLING_2_6_PRO)  # quality bake-off candidate - $0.07/s, no resolution tiers
 FalVideoProvider(VEO_3_1_FAST)   # quality bake-off candidate - $0.10/s, 1080p
 FalVideoProvider(SEEDANCE_2_0_FAST)  # one-time premium benchmark - $0.2419/s flat, 480p/720p
+FalVideoProvider(WAN_3_0_STANDARD)   # cost-down 15s+ candidate - $0.05/$0.10/$0.20 per s @ 480p/720p/1080p
 FalImageProvider(FLUX_SCHNELL)            # cheapest reference image - $0.003/MP
 FalImageProvider(FLUX_PRO)                # higher-fidelity reference image - $0.04/MP
 FalImageProvider(NANO_BANANA_PRO_GENERATE)  # fresh text-to-image, aspect_ratio-based - $0.15/image flat
@@ -376,7 +377,7 @@ explicit width/height as FLUX_SCHNELL, keeping every candidate's cost
 exactly pre-computable, consistent with every other provider in this
 codebase.
 
-**These real adapters are written and locally tested (30 tests in
+**These real adapters are written and locally tested (33 tests in
 `tests/test_fal_providers.py`, using `httpx.MockTransport` to simulate
 fal.ai's documented request/response shapes with zero network calls and
 zero cost) but are NOT wired in as the active provider anywhere in the
@@ -1178,6 +1179,63 @@ constants, no image-generation endpoint is touched, exactly two
 submissions happen with `resolution: "720p"`, and the total cost lands at
 exactly $0.20.
 
+## Running the Wan 3.0 15s timelapse test (spends real money - max $0.75)
+
+A cost-down candidate for one *continuous* ~15s generation with the same
+accelerated-montage feel as the successful Seedance 2.0 Fast benchmark -
+explicitly NOT modeled on either Wan Turbo test, which were the wrong
+creative format (slow, continuous, glitch-prone). `scripts/run_wan3_15s_timelapse_test.py`
+imports `BENCHMARK_PROMPT` directly from `scripts/run_seedance_benchmark_test.py`
+(not retyped) as the base camera/attention/style language, then extends
+it with an explicit multi-stage montage structure for 15s of *more*
+progression, not the same amount paced more slowly - natural jump/cut-
+like shifts between construction stages are called out as desirable, not
+a flaw to avoid.
+
+**Model: `WAN_3_0_STANDARD`** (`alibaba/wan-3.0/image-to-video`, 480p) -
+a third distinct fal.ai owner (`alibaba`, after `fal-ai` and `bytedance`),
+confirming queue routing generalizes across vendors. Verification here is
+**partial, and documented as such** rather than presented as complete:
+cross-confirmed across multiple fal.ai model-page searches are the
+endpoint path, 2-30s duration range (comfortably covers 15s), 480p/720p/
+1080p tiers, 9:16 support, and per-second pricing ($0.05/s at 480p). **Not
+resolved despite 7 search attempts** (fal.ai itself is unreachable from
+this sandbox, unlike for Seedance, which had an actual schema repo to
+check against): the exact audio-control field's name and type - sources
+disagreed between a boolean flag and prompt-implicit control. Resolved by
+sending **no audio field at all** (every source agreed audio is either
+on-by-default or doesn't affect price, and this experiment doesn't need
+it) and by sending `duration` as a bare int (`15`), the one concrete shape
+found in an example, rather than a string like Kling/Veo/Seedance use.
+Both choices fail safely: a wrong field name/type produces an immediate
+4xx at submission time, before any billable work starts - not a paid
+generation - so the existing zero-retry `fail()` pattern already handles
+that risk with no code changes needed.
+
+**Exactly 1 video call, $0 image cost (source reused):**
+- 480p, 15s, 9:16. Hard cap is set **exactly equal to the computed
+  estimate** ($0.75, $0.05/s x 15s) - zero margin, per instruction, since
+  this is a deterministic per-second rate with a fixed duration.
+- No retries, no alternate model, no additional generations.
+- `manifest.json` records the prompt, model, resolution, duration, cost,
+  job id, and output path.
+
+```bash
+python -m scripts.run_wan3_15s_timelapse_test
+python -m scripts.run_wan3_15s_timelapse_test --yes
+```
+
+Outputs land in `data/fal_wan3_15s_timelapse_test/` (gitignored):
+`wan3_15s_timelapse.mp4`, `manifest.json`. Verified entirely offline: a
+mocked-transport dry run confirms no image-generation or other-model
+endpoint is ever touched, exactly one submission happens, the payload
+matches the best-verified schema (`duration: 15` as a bare int, no audio
+field present under any of the candidate names, `resolution: "480p"`,
+`aspect_ratio: "9:16"`), the prompt contains both the imported Seedance
+benchmark language and the 15s multi-stage extension, queue routing
+resolves to `alibaba/wan-3.0` (owner/alias only), and the cost lands at
+exactly $0.75.
+
 ## Running the API server
 
 ```bash
@@ -1379,18 +1437,36 @@ provider-level rate limiting.
   concat filter) produces one review file from the two clips - a small,
   reusable piece of the eventual real assembly system, not the whole
   thing.
-- **Wan Turbo 2-clip 720p timelapse test (current)**: `scripts/run_wan_turbo_2clip_timelapse_720p_test.py`
-  is a deliberately controlled, single-variable comparison against the
-  480p test - same source image, same two-clip structure, same last-frame
-  propagation, same prompts (imported directly from the 480p script for
-  guaranteed byte-identity, not retyped) - only resolution changes
-  (480p->720p, $0.05->$0.10/clip). Answers whether paying double per clip
-  buys enough visible improvement to make 720p (not 480p) the high-volume
-  production tier - not to beat Seedance, just to find the cheapest tier
-  that doesn't read as obviously low-quality. Own dedicated output
-  directory so the 480p results are never overwritten. Exactly 2 video
-  calls ($0.20 total), $0 image cost, no retries, no alternate model. Not
-  yet run for real - built and verified offline only.
+- **Wan Turbo 2-clip 720p timelapse test, run for real (result pending
+  review)**: `scripts/run_wan_turbo_2clip_timelapse_720p_test.py` was a
+  deliberately controlled, single-variable comparison against the 480p
+  test - only resolution changed (480p->720p, $0.05->$0.10/clip) - to
+  answer whether paying double per clip buys enough visible improvement
+  to make 720p the high-volume production tier.
+- **Wan Turbo verdict**: both Wan Turbo tests (slow, continuous,
+  glitch-prone) were judged the wrong creative format entirely - not a
+  resolution problem, a format problem. The successful Seedance 2.0 Fast
+  benchmark (accelerated montage, natural jump/cut-like progression) is
+  now the explicit creative template for all subsequent cost-down
+  candidates, not either Wan Turbo test.
+- **Wan 3.0 15s timelapse test (current)**: `scripts/run_wan3_15s_timelapse_test.py`
+  tests whether a single continuous ~15s generation on a cheaper model
+  (`alibaba/wan-3.0/image-to-video`, 480p, $0.05/s = $0.75 total) can
+  reproduce the Seedance benchmark's accelerated-montage feel at roughly
+  1/5th its cost. Imports the Seedance benchmark's own prompt directly
+  (not retyped) as the creative base, extended for 15s of *more*
+  progression across an explicit multi-stage structure (early framing ->
+  denser wall framing -> upper framing -> roof/bracing -> substantially
+  more complete), with natural jump-cut-like transitions called out as
+  desirable. Schema verification is honestly partial - endpoint, duration
+  range, resolution tiers, 9:16 support, and pricing are cross-confirmed,
+  but the exact audio-control field name/type could not be pinned down
+  despite 7 search attempts (fal.ai itself is unreachable from this
+  sandbox); resolved by omitting any audio field entirely, which fails
+  safely (an immediate 4xx at submission, no charge) if wrong. Exactly 1
+  video call, $0 image cost, no retries, no alternate model, hard cap set
+  exactly equal to the computed estimate (no margin). Not yet run for
+  real - built and verified offline only.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

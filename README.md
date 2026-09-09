@@ -1719,6 +1719,66 @@ absolute meter callout confirmed absent, cost exactly $0.60, and the
 manifest updated correctly (image fields preserved, `build_state_end`
 untouched, video fields newly populated with the revised prompt).
 
+## Running the full video segment 3 test (spends real money - max $0.85)
+
+Segment 2 is approved and locked. `scripts/run_full_video_segment_3_test.py`
+is the moment the project transitions from a large open platform into an
+actual building - Segment 4 and everything after it are separate scripts,
+built only after this one's result is reviewed. This script does not
+touch or regenerate Segments 1A, 1B, or 2.
+
+**Start state** (re-describes Segment 2's actual approved appearance
+using relative-scale language, not a byte-identical import of Segment 2's
+own absolute-meter text - the same one-time-deviation pattern used going
+into Segment 2 itself):
+
+> Current construction state: the joist platform now spans approximately twice the width and twice the depth of the original starter section (matching the actual appearance confirmed in the approved Segment 2 footage) - fully continuous and dense, sitting on its foundation piers and perimeter beams. There is still no floor decking, no wall framing, no roof, and no windows or doors.
+
+**End state (S3)** - every stud is a normal full-height stud; the second
+wall's progress is horizontal extent only, never partial stud height:
+
+> Current construction state: floor decking now fully covers the expanded platform. The near-side wall is completely framed at full height, from end to end. On one adjacent side wall, a substantial horizontal portion has been framed at the same full stud height, while the remainder of that wall's length is not yet framed - progress on this second wall is represented by how much of its length is built, not by partial stud height. The ocean-facing side of the platform remains predominantly open. The cabin's volume is clearly recognizable as a building skeleton. There is still no roof framing, no roof sheathing, no exterior siding, no installed windows, no installed doors, and no interior finishes.
+
+**Camera** - a fresh angle, different from every prior segment, with an
+explicit scale-preservation instruction:
+
+> Camera view: a fresh three-quarter diagonal angle, different from Segment 2's - positioned near one corner of the expanded platform, looking diagonally down its long axis toward the open ocean-facing side, so the full length of the platform recedes toward the coastline. This reveals a different beautiful sweep of cliff and coastline not yet shown from this vantage. The near-side wall framing rises along one side of the frame rather than blocking the view - the ocean, horizon, and cliff geography remain clearly visible beside and beyond the rising structure, never obscured by it. The full extent of the platform stays visible so its increased scale relative to the builder remains obvious. This new camera angle must preserve the platform's actual established scale from the previous segment - the platform must read as the same large, substantially expanded structure already shown, never smaller or reduced in size merely because the camera position changed. Candid, fixed-camera construction-documentary feeling, not a posed or hero composition.
+
+**Hard-time-jump sequence** (opening hold + 4 beats + closing hold): the
+platform as-is -> decking rapidly fills it -> first wall plates/studs
+appear -> the near-side wall becomes completely framed at full height,
+end to end -> a substantial horizontal portion of the adjacent wall
+framed at that same full height -> a clean closing hold on the skeleton.
+
+```bash
+python -m scripts.run_full_video_segment_3_test
+python -m scripts.run_full_video_segment_3_test --yes   (skips only the upfront cost confirmation - the image review gate always runs)
+```
+
+Model settings: Nano Banana Pro Generate (image, $0.15) then Wan 3.0
+standard 480p, 9:16, **14 seconds** (`WAN_3_0_SEGMENT_3`, a new local
+`dataclasses.replace()` variant, `extra_payload={"duration": 14}` -
+touching neither the shared module-level config nor any earlier
+segment's own duration variant), `start_image_url`, no audio field. $0.15
++ $0.70 (14s @ $0.05/s) = **$0.85 total, hard cap with zero margin**.
+
+Outputs land in `data/fal_full_video_segment_3/` (gitignored):
+`segment_3_start_frame.jpg`, `segment_3.mp4`, `manifest.json`,
+`last_job.json`. Verified entirely offline: a mocked-transport dry run
+confirms exactly 1 call to each endpoint, the image prompt starts with
+the byte-identical site bible + the relative-scale start state and
+includes the scale-preservation instruction, the video payload uses
+`start_image_url`/bare-int `duration=14`/no audio field, the prompt
+contains the opening hold, all 4 distinct jump beats, the closing hold,
+the "ocean-facing side... predominantly open" constraint, explicitly does
+NOT contain "several studs high" anywhere (in either the live prompts or
+the manifest's own recorded build-state text), the review gate fires
+exactly once and is not skippable by `--yes`, every earlier segment's own
+config (`WAN_3_0_SEGMENT_1A` duration=6, `WAN_3_0_SEGMENT_1B` duration=8,
+`WAN_3_0_SEGMENT_2` duration=12) and the shared `WAN_3_0_STANDARD`
+(duration=15) are all asserted unchanged, and total cost is exactly
+$0.85.
+
 ## Running the API server
 
 ```bash
@@ -2133,6 +2193,32 @@ provider-level rate limiting.
   otherwise unchanged. The manifest's standing `build_state_end` (still
   recording the project's ~10m x 6m canonical footprint fact) is left
   untouched - only the actual generation prompt for this call changed.
+- **Segment 2, run for real - APPROVED and LOCKED**: `segment_2.mp4`
+  came out excellent per user review. Segment 2's start image and video
+  must not be regenerated or modified.
+- **Segment 3, built and offline-verified (result pending review)**:
+  `scripts/run_full_video_segment_3_test.py` is the moment the project
+  transitions from a large open platform into an actual building: floor
+  decking goes down, then wall framing begins and becomes substantial -
+  deliberately NOT complete. The near-side wall ends up completely framed
+  at full height end to end; an adjacent side wall gets only a
+  substantial *horizontal portion* framed (at the same full stud height,
+  never partial height) - progress on that second wall is represented
+  purely by how much of its length is built. The ocean-facing side of the
+  platform stays predominantly open throughout. No roof framing/
+  sheathing, no siding, no installed windows/doors, no interior finishes
+  yet. New three-quarter diagonal camera angle - looking down the
+  platform's long axis toward the ocean, so the rising wall reads along
+  one side of the frame rather than blocking the coastline - carries an
+  explicit scale-preservation instruction (the platform must not appear
+  smaller just because the camera angle changed, a direct safeguard
+  against the same kind of scale-drift Segment 2 itself had to correct).
+  Start state re-describes Segment 2's actual approved appearance using
+  relative-scale language, not a byte-identical import of Segment 2's own
+  original absolute-meter text - same one-time-deviation pattern used
+  going into Segment 2. Same mandatory image-review gate as every earlier
+  segment. Segments 1A, 1B, and 2 are untouched by this script. See
+  "Running the full video segment 3 test" below.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

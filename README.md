@@ -1524,6 +1524,62 @@ contains every new composition requirement, does NOT contain the old
 rejected downward-pitch language, the original image file's bytes and
 mtime are unchanged after the run, and cost is exactly $0.15.
 
+## Running the full video segment 1B test (spends real money - max $0.55)
+
+Segment 1A is approved and locked. `scripts/run_full_video_segment_1b_test.py`
+builds and runs Segment 1B ONLY - Segment 2 and everything after it are
+separate scripts, built after this one's result is reviewed. Same
+2-call, image-then-video pattern as Segment 1A, including the mandatory
+image-review gate.
+
+**Start state** (imported byte-identical from
+`SEGMENT_1A_END_STATE_S0_5`, Segment 1A's own hand-off text):
+
+> Current construction state: the clearing has been fully cut back and is now visibly bare - brush, scrub, and debris removed, exposed ground across the whole working area. It is still completely unbuilt: no stakes, no footprint markings, no materials staged, and no structure of any kind yet.
+
+**End state (S1)**:
+
+> Current construction state: string lines and stakes mark the building footprint, with foundation piers set at the corners. Stacks of raw timber, a tool case, and a circular saw are staged beside the footprint. Most of the floor joist system is now installed, running parallel across nearly the entire footprint with only one or two gaps remaining - the beginning of a timber floor structure is clearly visible. There is still no floor decking, no wall framing, no roof, and no windows or doors.
+
+**Camera** (carries forward Segment 1A's approved V2 visual language, at a
+somewhat closer scale): chest/eye height, near-horizontal axis, horizon
+clearly visible, ocean/horizon/coastline occupying ~30-40% of the frame,
+front-to-back depth preserved (foreground worksite -> builder ->
+cliff/coast -> ocean/horizon).
+
+**Video prompt's hard-time-jump sequence** (4 distinct beats, not
+repeated "more joists" shots): footprint marked with stakes/string ->
+foundation piers + materials staged -> first floor joists appear -> most
+of the joist system installed (only 1-2 gaps left). Varied, non-lingering
+builder activity between jumps: hammering a stake, carrying timber,
+positioning a joist, fastening with an impact driver.
+
+```bash
+python -m scripts.run_full_video_segment_1b_test
+python -m scripts.run_full_video_segment_1b_test --yes   (skips only the upfront cost confirmation - the image review gate always runs)
+```
+
+Model settings: Nano Banana Pro Generate (image, $0.15) then Wan 3.0
+standard 480p, 9:16, **8 seconds** (a new local `dataclasses.replace()`
+variant, `WAN_3_0_SEGMENT_1B`, `extra_payload={"duration": 8}` - touching
+neither the shared module-level config nor Segment 1A's own duration=6
+variant), `start_image_url`, no audio field. $0.15 + $0.40 (8s @
+$0.05/s) = **$0.55 total, hard cap with zero margin**.
+
+Outputs land in `data/fal_full_video_segment_1b/` (gitignored):
+`segment_1b_start_frame.jpg`, `segment_1b.mp4`, `manifest.json`,
+`last_job.json`. Verified entirely offline: a mocked-transport dry run
+confirms exactly 1 call to each endpoint, the image prompt starts with
+the byte-identical site bible + Segment 1A's S0.5 end state, the video
+payload uses `start_image_url`/bare-int `duration=8`/no audio field, the
+prompt contains all 4 distinct jump stages plus the preserved "no wall
+framing, no roof, and no windows or doors" S1 constraint, the
+environment-forward camera language, the review gate fires exactly once
+and is not skippable by `--yes`, Segment 1A's own config
+(`WAN_3_0_SEGMENT_1A`, duration=6) and the shared `WAN_3_0_STANDARD`
+(duration=15) are both asserted unchanged, and total cost is exactly
+$0.55.
+
 ## Running the API server
 
 ```bash
@@ -1839,20 +1895,34 @@ provider-level rate limiting.
   is now the **canonical, locked** starting image for Segment 1A - not to
   be regenerated or modified. The rejected V1 image and the original
   `manifest.json` were both left untouched throughout.
-- **Segment 1A video-completion (resume) script, updated to the locked
-  V2 image, built and offline-verified (result pending review)**:
-  `scripts/run_full_video_segment_1a_resume_video_test.py` makes ONLY the
-  remaining Wan 3.0 video call, reusing the approved, **locked V2**
-  candidate image as-is (no Nano Banana Pro call, and the rejected V1
-  image is never read) and importing the segment's approved video prompt
-  byte-identical from the V1 script plus one added emphasis sentence (the
-  builder's attention moves immediately and fully onto the clearing task;
-  he must not look toward the camera). It validates against
-  `candidate_v2_manifest.json` (not the stale V1-era `manifest.json`) to
-  confirm the V2 image path and that it was actually generated, then, on
-  completion, writes a fresh consolidated `manifest.json` with image
-  fields sourced from the approved V2 candidate, video fields from the
-  run, and a record of the rejected V1 path/reason for traceability.
+- **Segment 1A, run for real - APPROVED and LOCKED**:
+  `scripts/run_full_video_segment_1a_resume_video_test.py` completed the
+  remaining Wan 3.0 video call from the locked V2 image; the user's
+  verdict was that the generated video "looks excellent." Segment 1A is
+  finished and must not be regenerated or modified.
+- **Segment 1B, built and offline-verified (result pending review)**:
+  `scripts/run_full_video_segment_1b_test.py` picks up exactly where
+  Segment 1A ended (`SEGMENT_1A_END_STATE_S0_5`, imported byte-identical,
+  not retyped) and advances to build state S1: a measured footprint,
+  foundation piers, staged materials, and most of the floor joist system
+  installed - still zero walls/roof/windows/doors. Carries forward
+  Segment 1A's approved V2 visual language (chest/eye height,
+  near-horizontal axis) at a somewhat closer scale, with ocean/horizon
+  still occupying ~30-40% of the frame - a deliberately smaller share than
+  1A's 40-50% only because the shot is tighter, never because the
+  environment matters less. The hard-time-jump sequence was written so
+  each of its 4 beats reads as a visually distinct stage (footprint marked
+  -> foundations/materials staged -> first joists appear -> most joists
+  installed) rather than several similar "more joists" shots, with varied,
+  non-lingering builder activity (hammering, carrying, positioning,
+  fastening) between jumps. Same mandatory image-review gate as 1A (not
+  skippable by `--yes`) - the exact mechanism that caught 1A's V1
+  composition problem before any video spend. See "Running the full video
+  segment 1B test" below.
+- **Segment 2 (build state S1)**: with Segment 1B built (pending review),
+  Segment 2's script (not built yet) will start from
+  `SEGMENT_1B_END_STATE_S1` as its own hand-off, the same byte-identical-
+  import pattern used between 1A and 1B.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

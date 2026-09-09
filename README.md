@@ -1907,6 +1907,70 @@ after acceleration, the source clip's bytes/mtime unchanged throughout,
 and Test #1's own config (`WAN_3_0_CAUSAL_TEST`) confirmed as a genuinely
 separate, unmutated object.
 
+## Running the checkpoint chain test (spends real money - max $0.50)
+
+Validation Test #2 passed - construction-frontier progression works
+within a single clip, and 4x acceleration is close to the target FORMA
+timelapse feel. `scripts/run_checkpoint_chain_test.py` tests the next
+question: can a second Wan generation continue that exact same operation
+from the first clip's own real final frame, so two separately generated
+clips read as one continuous timelapse when concatenated? This is the
+basis for eventually completing larger construction phases through
+checkpoint chains instead of one AI generation simulating an entire
+phase.
+
+**Starting frame**: the real last frame of Test #2's own **raw** output
+(`data/fal_construction_frontier_test/construction_frontier_raw.mp4`) -
+never the 4x file, since propagation must come from the model's actual
+unaccelerated output, and never Segment 2's original frame. Both of Test
+#2's source files (`construction_frontier_raw.mp4` and
+`construction_frontier_4x.mp4`) are read-only inputs to this script.
+
+**Priority clarification baked into the prompt**: continuity across the
+Clip A -> Clip B seam is the #1 success criterion, ranked above how much
+additional decking Clip B completes. The prompt names every element that
+must stay visually identical to the starting frame - existing decking,
+exposed joists, the frontier position, camera/framing, structure
+geometry, builder appearance, site/background, lighting - **before** any
+instruction about continuing construction, and explicitly states that
+even one or two correctly placed boards is a good outcome if everything
+else stays continuous:
+
+> This is a direct continuation of an ongoing right-to-left decking operation, picking up from the exact visual state shown in the starting image - not a fresh start. The following must remain visually identical to the starting image for the entire clip: every board already installed as completed decking, the exposed joists still untouched, the position of the construction frontier..., the camera framing, the structure's geometry and proportions, the builder's appearance and clothing, the site and background..., and the lighting... It is far more important that the existing completed decking, camera, structure, and lighting remain visually identical to the starting image than how many additional boards get installed in this clip - even one or two correctly placed boards, with everything else held perfectly continuous, is a good outcome.
+
+```bash
+python -m scripts.run_checkpoint_chain_test
+python -m scripts.run_checkpoint_chain_test --yes
+```
+
+Same model settings as Tests #1/#2 (Wan 3.0 standard, 480p, 9:16, 10s,
+`WAN_3_0_CHECKPOINT_CHAIN_TEST`, its own separate local config,
+`start_image_url`, no audio). $0.50, zero image cost - **hard cap with
+zero margin**. Only the 4x version of Clip B is generated locally (the
+2x/3x/4x speed question was already settled by Test #2 - not re-tested
+here), then concatenated with Test #2's own real 4x file into
+`combined_preview_4x.mp4` via the existing `concatenate_videos()` - the
+**primary output**, meant to be judged as one continuous timelapse the
+way a viewer would, not as two separate technical clips.
+
+Outputs land in `data/fal_checkpoint_chain_test/` (gitignored):
+`clip_b_start_frame.jpg`, `clip_b_raw.mp4` (preserved untouched),
+`clip_b_4x.mp4`, **`combined_preview_4x.mp4`**, `manifest.json`,
+`last_job.json`.
+
+Verified entirely offline the same way as Tests #1/#2 (the repo's real
+fixture clip standing in for both of Test #2's source files, real ffmpeg
+extraction/acceleration/concatenation against genuine video data): no
+image-generation endpoint touched, correct payload shape, no "HARD TIME
+JUMP" language, every continuity element confirmed present in the prompt
+**before** the continuation instructions (by string position), the
+board-quantity deprioritization sentence confirmed present, cost exactly
+$0.50, a real accelerated Clip B and a real combined preview both
+produced (via `ffprobe`), Clip B's raw file unchanged after
+acceleration/concatenation, both of Test #2's source files completely
+unchanged throughout (read-only), and every other test's and segment's
+own config confirmed as a genuinely separate, unmutated object.
+
 ## Running the API server
 
 ```bash
@@ -2434,6 +2498,41 @@ provider-level rate limiting.
   language that got equal weight in Test #1's prompt. Board count is
   explicitly not a pass/fail factor. Same $0.50 hard cap, same 2x/3x/4x
   FFmpeg comparison. See "Running the construction frontier test" below.
+- **Validation Test #2, run for real - PASSED**: ordered construction-
+  frontier progression was substantially better than Test #1, and 4x
+  acceleration was close to the target FORMA timelapse aesthetic. Four
+  permanent principles locked in: **Construction Frontier** (one spatial
+  direction, single active boundary), **Causal Labor** (builder stays
+  physically attached to the boundary and visibly causes progress),
+  **Sequential Progress** (new construction appears adjacent to existing
+  work, never randomly), **Post-Production Timelapse** (believable motion
+  first, FFmpeg creates the aggressive feel afterward - **~4x is now the
+  baseline speed**, tunable per shot).
+- **Validation Test #3 (checkpoint chaining), built and offline-verified
+  (result pending review)**: `scripts/run_checkpoint_chain_test.py` tests
+  whether a second Wan generation can continue the same construction
+  frontier from a first clip's own real final frame, so two separately
+  generated clips read as one continuous timelapse when accelerated and
+  concatenated - the basis for eventually completing larger construction
+  phases through checkpoint chains instead of one AI generation
+  simulating an entire phase. Starting image ("Clip B") is the REAL last
+  frame of Test #2's own RAW output (not the 4x file - propagation must
+  always come from the unaccelerated generation, never a re-timed one),
+  extracted freshly; Test #2's raw file is only ever read. Per explicit
+  priority: **continuity across the Clip A -> Clip B seam is the #1
+  success criterion**, ranked above how much additional decking Clip B
+  completes - the video prompt opens by naming every element that must
+  stay visually identical to the starting frame (existing decking,
+  exposed joists, frontier position, camera/framing, structure geometry,
+  builder appearance, site/background, lighting) before any construction-
+  continuation instruction, and explicitly states that even one or two
+  correctly placed boards is a good outcome if everything else stays
+  continuous. Only the 4x version of Clip B is generated (the speed
+  question was already settled by Test #2) and is then concatenated with
+  Test #2's own real 4x file into `combined_preview_4x.mp4` - the primary
+  output, meant to be judged as one continuous timelapse the way a viewer
+  would. Same $0.50 hard cap. See "Running the checkpoint chain test"
+  below.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

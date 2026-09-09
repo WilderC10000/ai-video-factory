@@ -1407,6 +1407,74 @@ script does not generate any video; it stops after the two images so they
 can be manually reviewed before any segment of the full production video is
 attempted.
 
+## Running the full video segment 1A test (spends real money - max $0.45)
+
+First of 7 segments in Full Video #1's production plan (see "What's next"
+above for the full spec). `scripts/run_full_video_segment_1a_test.py`
+covers the opening: the first ~1.5-2s hold on the completely untouched
+clifftop site, then the builder clears brush/scrub through several hard
+time-lapse jumps, ending on a fully cleared but still entirely unbuilt
+site. This is the ONLY segment this script builds - 1B and every later
+segment are separate scripts, each built and approved only after the
+previous one is reviewed.
+
+Makes exactly 2 calls, same "reference image, then video from it" pattern
+as `scripts/run_first_fal_test.py`: 1 Nano Banana Pro Generate still image
+(the segment's start-frame reference, no source image), then 1 Wan 3.0
+standard video (image-to-video, 480p, 9:16, 6s) generated from it. The
+video model uses a local `dataclasses.replace()` copy of
+`WAN_3_0_STANDARD` with `extra_payload={"duration": 6}` - the shared
+module-level config (still used at `duration=15` by the earlier 15s
+timelapse tests) is never mutated.
+
+**Site continuity bible** (fixed text, shared verbatim across all 7
+segments' reference-image prompts - only a build-state clause and a
+camera clause change per segment):
+
+> A rugged male builder in his mid-40s, with slightly messy dark brown hair, a short dark beard/stubble, and a medium athletic build, wearing worn faded blue-grey jeans, a plain heather-grey crew-neck work shirt with no visible logo or branding, and brown leather work boots, working on a flat rocky clifftop clearing. The clearing is roughly triangular, narrowing toward a cliff edge that drops sharply 8-10 meters to the ocean; the ocean and horizon are visible beyond the site. A distinctive large flat grey boulder sits near the rear/landward corner of the clearing. Sparse wind-bent low shrubs and scrub grass line the cliff edge, with a narrow dirt access path from the landward side. Warm, low-angle, late-afternoon golden-hour sunlight from the landward side, long soft shadows. Candid documentary/observational photography style, vertical 9:16.
+
+**Segment 1A build states** (S0 = this segment's start, used in the
+reference-image prompt; S0.5 = this segment's end, handed off byte-
+identical as segment 1B's own start-state text when that script is built):
+
+> S0: Current construction state: the clifftop clearing is completely untouched - natural rocky ground with low brush, small shrubs, loose rock, and some scattered debris across the site. There is no cabin structure of any kind, no framing, no stakes, no materials, and no tools laid out beyond what the builder is personally carrying.
+>
+> S0.5: Current construction state: the clearing has been fully cut back and is now visibly bare - brush, scrub, and debris removed, exposed ground across the whole working area. It is still completely unbuilt: no stakes, no footprint markings, no materials staged, and no structure of any kind yet.
+
+**Camera clause** (wide environmental, shared by 1A and 1B): "a wide
+environmental angle, pulled back and slightly elevated, taking in the
+whole clifftop clearing - the ocean and cliff edge beyond, the distinctive
+flat grey boulder near the rear corner, and the sparse shrubs along the
+edge - with the builder positioned within this wide view rather than
+filling the frame."
+
+**Video prompt**: built on the validated Wan 3.0 V2 hard-time-jump
+structure - explicitly holds on the untouched site for the first 1.5-2s,
+then 3 "HARD TIME JUMP" beats through brush-cutting to a fully cleared
+site, with the builder moving ~25-30% faster than typical real-time work,
+alive environment (ocean/wind/clouds), and forward-only progress language.
+
+```bash
+python -m scripts.run_full_video_segment_1a_test
+python -m scripts.run_full_video_segment_1a_test --yes
+```
+
+Outputs land in `data/fal_full_video_segment_1a/` (gitignored):
+`segment_1a_start_frame.jpg`, `segment_1a.mp4`, `manifest.json`,
+`last_job.json` (job state for `recover_fal_video_job.py`, same pattern as
+every other real-call script here). Exactly 1 image ($0.15) + 1 video (6s
+@ $0.05/s = $0.30) = $0.45 total = the hard cap with zero margin. Verified
+entirely offline: a mocked-transport dry run confirms the image call is
+synchronous with no source image, the video call uploads that exact image
+and submits with `start_image_url` (not `image_url`), `duration=6` as a
+bare int (proving the local per-segment config variant is actually used,
+NOT the shared module-level config's `duration=15`), no audio field,
+correct resolution/aspect ratio, the video prompt contains the segment's
+hard-time-jump and "first 1.5-2 seconds" language, exactly 1 call to each
+endpoint, and a total cost of exactly $0.45. The shared `WAN_3_0_STANDARD`
+config is asserted unchanged (`duration=15`) both before and after the
+run.
+
 ## Running the API server
 
 ```bash
@@ -1646,36 +1714,62 @@ provider-level rate limiting.
   generation method for the production video (superseding Wan Turbo
   entirely, and matching the Seedance benchmark's creative feel at roughly
   1/5th its cost).
-- **First full production video, planning (current)**: with Wan 3.0 V2
-  validated, planning has moved to the first full ~65-70s production
-  video: a 6-segment shot plan (raw site & clearing -> foundation & early
-  framing -> wall framing advances -> roof & enclosure -> exterior details
-  & interior glimpse -> final cinematic reveal), each segment using a
-  distinct stable observational camera position (the camera always watches
-  the builder; the builder never watches the camera), builder movement
-  speed increased ~25-30% over V2, and the video beginning from a
-  completely untouched site rather than any existing framing. The revised
-  opening pacing is: 0-2s untouched/raw site, 2-6s rapid satisfying
-  clearing, 6-10s ground/footprint/material preparation, ~10s onward
-  construction begins. Five segments are planned on Wan 3.0 480p; the
-  final reveal segment is the one candidate for a premium model (Seedance
-  2.0 Fast). Estimated total raw generation cost across all 6 segments
-  plus re-anchor images: ~$5.79. The single biggest unproven risk in this
-  plan is **cross-angle continuity**: whether independently generated
-  reference images for 6 different camera angles can convincingly depict
-  the same builder, cabin, and location - this has never been tested, so
-  it is being isolated and tested first (see "Running the cross-angle
-  continuity test" below) before any segment of the full video is
-  generated.
-- **Cross-angle continuity test, built and offline-verified (result
-  pending review)**: `scripts/run_cross_angle_continuity_test.py` isolates
-  the continuity risk above from every other variable (no video, no
-  motion, no construction-progress prompt language) by generating exactly
-  two still images - a wide three-quarter-rear view and an opposite-side
-  three-quarter view - from a single fixed "continuity bible" text block
-  describing the builder, cabin, terrain, and lighting, with only a
-  camera-angle clause differing between the two prompts. See "Running the
-  cross-angle continuity test" below for the full bible and both prompts.
+- **Cross-angle continuity test, run for real - PASSED**:
+  `scripts/run_cross_angle_continuity_test.py` isolated the single biggest
+  unproven risk in the full-video plan (whether independently generated
+  reference images for different camera angles can convincingly depict the
+  same builder, cabin, and location) from every other variable, by
+  generating exactly two still images - a wide three-quarter-rear view and
+  an opposite-side three-quarter view - from one fixed "continuity bible"
+  text block with only a camera-angle clause differing between the two
+  prompts. User verdict: both images convincingly read as the same
+  builder, same construction project, and same coastal location; cross-
+  angle continuity is not geometrically perfect but is more than
+  sufficient for this rapid-timelapse format. This validated the
+  "shared bible + swapped clause" mechanism now used by every segment's
+  reference image in Full Video #1 (see below). It also produced one new
+  standing production rule: **synchronize every camera-angle change with
+  a major temporal/construction-state jump** (never cut to a new angle at
+  the same moment in time) - minor cross-angle geometric drift is far
+  easier to miss when it coincides with an obvious story jump than when
+  the viewer can compare "the same instant" from two angles.
+- **Full Video #1, production spec finalized (current)**: with Wan 3.0 V2
+  and cross-angle continuity both validated, the first full ~68s
+  production video is now specified as **7 generated video segments**
+  (Segment 1 was split into 1A and 1B so no single Wan 3.0 call has to
+  perform the entire untouched-site -> floor-joist transformation):
+  1A raw site->cleared (6s), 1B cleared->early foundation/floor (8s),
+  2 floor deck & wall framing (12s), 3 wall framing advances - reuses the
+  cross-angle test's own validated two-walls-framed state (11s), 4 roof &
+  enclosure (11s), 5 exterior details (11s), 6 final reveal (9s, premium
+  model). Every segment's shot SCALE varies, not just direction (wide
+  environmental / medium construction / opposite-side three-quarter /
+  closer work-action / elevated-environment-heavy / final hero-reveal),
+  and every angle/scale change is synchronized with a construction-state
+  jump per the rule above. One fixed "site bible" (builder identity, site
+  geometry, ocean orientation, landmarks, lighting - see "Running the full
+  video segment 1A test" below) is shared verbatim across all 7 segments'
+  reference-image prompts; only a per-segment build-state clause (S0
+  through S6, each one textually identical to the previous segment's own
+  end-state, so hand-offs are byte-identical rather than re-described)
+  and the camera clause change. **7 re-anchor images + 7 video generations
+  = 14 total calls.** Cost: 7 x $0.15 images = $1.05; Wan 3.0 480p across
+  segments 1A/1B/2/3/4/5 (6+8+12+11+11+11 = 59s) = $2.95; Seedance 2.0
+  Fast 720p for segment 6 (9s, **no native audio requested** - the
+  finished video's sound design is a separate later pass across the whole
+  assembly, so paying for audio on one segment only to discard it would
+  be pointless) = $2.18. **Total production cost: ~$6.18.** Segments are
+  each their own independently-built, offline-verified, and separately
+  approved script - never one monolithic run - so a problem in any one
+  segment never risks the spend on segments after it. Assembly will use
+  `app/services/video_assembly.concatenate_videos()`, extended with a
+  normalization pass (scale all clips to a common 720x1280 canvas before
+  concatenation, since segment 6's resolution differs from segments
+  1A-5's) and with audio stripped from every clip pre-concatenation.
+- **Segment 1A, built and offline-verified (result pending review)**:
+  see "Running the full video segment 1A test" below for the full site
+  bible, both prompts, and verification summary. No other segment has
+  been built yet.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

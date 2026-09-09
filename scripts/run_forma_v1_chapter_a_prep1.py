@@ -29,16 +29,25 @@ For Waterfall Cave, that's a compact tracked mini excavator, operated by
 the builder, scraping loose rock/mud/debris and depositing it in a
 visible pile to one side.
 
-TIGHTENED again after the mechanical version's own preflight review: the
-clip must NOT spend any of its 7 seconds on the builder walking to,
-climbing into, or starting the excavator - that doesn't contribute to
-the transformation and asks too much of a short generation. The clip now
-opens with the builder already seated in and actively operating the
-machine, and the entire duration is the smallest possible causal loop
-repeated: SCOOP -> SWING -> DUMP -> SHIFT -> REPEAT, always into one
-single pile, in one direction. This "smallest visually powerful causal
-loop, repeated" is the intended broader FORMA formula going forward
-(Prep 2's own loop is SCRAPE -> LEVEL -> SHIFT -> REPEAT).
+TIGHTENED after the mechanical version's own preflight review: the clip
+must NOT spend any of its 7 seconds on the builder walking to, climbing
+into, or starting a machine - that doesn't contribute to the
+transformation and asks too much of a short generation.
+
+REJECTED AND REDESIGNED AGAIN (the excavator scoop/swing/dump clip itself
+was valid, but repeated scoop cycles were judged a weaker permanent
+formula than a single continuous sweeping action). Prep 1 is now built
+around a compact tracked skid-steer with a wide grading blade, already
+aligned at one edge of the site with the blade down: PUSH -> CLEAR ->
+ADVANCE -> COMPLETE. The machine drives steadily forward in one
+direction; the blade pushes loose rock/mud/debris ahead of it into one
+coherent debris ridge; the ground behind the blade reads as visibly
+cleaner and more buildable, the ground ahead of it remains untouched
+until the machine reaches it - a single sweeping frontier moving across
+the frame (cleared pad | machine/blade | rough site), rather than
+scoop/swing/dump cycles. This "one large matched machine + one sweeping
+frontier + one obvious before/after transformation" is now the preferred
+FORMA site-prep principle when the terrain allows it.
 
 Makes exactly ONE Wan 3.0 video call. No retries. Does NOT chain to Stage
 A3 (Prep 2) - that is a separate script, run only after this stage's own
@@ -84,35 +93,38 @@ PREP1_START_FRAME_PATH = OUTPUT_DIR / "site_prep_clip1_start_frame.jpg"
 PREP1_RAW_PATH = OUTPUT_DIR / "site_prep_clip1_raw.mp4"
 JOB_STATE_PATH = OUTPUT_DIR / "prep1_last_job.json"
 
-# Visual-only - no audio instructions, per explicit instruction. Built as
-# the smallest possible causal loop, repeated for nearly the whole clip:
-# SCOOP -> SWING -> DUMP -> SHIFT -> REPEAT. No arrival/boarding/startup
-# behavior - the clip begins mid-action, already operating. Priority
-# order, matching the FORMA Site Prep Rule: (1) the excavator visibly
-# causes the ground transformation, (2) clearing progresses across one
-# contiguous area in one consistent direction, (3) removed material
-# visibly accumulates in ONE pile, (4) cleared ground remains cleared,
-# (5) the bucket/swing motion reads as believable.
+# Visual-only - no audio instructions, per explicit instruction. Built
+# around a single continuous sweeping frontier rather than repeated
+# scoop/swing/dump cycles: PUSH -> CLEAR -> ADVANCE -> COMPLETE. No
+# arrival/positioning/startup behavior - the machine is already aligned
+# with its blade down at the start. Priority order, matching the FORMA
+# Site Prep Rule: (1) the machine visibly causes the ground
+# transformation, (2) clearing progresses across one contiguous area in
+# one consistent direction, (3) pushed material accumulates into ONE
+# coherent debris ridge, (4) cleared ground behind the blade stays
+# cleared and rough ground ahead of it stays untouched until reached,
+# (5) the blade/push motion looks believable.
 PREP1_PROMPT = (
     "Vertical 9:16, realistic construction footage, documentary/observational style. "
     f"{CAMERA_CLAUSE_A} No camera movement, no angle change - continuing directly from the "
     "current state shown in the starting image.\n\n"
     "The ground beneath the overhang is rough, natural, and clearly not yet buildable: loose "
-    "rock, mud, and plant debris cover the intended build area. The builder is already seated in "
-    "and actively operating a compact tracked mini excavator positioned at the working edge of "
-    "the site - the clip begins mid-action, with no arrival, boarding, or startup shown. The "
-    "excavator's arm swings its toothed bucket into the loose rock, mud, and debris directly in "
-    "front of it, scoops up a load, swings to one consistent side, and dumps it onto a single "
-    "growing debris pile in that one spot, then immediately swings back and repeats the same "
-    "scoop-swing-dump motion on the next section of ground immediately adjacent to where it just "
-    "worked. This scoop-swing-dump cycle repeats continuously for nearly the entire clip, always "
-    "in the same direction, always depositing into the same single pile - the machine and the "
-    "moving debris are the dominant visual action throughout. By the end of the clip, the worked "
-    "section reads as visibly scraped down to bare, cleared earth - clearly different from the "
-    "rough ground around it - with one clearly accumulated pile of removed material beside it; "
-    "ground already cleared stays cleared. No structure of any kind appears yet. The builder "
-    "never looks toward the camera. The waterfall remains visible and in motion beside the cave; "
-    "mist continues to drift. No posing, no presenter behavior."
+    "rock, mud, and plant debris cover the intended build area. A compact tracked skid-steer with "
+    "a wide grading blade is already aligned at one edge of the site, blade lowered to the ground "
+    "- the clip begins mid-action, with no arrival, positioning, or startup shown. The machine "
+    "drives steadily forward across the site in one continuous direction, its wide blade "
+    "physically pushing the loose rock, mud, and debris ahead of it as it advances. Behind the "
+    "blade, the ground it has already crossed is visibly cleaner, flatter, and clearly more "
+    "buildable; ahead of the blade, the rough natural ground remains completely untouched until "
+    "the machine reaches it - nothing clears itself anywhere else in the frame. The pushed "
+    "material accumulates ahead of the blade into a single coherent debris ridge that grows as "
+    "the machine advances. The frame reads like a moving boundary sweeping across it in one "
+    "direction: cleared pad behind, the machine and blade in the middle, rough untouched site "
+    "ahead. By the end of the clip, the machine has advanced across a clearly bounded section of "
+    "the site, leaving a visibly flatter, cleared pad behind it and a single accumulated debris "
+    "ridge at the leading edge. No structure of any kind appears yet. The waterfall remains "
+    "visible and in motion beside the cave; mist continues to drift. No posing, no presenter "
+    "behavior."
 )
 
 WAN_3_0_FORMA_V1_PREP1 = dataclasses.replace(WAN_3_0_STANDARD, extra_payload={"duration": 7})
@@ -290,14 +302,15 @@ def main() -> None:
     print(f"Actual cost:          ${actual_cost:.4f}")
     print(f"Manifest:             {MANIFEST_PATH}")
     print("\nSTOP HERE. Review site_prep_clip1_raw.mp4 in this priority order:")
-    print("  1. the excavator visibly causes the ground transformation")
+    print("  1. the machine (blade) visibly causes the ground transformation")
     print("  2. clearing progresses across one contiguous area in one consistent direction")
-    print("  3. removed material visibly accumulates in ONE pile (not scattered/multiple piles)")
-    print("  4. cleared ground remains cleared - nothing un-clears or resets")
-    print("  5. the bucket/swing motion looks believable")
-    print("  Also: no arrival/boarding/startup wasted at the start - already mid-action;")
+    print("  3. pushed material accumulates into ONE coherent debris ridge (not scattered piles)")
+    print("  4. behind the blade stays cleared; ahead of the blade stays untouched until reached")
+    print("  5. the blade/push motion looks believable")
+    print("  Also: reads like a sweeping frontier (cleared pad | machine/blade | rough site);")
+    print("  no arrival/positioning/startup wasted at the start - already mid-action;")
     print("  continues directly from Hook's real last frame; no construction begins yet;")
-    print("  camera framing identical to the Hook; builder never looks toward the camera")
+    print("  camera framing identical to the Hook")
     print("\nDo NOT run Stage A3 (Prep 2) until you have reviewed and approved this clip.")
     print("Stage A3 is scripts/run_forma_v1_chapter_a_prep2.py - a separate script, not run automatically.")
 

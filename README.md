@@ -1679,6 +1679,46 @@ segment's own config (`WAN_3_0_SEGMENT_1A` duration=6,
 (duration=15) are all asserted unchanged, and total cost is exactly
 $0.75.
 
+## Running the segment 2 resume-video test (spends real money - max $0.60)
+
+The user exited at Segment 2's mandatory review gate after the $0.15
+image call, then separately approved and locked
+`segment_2_start_frame.jpg`, along with a scale correction: the visible
+platform in that approved image - not absolute meter dimensions - is now
+the visual source of truth. `scripts/run_full_video_segment_2_resume_video_test.py`
+makes ONLY the remaining Wan 3.0 video call from that exact image (no
+Nano Banana Pro call), with a **revised** video prompt: every absolute
+meter callout from the original script's prompt ("roughly 3 meters by 3
+meters", "roughly 10 meters wide by 6 meters deep") is replaced with
+framing relative to the actual approved image - approximately 2x width
+and 2x depth, ~4x floor area, explicitly proportionate rather than
+site-consuming. The camera clause, opening/closing holds, 4-beat
+hard-time-jump structure, and the "no floor decking, no wall framing, no
+roof, and no windows or doors" end-state constraint are all otherwise
+unchanged.
+
+```bash
+python -m scripts.run_full_video_segment_2_resume_video_test
+python -m scripts.run_full_video_segment_2_resume_video_test --yes
+```
+
+Validates against the segment's own `manifest.json` (image already
+recorded, video not yet) before submitting, then updates it in place -
+the manifest's standing `build_state_end` (still recording the project's
+~10m x 6m canonical footprint fact for future-segment planning) is left
+untouched; only the field recording what prompt was actually sent for
+this video call is updated to the revised text. $0.60 = the hard cap with
+zero margin (12s @ $0.05/s, exactly precomputable). Verified entirely
+offline: a mocked-transport dry run seeds a fake pre-existing
+manifest.json + approved image, confirms no image-generation endpoint is
+ever touched, exactly 1 video call with the correct payload shape
+(`start_image_url`, bare-int `duration=12`, no audio field), the prompt
+byte-identical to `VIDEO_PROMPT_RESUME` with the opening/closing holds and
+all 4 jump beats intact, the relative-scale language present and every
+absolute meter callout confirmed absent, cost exactly $0.60, and the
+manifest updated correctly (image fields preserved, `build_state_end`
+untouched, video fields newly populated with the revised prompt).
+
 ## Running the API server
 
 ```bash
@@ -2074,6 +2114,25 @@ provider-level rate limiting.
   the segment's end he reads as noticeably small against the completed
   platform. Same mandatory image-review gate as 1A/1B. See "Running the
   full video segment 2 test" below.
+- **Segment 2 start frame, APPROVED and LOCKED; video resume script with
+  a REVISED prompt, built and offline-verified (result pending review)**:
+  the user exited at the review gate after the $0.15 image call, then
+  approved that image (`segment_2_start_frame.jpg`) separately, along
+  with a scale correction: rather than depending on absolute meter
+  dimensions, the visible platform in the approved image is now the
+  visual source of truth, and the target is described relative to it -
+  approximately 2x width and 2x depth (~4x floor area), proportionate and
+  not site-consuming. `scripts/run_full_video_segment_2_resume_video_test.py`
+  makes ONLY the remaining $0.60 Wan 3.0 video call, reusing that exact
+  locked image (no Nano Banana Pro call), with a **revised**
+  `VIDEO_PROMPT_RESUME` - unlike segment 1B's resume (prompt reused
+  unchanged), every absolute meter callout from the original script's
+  prompt is replaced with framing relative to the actual image, while the
+  camera clause, opening/closing holds, 4-beat hard-time-jump structure,
+  and S2 end-state constraint (no decking/walls/roof/doors) are all
+  otherwise unchanged. The manifest's standing `build_state_end` (still
+  recording the project's ~10m x 6m canonical footprint fact) is left
+  untouched - only the actual generation prompt for this call changed.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

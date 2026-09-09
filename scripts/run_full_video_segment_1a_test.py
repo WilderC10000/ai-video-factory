@@ -56,10 +56,19 @@ Safety, same pattern as every other real-call script in this repo:
     saved to disk immediately after video submission, before polling
     starts, so scripts/recover_fal_video_job.py can recover it if this
     script crashes or is interrupted mid-poll.
+  - A mandatory manual REVIEW GATE sits between the two calls: after the
+    image is generated, the script prints its path and stops, requiring a
+    separate "type yes" before submitting the video job. This second gate
+    is NOT skippable by --yes (--yes only skips the upfront spend
+    confirmation) - its entire purpose is to let a human judge the actual
+    generated image (does it show a completely untouched site, no
+    structure, correct framing?) before the larger video spend happens
+    from it, rather than trusting the video call to run automatically no
+    matter what the image looks like.
 
 Usage (from the repo root, with FAL_API_KEY set in your .env):
     python -m scripts.run_full_video_segment_1a_test
-    python -m scripts.run_full_video_segment_1a_test --yes
+    python -m scripts.run_full_video_segment_1a_test --yes   (skips only the upfront cost confirmation - the image review gate always runs)
 """
 import dataclasses
 import json
@@ -272,6 +281,27 @@ def main() -> None:
     manifest["image_path"] = str(image_path)
     manifest["image_cost_usd"] = image_result.cost_usd
     save_manifest(manifest)
+
+    # Mandatory manual review gate - NOT skippable by --yes, unlike the
+    # spend confirmation above. The whole point of this pause is to let a
+    # human open and judge segment_1a_start_frame.jpg (does it show a
+    # completely untouched site, no structure, correct framing?) BEFORE the
+    # $0.30 video call is made from it - --yes only ever meant "skip typing
+    # yes to the cost I already reviewed in the preflight," not "skip
+    # judging output that doesn't exist until this exact moment."
+    print(f"\n{'=' * 70}")
+    print("REVIEW GATE - open the image below before continuing.")
+    print(f"{'=' * 70}")
+    print(f"Start-frame image: {image_path}")
+    print("Check: completely untouched site, no cabin/materials of any kind,")
+    print("wide environmental framing, builder not looking at camera.")
+    review_answer = input(
+        "\nType 'yes' once you've reviewed the image and want to proceed to the "
+        f"${video_cost:.4f} video call (anything else stops here, no video generated): "
+    ).strip().lower()
+    if review_answer != "yes":
+        print("Stopped after image review. No video was generated. Nothing further will happen automatically.")
+        sys.exit(0)
 
     # --- Step 2: exactly one video, from that exact image -------------------
     print(f"\n[2/2] Submitting segment {SEGMENT_ID} video generation job (Wan 3.0 standard, {RESOLUTION})...")

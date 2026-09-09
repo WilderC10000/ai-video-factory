@@ -1427,6 +1427,14 @@ video model uses a local `dataclasses.replace()` copy of
 module-level config (still used at `duration=15` by the earlier 15s
 timelapse tests) is never mutated.
 
+Between the two calls sits a **mandatory manual review gate**: after the
+image is generated, the script prints its path and stops, requiring a
+separate "type yes" before submitting the $0.30 video job. This gate is
+NOT skippable by `--yes` (`--yes` only skips the upfront cost
+confirmation) - its purpose is to let you actually judge the generated
+image before spending on video from it, rather than trusting the video
+call to fire automatically regardless of what the image looks like.
+
 **Site continuity bible** (fixed text, shared verbatim across all 7
 segments' reference-image prompts - only a build-state clause and a
 camera clause change per segment):
@@ -1471,7 +1479,9 @@ bare int (proving the local per-segment config variant is actually used,
 NOT the shared module-level config's `duration=15`), no audio field,
 correct resolution/aspect ratio, the video prompt contains the segment's
 hard-time-jump and "first 1.5-2 seconds" language, exactly 1 call to each
-endpoint, and a total cost of exactly $0.45. The shared `WAN_3_0_STANDARD`
+endpoint, a total cost of exactly $0.45, and that the manual review gate
+fires exactly once between the two calls even when `--yes` is passed. The
+shared `WAN_3_0_STANDARD`
 config is asserted unchanged (`duration=15`) both before and after the
 run.
 

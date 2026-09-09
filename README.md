@@ -2019,6 +2019,108 @@ lighting) and both prohibition clauses (no new construction, nothing
 removed), cost is exactly $0.15, and the source clip's bytes/mtime are
 completely unchanged throughout.
 
+## Running FORMA Video #1 - Chapter A (spends real money - max $0.95 across 3 gated stages)
+
+Chapter A (Hook + Site Prep) is FORMA Video #1's first production chapter,
+built as **four completely isolated stages** rather than one auto-chaining
+script. Each paid stage stops completely after generating its one clip -
+nothing downstream ever runs automatically, so a failed or un-reviewed
+upstream clip can never trigger further spend. Every stage after Stage A1
+requires a separate, explicit "have you reviewed and approved the previous
+clip?" confirmation (distinct from, and asked before, the usual cost
+confirmation) - answering anything but `yes` stops immediately with zero
+calls made, not even the free local frame extraction.
+
+All Wan prompts in Chapter A are **visual-only** - Wan is run with no
+audio field, and no prompt asks for waterfall/wind/footsteps/tools/birds/
+dialogue/narration/music of any kind. FORMA sound is a separate
+post-production layer, added later. The approved waterfall-cave reference
+photo is **authoritative**: Stage A1 uses it directly as the starting
+image (never regenerated, never identity-corrected), and the actual
+builder appearance, cave geometry, waterfall position, and lighting
+visible in it govern every subsequent prompt.
+
+### Before you start
+
+Place your already-approved waterfall-cave reference photo at exactly:
+
+```
+data\forma_video_1_chapter_a\canonical_reference_start_frame.jpg
+```
+
+Stage A1 fails clearly (before spending anything) if this file is missing.
+The file is only ever read, never modified.
+
+### Stage A1 - Hook (spends real money - max $0.20)
+
+```bash
+python -m scripts.run_forma_v1_chapter_a_hook
+python -m scripts.run_forma_v1_chapter_a_hook --yes
+```
+
+Wan 3.0 standard, 480p, 9:16, 4s, image-to-video from the reference photo
+directly. One cost-confirmation gate (no upstream-approval gate - there is
+no prior chapter clip yet). Exactly 1 video call, no retries. Output:
+`data/forma_video_1_chapter_a/hook_raw.mp4`, `manifest.json`. **Stop here
+and review the clip before running Stage A2.**
+
+### Stage A2 - Site Prep Clip 1 (spends real money - max $0.35)
+
+Runnable only after `hook_raw.mp4` exists. Extracts Hook's real last frame
+locally (free), then requires typing `yes` at the upstream-approval prompt
+before the cost-confirmation prompt even appears:
+
+```bash
+python -m scripts.run_forma_v1_chapter_a_prep1
+python -m scripts.run_forma_v1_chapter_a_prep1 --yes
+```
+
+`--yes` only skips the cost-confirmation prompt - the upstream-approval
+prompt always fires and is never skippable. Wan 3.0 standard, 480p, 9:16,
+7s, image-to-video from the extracted frame. Output:
+`data/forma_video_1_chapter_a/site_prep_clip1_raw.mp4`. **Stop here and
+review before running Stage A3.**
+
+### Stage A3 - Site Prep Clip 2 (spends real money - max $0.40)
+
+Same pattern, gated on `site_prep_clip1_raw.mp4` and its own
+upstream-approval confirmation:
+
+```bash
+python -m scripts.run_forma_v1_chapter_a_prep2
+python -m scripts.run_forma_v1_chapter_a_prep2 --yes
+```
+
+Wan 3.0 standard, 480p, 9:16, 8s. Output:
+`data/forma_video_1_chapter_a/site_prep_clip2_raw.mp4`. **Stop here and
+review before running Stage A4.**
+
+### Stage A4 - Local assembly (free - no API calls, no FAL_API_KEY needed)
+
+Runnable only after all three raw clips exist. Pure local FFmpeg:
+accelerates each raw clip individually (Hook 1.3x, Prep 1 ~2.33x, Prep 2
+~2.67x - easily adjustable by editing the `*_FACTOR` constants and
+re-running, a free and instant step), then concatenates the accelerated
+clips into one combined preview:
+
+```bash
+python -m scripts.run_forma_v1_chapter_a_assemble
+```
+
+Output: `data/forma_video_1_chapter_a/chapter_a_combined_preview.mp4`.
+Review it as one continuous piece - Hook's near-real-time establishing
+beat flowing into Site Prep's accelerated progress, no visible seam.
+
+Verified entirely offline: mocked-transport dry runs for Stages A1-A3
+confirm each submits exactly 1 video call with the correct duration/
+resolution/aspect ratio, no audio field and no audio-language in the
+prompt, and (Stages A2-A3) that declining the upstream-approval prompt
+makes zero calls and doesn't even extract a frame; a dry run for Stage A4
+using the repo's real fixture clip as a stand-in for all three raw files
+confirms it fails cleanly when clips are missing and otherwise produces
+real, valid accelerated clips and a real combined preview via genuine
+ffmpeg operations, with none of the three raw clips ever modified.
+
 ## Running the API server
 
 ```bash
@@ -2602,17 +2704,46 @@ provider-level rate limiting.
   test below. Full production plan (chapter timeline, per-clip raw/accel/
   finished breakdown, cost estimate, sound design layer, risk analysis)
   is conversational/planning-stage only, not yet committed to any script.
-- **Camera-transition edit validation test, built and offline-verified
-  (result pending review)**: before committing FORMA Video #1's
-  architecture to the `NANO_BANANA_PRO_EDIT`-based transition mechanism,
-  `scripts/run_camera_transition_edit_test.py` tests it in isolation
-  against real, already-existing footage: the real last frame of the
-  approved cliff-cabin Segment 2 video (chosen specifically for its
-  existing structural complexity - platform, joists, posts), asking for
-  ONE conservative ~20-30 degree camera nudge while preserving structure,
-  landmarks, lighting, and builder identity. Exactly 1 image-edit call,
-  no video call, no other segment or prior test touched. See "Running the
-  camera transition edit test" below.
+- **Camera-transition edit validation test, PASSED**: before committing
+  FORMA Video #1's architecture to the `NANO_BANANA_PRO_EDIT`-based
+  transition mechanism, `scripts/run_camera_transition_edit_test.py`
+  tested it in isolation against real, already-existing footage: the real
+  last frame of the approved cliff-cabin Segment 2 video (chosen
+  specifically for its existing structural complexity - platform, joists,
+  posts), asking for ONE conservative ~20-30 degree camera nudge while
+  preserving structure, landmarks, lighting, and builder identity. Real
+  result: not pixel-perfect, but convincingly reads as the same physical
+  structure from a nearby camera position - sufficient for the intended
+  fast timelapse use. See "Running the camera transition edit test" below.
+  **The camera-transition rule is now permanently locked**: conservative
+  transitions may use `NANO_BANANA_PRO_EDIT`, always conditioned on the
+  literal real final frame of the previous chapter, ~20-30 degrees maximum
+  (no large rotations), every EDIT transition requires manual review
+  before any downstream generation, and continuity always outranks camera
+  variety. The cliff-cabin R&D phase is complete.
+- **FORMA Video #1, Chapter A (Hook + Site Prep) implementation**: the
+  first production chapter of FORMA Video #1, built as four completely
+  isolated, hard-gated stages so a failed or unreviewed upstream clip can
+  never automatically trigger downstream paid generation - `scripts/
+  run_forma_v1_chapter_a_hook.py` (Stage A1: Hook, ~4s raw, uses the
+  user's own already-approved waterfall-cave reference photo directly as
+  the canonical starting image - never regenerated), `scripts/
+  run_forma_v1_chapter_a_prep1.py` (Stage A2: Site Prep Clip 1, ~7s raw,
+  runnable only after a separate "have you reviewed and approved
+  hook_raw.mp4?" confirmation, distinct from and prior to the cost
+  confirmation), `scripts/run_forma_v1_chapter_a_prep2.py` (Stage A3: Site
+  Prep Clip 2, ~8s raw, same upstream-approval gate against Prep 1), and
+  `scripts/run_forma_v1_chapter_a_assemble.py` (Stage A4: local-only
+  FFmpeg acceleration + concatenation into `chapter_a_combined_preview.mp4`
+  - no API calls, no spend). Two policies apply project-wide from here on:
+  the approved reference photo (and, by extension, each chapter's real
+  generated frames) is authoritative - no identity-correction edits unless
+  there is a genuine severe problem, and the actual builder appearance,
+  cave geometry, waterfall, and lighting visible in the footage govern
+  future prompts, not an older textual description; and all Wan prompts
+  are visual-only - no audio-generation language of any kind (Wan is run
+  with no audio field; FORMA sound is a separate post-production layer).
+  See "Running FORMA Video #1 - Chapter A" below.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

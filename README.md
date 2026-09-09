@@ -1485,6 +1485,45 @@ shared `WAN_3_0_STANDARD`
 config is asserted unchanged (`duration=15`) both before and after the
 run.
 
+## Running the segment 1A image V2 candidate test (spends real money - max $0.15)
+
+The original segment 1A start frame was rejected at the manual review gate:
+the camera was pitched too far downward, so foreground ground/vegetation
+dominated the frame while the ocean/cliff environment was compressed into
+the upper background - a real problem for FORMA's visual identity, which
+needs the dramatic environment to be a major retention element, not
+background scenery. `scripts/run_full_video_segment_1a_image_v2_test.py`
+fixes ONLY the camera/composition clause; builder identity, site geometry,
+lighting, and the S0 untouched-construction-state text are imported
+directly from `run_full_video_segment_1a_test.py` (`SITE_BIBLE`,
+`SEGMENT_1A_START_STATE_S0`), byte-identical, not retyped.
+
+**New composition clause:**
+
+> Camera view: a wide environmental establishing shot taken from approximately human chest/eye height, with the camera axis close to horizontal rather than elevated and angled downward. The horizon is clearly visible. Roughly the upper 40-50% of the frame showcases the dramatic coastal landscape - open ocean, horizon, sky, and, where composition permits, glimpses of distant coastline or cliff geography rather than only open water. The remaining lower portion of the frame contains the builder and the untouched worksite, with enough foreground ground and vegetation visible to clearly read as material that will be cleared; the builder occupies a noticeably smaller portion of the frame than in a close or elevated shot, positioned further back within the scene rather than filling it. The composition shows clear depth from front to back: foreground worksite, then the builder, then the cliff edge and coastline, then the ocean and horizon beyond. Candid, fixed-camera construction-documentary feeling, not a posed or hero composition.
+
+Plus a builder-action clause: naturally preparing a brush-cutter, gaze
+toward the work area, never toward the camera, no posing.
+
+Makes exactly ONE Nano Banana Pro Generate call ($0.15, no source image,
+same as `run_composition_test.py`). No video call.
+
+```bash
+python -m scripts.run_full_video_segment_1a_image_v2_test
+python -m scripts.run_full_video_segment_1a_image_v2_test --yes
+```
+
+Saves to a **new candidate path** in `data/fal_full_video_segment_1a/`:
+`segment_1a_start_frame_v2_candidate.jpg` and its own
+`candidate_v2_manifest.json` - the original (rejected)
+`segment_1a_start_frame.jpg` and the segment's main `manifest.json` are
+both left completely untouched. Verified entirely offline: a mocked-
+transport dry run confirms exactly 1 call, no video/edit endpoint ever
+touched, the prompt starts with the byte-identical site bible + S0 state,
+contains every new composition requirement, does NOT contain the old
+rejected downward-pitch language, the original image file's bytes and
+mtime are unchanged after the run, and cost is exactly $0.15.
+
 ## Running the API server
 
 ```bash
@@ -1776,10 +1815,44 @@ provider-level rate limiting.
   normalization pass (scale all clips to a common 720x1280 canvas before
   concatenation, since segment 6's resolution differs from segments
   1A-5's) and with audio stripped from every clip pre-concatenation.
-- **Segment 1A, built and offline-verified (result pending review)**:
-  see "Running the full video segment 1A test" below for the full site
-  bible, both prompts, and verification summary. No other segment has
-  been built yet.
+- **Segment 1A start frame V1, run for real - REJECTED**: the first
+  `segment_1a_start_frame.jpg` had the right builder, site, and identity,
+  but the camera was pitched too far downward - foreground ground/
+  vegetation dominated the vertical frame while the ocean/cliff
+  environment was compressed into the upper background. This mattered
+  more than a typical composition nit: FORMA's visual identity requires
+  the dramatic environment to be a major retention element alongside the
+  transformation, not background scenery. The mandatory review gate (see
+  "Running the full video segment 1A test" below) caught this before any
+  video spend - the $0.30 video call was never made from the rejected
+  image.
+- **Segment 1A start frame V2 candidate, built and offline-verified
+  (result pending review)**: `scripts/run_full_video_segment_1a_image_v2_test.py`
+  changes ONLY the camera/composition clause - builder identity, site
+  geometry, lighting, and the S0 untouched-construction-state text are
+  imported directly from the V1 script, byte-identical, not retyped. New
+  composition: camera at ~chest/eye height with a near-horizontal axis
+  (not elevated/downward), horizon clearly visible, ~40-50% of the frame
+  showing ocean/horizon/coastline, the builder occupying noticeably less
+  of the frame, and explicit front-to-back depth (foreground worksite ->
+  builder -> cliff/coast -> ocean/horizon). Saves to a new candidate path
+  (`segment_1a_start_frame_v2_candidate.jpg`) and writes its own
+  `candidate_v2_manifest.json` - the original rejected image and the
+  segment's main `manifest.json` are both left untouched. See "Running the
+  segment 1A image V2 candidate test" below.
+- **Segment 1A video-completion (resume) script, built and offline-
+  verified, on hold pending image approval**:
+  `scripts/run_full_video_segment_1a_resume_video_test.py` makes ONLY the
+  remaining Wan 3.0 video call from whichever start-frame image is
+  eventually approved, reusing that image as-is (no Nano Banana Pro call)
+  and importing the segment's approved video prompt byte-identical from
+  the V1 script plus one added emphasis sentence (the builder's attention
+  moves immediately and fully onto the clearing task; he must not look
+  toward the camera). It currently reads its source image from
+  `segment_1a_start_frame.jpg` (the V1 path) - once a final image is
+  approved (V2 candidate or a further revision), that file must be at
+  that exact path before this script is run, since it deliberately never
+  regenerates or picks an image itself.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

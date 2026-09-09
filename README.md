@@ -1580,6 +1580,39 @@ and is not skippable by `--yes`, Segment 1A's own config
 (duration=15) are both asserted unchanged, and total cost is exactly
 $0.55.
 
+## Running the segment 1B resume-video test (spends real money - max $0.40)
+
+The user exited at the mandatory review gate after Segment 1B's $0.15
+image call, then separately approved and locked
+`segment_1b_start_frame.jpg` as the canonical Segment 1B starting image.
+`scripts/run_full_video_segment_1b_resume_video_test.py` makes ONLY the
+remaining Wan 3.0 video call from that exact image - no Nano Banana Pro
+call, no regeneration. The video prompt is imported directly from
+`run_full_video_segment_1b_test` (`VIDEO_PROMPT`) and used **completely
+unchanged** - unlike segment 1A's resume, no emphasis sentence is added
+here, since the prompt was approved as-is.
+
+```bash
+python -m scripts.run_full_video_segment_1b_resume_video_test
+python -m scripts.run_full_video_segment_1b_resume_video_test --yes
+```
+
+Validates against the segment's own `manifest.json` (written by the
+image step before the review gate) - confirms its `image_path` matches
+the locked image, that the image was actually generated, and that no
+video is already recorded for this segment (no accidental double-spend) -
+then updates that same manifest in place with the video result. $0.40 =
+the hard cap with zero margin (8s @ $0.05/s, exactly precomputable).
+Verified entirely offline: a mocked-transport dry run seeds a fake
+pre-existing manifest.json + approved image, confirms no image-generation
+endpoint is ever touched, exactly 1 video call with the correct payload
+shape (`start_image_url`, bare-int `duration=8`, no audio field), the
+prompt byte-identical to the approved `VIDEO_PROMPT` (all 4 distinct jump
+stages and the "no floor decking, no wall framing, no roof, and no
+windows or doors" constraint intact), cost exactly $0.40, and the
+manifest updated correctly (image fields preserved, video fields newly
+populated).
+
 ## Running the API server
 
 ```bash
@@ -1919,6 +1952,17 @@ provider-level rate limiting.
   skippable by `--yes`) - the exact mechanism that caught 1A's V1
   composition problem before any video spend. See "Running the full video
   segment 1B test" below.
+- **Segment 1B start frame, APPROVED and LOCKED; video resume script
+  built and offline-verified (result pending review)**: the user exited
+  at the review gate after the $0.15 image call, then approved that image
+  (`segment_1b_start_frame.jpg`) separately.
+  `scripts/run_full_video_segment_1b_resume_video_test.py` makes ONLY the
+  remaining $0.40 Wan 3.0 video call, reusing that exact locked image (no
+  Nano Banana Pro call) and importing the segment's already-approved
+  video prompt completely unchanged (unlike segment 1A's resume, no
+  emphasis sentence was added this time - the prompt was approved as-is).
+  Validates against the segment's own `manifest.json` (image already
+  recorded, video not yet) before submitting, then updates it in place.
 - **Segment 2 (build state S1)**: with Segment 1B built (pending review),
   Segment 2's script (not built yet) will start from
   `SEGMENT_1B_END_STATE_S1` as its own hand-off, the same byte-identical-

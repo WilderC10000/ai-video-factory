@@ -12,10 +12,17 @@ site_prep_clip1_raw.mp4 is only ever read, never modified. Same camera as
 Hook/Prep 1 (CAMERA_CLAUSE_A, imported unchanged).
 
 Visual-only prompt - no audio instructions of any kind. This clip ends
-Chapter A: the site reads as fully cleared, leveled, and marked, still
-with zero structure - ready for foundation work. That real final frame
-becomes the source for Chapter B's future NANO_BANANA_PRO_EDIT camera
-transition (a separate, later step, not part of this script).
+Chapter A: the site reads as fully cleared and mechanically leveled,
+still with zero structure - ready for foundation work. That real final
+frame becomes the source for Chapter B's future NANO_BANANA_PRO_EDIT
+camera transition (a separate, later step, not part of this script).
+
+REDESIGNED alongside Prep 1 per the permanent FORMA Site Prep Rule (the
+original hand-clearing version was rejected for not reading as meaningful
+site preparation). The mini excavator established in Prep 1 finishes
+clearing the remaining rough ground, then transitions to leveling passes,
+ending with a visibly flat, mechanically-worked construction pad - a
+clear, obvious transformation from the rough ground the site began as.
 
 Makes exactly ONE Wan 3.0 video call. No retries. Does NOT trigger Stage
 A4 (local assembly) - that is a separate, free, non-API script, run only
@@ -54,21 +61,29 @@ PREP2_START_FRAME_PATH = OUTPUT_DIR / "site_prep_clip2_start_frame.jpg"
 PREP2_RAW_PATH = OUTPUT_DIR / "site_prep_clip2_raw.mp4"
 JOB_STATE_PATH = OUTPUT_DIR / "prep2_last_job.json"
 
-# Visual-only - no audio instructions, per explicit instruction.
+# Visual-only - no audio instructions, per explicit instruction. Redesigned
+# alongside Prep 1 around the permanent FORMA Site Prep Rule - the mini
+# excavator (established in Prep 1's real last frame) continues and
+# finishes the mechanical clearing, then transitions to leveling, so the
+# site ends this clip as a clearly more buildable, flattened pad.
 PREP2_PROMPT = (
     "Vertical 9:16, realistic construction footage, documentary/observational style. "
     f"{CAMERA_CLAUSE_A} No camera movement, no angle change - this is a direct continuation of "
-    "the ongoing site-clearing operation shown in the starting image; the ground already "
-    "cleared must remain exactly as shown, unchanged.\n\n"
-    "The builder continues working from exactly where he left off: he finishes clearing the "
-    "remaining loose rock and debris from the site, then begins leveling and marking out the "
-    "ground - driving a stake and running a string line to define where the structure will go. "
-    "All of this happens through his direct, visible physical actions in the area he is working; "
-    "nothing changes anywhere else on the site while he works. By the end of the clip, the site "
-    "reads as fully cleared and prepared, with the ground level and marked, still with no "
-    "structure of any kind - ready for foundation work to begin. He never looks toward the "
-    "camera. The waterfall remains visible and in motion beside the cave; mist continues to "
-    "drift. No posing, no presenter behavior."
+    "the mechanical site-clearing operation shown in the starting image; the section already "
+    "cleared and the debris pile must remain exactly as shown, unchanged.\n\n"
+    "The builder continues operating the mini excavator from exactly where it left off: it keeps "
+    "working in the same direction, scooping the remaining loose rock, mud, and debris from the "
+    "ground immediately adjacent to the already-cleared section and adding it to the same debris "
+    "pile, until the entire intended build area has been cleared of loose material. The machine "
+    "then lowers its bucket flat and makes several sweeping, dragging passes back and forth "
+    "across the cleared ground, visibly flattening and leveling it into an even pad. All of this "
+    "happens through the excavator's direct, visible action in the area it is working; nothing "
+    "changes anywhere else on the site while it works. By the end of the clip, the entire "
+    "intended build area reads as a flat, mechanically cleared and leveled construction pad - a "
+    "clear, visually obvious transformation from the rough natural ground the site began as - "
+    "still with no structure of any kind, ready for foundation work to begin. The builder never "
+    "looks toward the camera. The waterfall remains visible and in motion beside the cave; mist "
+    "continues to drift. No posing, no presenter behavior."
 )
 
 WAN_3_0_FORMA_V1_PREP2 = dataclasses.replace(WAN_3_0_STANDARD, extra_payload={"duration": 8})
@@ -244,10 +259,13 @@ def main() -> None:
     print(f"Site Prep Clip 2 raw: {PREP2_RAW_PATH}")
     print(f"Actual cost:          ${actual_cost:.4f}")
     print(f"Manifest:             {MANIFEST_PATH}")
-    print("\nSTOP HERE. Review site_prep_clip2_raw.mp4 against:")
-    print("  - continues directly from Prep 1's real last frame - no reset")
-    print("  - every visible change is caused by the builder's visible action (Causal Labor)")
-    print("  - ends with the site fully cleared, leveled, and marked - still no structure")
+    print("\nSTOP HERE. Review site_prep_clip2_raw.mp4 against the FORMA Site Prep Rule:")
+    print("  - continues directly from Prep 1's real last frame - cleared section/pile unchanged")
+    print("  - remaining rough ground (the obstacle) is visibly cleared by the same excavator")
+    print("  - visible transformation: leveling/flattening passes smooth the cleared ground")
+    print("  - by the end, the whole pad reads as clearly more buildable - flat and leveled")
+    print("  - machine works in one clear spatial direction - nothing changes elsewhere")
+    print("  - ends with no structure of any kind - still ready for foundation work")
     print("  - camera framing identical throughout Chapter A - no drift")
     print("  - builder never looks toward the camera")
     print("\nOnce all three clips (Hook, Prep 1, Prep 2) are approved, run Stage A4 for local,")

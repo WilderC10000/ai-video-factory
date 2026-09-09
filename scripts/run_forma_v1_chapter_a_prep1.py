@@ -19,6 +19,16 @@ Visual-only prompt - no audio instructions of any kind, per explicit
 instruction. Wan runs with no audio field regardless; sound is an
 entirely separate later post-production layer.
 
+REDESIGNED per the permanent FORMA Site Prep Rule (the original
+hand-clearing version was rejected: visual quality was good, but "pick up
+one rock" did not read as meaningful site preparation). Every prep clip
+must now show (1) a clear physical obstacle, (2) a clear tool/machine
+matched to it, (3) visible removal/transformation of that obstacle, and
+(4) a clearly more buildable site by the end - never vague hand-clearing.
+For Waterfall Cave, that's a compact tracked mini excavator, operated by
+the builder, scraping loose rock/mud/debris and depositing it in a
+visible pile to one side.
+
 Makes exactly ONE Wan 3.0 video call. No retries. Does NOT chain to Stage
 A3 (Prep 2) - that is a separate script, run only after this stage's own
 output is reviewed and approved.
@@ -63,18 +73,32 @@ PREP1_START_FRAME_PATH = OUTPUT_DIR / "site_prep_clip1_start_frame.jpg"
 PREP1_RAW_PATH = OUTPUT_DIR / "site_prep_clip1_raw.mp4"
 JOB_STATE_PATH = OUTPUT_DIR / "prep1_last_job.json"
 
-# Visual-only - no audio instructions, per explicit instruction.
+# Visual-only - no audio instructions, per explicit instruction. Redesigned
+# around the permanent FORMA Site Prep Rule: every prep stage must show a
+# clear physical obstacle, a clear tool/machine matched to it, visible
+# removal/transformation of that obstacle, and a clearly more buildable
+# site by the end - never vague hand-clearing or symbolic actions. For
+# Waterfall Cave, that means a compact tracked mini excavator (operated by
+# the builder) doing the clearing, not manual hand-clearing.
 PREP1_PROMPT = (
     "Vertical 9:16, realistic construction footage, documentary/observational style. "
     f"{CAMERA_CLAUSE_A} No camera movement, no angle change - continuing directly from the "
     "current state shown in the starting image.\n\n"
-    "The builder begins clearing the site: he picks up loose rock and debris from one area near "
-    "the cave wall and carries it aside, out of the working area, then continues to the next "
-    "piece nearby, working steadily across that section of ground. Each piece of debris is "
-    "visibly picked up, carried, and placed aside by him - nothing disappears or clears itself "
-    "elsewhere on the site while he works in one area. No structure of any kind appears yet - "
-    "this is only site clearing. He never looks toward the camera. The waterfall remains visible "
-    "and in motion beside the cave; mist continues to drift. No posing, no presenter behavior."
+    "The ground beneath the overhang is rough, natural, and clearly not yet buildable: loose "
+    "rock, mud, and plant debris cover the intended build area. The builder walks to a compact "
+    "tracked mini excavator waiting at the edge of the site, climbs into it, and starts the "
+    "machine. He operates it to clear the ground: the excavator's arm swings its toothed bucket "
+    "into the loose rock, mud, and debris directly in front of it, scoops up a load, swings to "
+    "one side, and dumps it onto a growing debris pile just outside the work area, then swings "
+    "back and repeats the same scoop-swing-dump motion on the next section of ground immediately "
+    "adjacent to where it just worked. The machine works in one continuous direction across a "
+    "single bounded section of the site - it never jumps to a different part of the site, and "
+    "nothing clears itself outside the machine's active work zone. By the end of the clip, that "
+    "section reads as visibly scraped down to bare, cleared earth - clearly different from the "
+    "rough ground around it - with an obvious pile of removed material beside it. No structure of "
+    "any kind appears yet. The builder never looks toward the camera. The waterfall remains "
+    "visible and in motion beside the cave; mist continues to drift. No posing, no presenter "
+    "behavior."
 )
 
 WAN_3_0_FORMA_V1_PREP1 = dataclasses.replace(WAN_3_0_STANDARD, extra_payload={"duration": 7})
@@ -251,10 +275,13 @@ def main() -> None:
     print(f"Site Prep Clip 1 raw: {PREP1_RAW_PATH}")
     print(f"Actual cost:          ${actual_cost:.4f}")
     print(f"Manifest:             {MANIFEST_PATH}")
-    print("\nSTOP HERE. Review site_prep_clip1_raw.mp4 against:")
+    print("\nSTOP HERE. Review site_prep_clip1_raw.mp4 against the FORMA Site Prep Rule:")
+    print("  - a clear physical obstacle is shown (rough ground: loose rock, mud, debris)")
+    print("  - a clear tool/machine matched to it is shown (compact tracked mini excavator)")
+    print("  - visible removal/transformation: scoop-swing-dump cycle, growing debris pile")
+    print("  - the worked section reads as clearly more buildable (bare cleared earth) by the end")
     print("  - continues directly from Hook's real last frame - no reset")
-    print("  - every visible change is caused by the builder's visible action (Causal Labor)")
-    print("  - clearing has some spatial coherence, not random across the whole site")
+    print("  - machine works in one clear spatial direction - nothing clears itself elsewhere")
     print("  - no construction of any kind begins yet")
     print("  - camera framing identical to the Hook - no drift")
     print("  - builder never looks toward the camera")

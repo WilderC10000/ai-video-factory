@@ -2077,7 +2077,10 @@ python -m scripts.run_forma_v1_chapter_a_prep1 --yes
 
 `--yes` only skips the cost-confirmation prompt - the upstream-approval
 prompt always fires and is never skippable. Wan 3.0 standard, 480p, 9:16,
-7s, image-to-video from the extracted frame. Output:
+7s, image-to-video from the extracted frame. Per the FORMA Site Prep
+Rule, this clip shows a compact tracked mini excavator (operated by the
+builder) scraping loose rock/mud/debris from one bounded section and
+depositing it in a visible pile to one side - not hand-clearing. Output:
 `data/forma_video_1_chapter_a/site_prep_clip1_raw.mp4`. **Stop here and
 review before running Stage A3.**
 
@@ -2091,7 +2094,10 @@ python -m scripts.run_forma_v1_chapter_a_prep2
 python -m scripts.run_forma_v1_chapter_a_prep2 --yes
 ```
 
-Wan 3.0 standard, 480p, 9:16, 8s. Output:
+Wan 3.0 standard, 480p, 9:16, 8s. Continues the same excavator from Prep
+1's real last frame: finishes clearing the remaining rough ground, then
+transitions to leveling passes, ending as a flat, mechanically-worked
+construction pad. Output:
 `data/forma_video_1_chapter_a/site_prep_clip2_raw.mp4`. **Stop here and
 review before running Stage A4.**
 
@@ -2744,6 +2750,29 @@ provider-level rate limiting.
   are visual-only - no audio-generation language of any kind (Wan is run
   with no audio field; FORMA sound is a separate post-production layer).
   See "Running FORMA Video #1 - Chapter A" below.
+- **Stage A2 (Site Prep Clip 1), real result: REJECTED**: visual quality
+  was good, but the action didn't read as meaningful site preparation -
+  the builder breaking/pulling at one rock was too small and symbolic a
+  gesture to justify calling the site "prepared." This exposed a gap the
+  Construction Frontier/Causal Labor principles alone didn't cover: they
+  guarantee a progression reads as spatially coherent and causally
+  connected, but not that the action itself is *substantial* enough to
+  register as real transformation.
+- **FORMA SITE PREP RULE, new permanent principle**: every prep stage must
+  show (1) a clear physical obstacle, (2) a clear tool/machine designed to
+  deal with it, (3) visible removal/transformation of that obstacle, and
+  (4) a clearly more buildable site by the end. Vague hand-clearing or
+  symbolic actions that leave too much to the model's imagination are no
+  longer sufficient - the obstacle and the machinery addressing it must
+  both be explicit in the prompt. For Waterfall Cave, Prep 1 and Prep 2
+  were redesigned around a compact tracked mini excavator (operated by the
+  builder, who can hand off manual clearing to the machine) that scoops
+  loose rock/mud/debris into a visible pile, then levels the pad -
+  ending with rough natural ground -> mechanically cleared, flattened
+  construction pad. Redesigned prompts for `scripts/run_forma_v1_chapter_a_prep1.py`
+  and `_prep2.py` re-verified offline (same mocked-transport dry runs,
+  updated assertions for the new machine/obstacle/pile language); full
+  suite still 88 passed. Not yet re-generated for real.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

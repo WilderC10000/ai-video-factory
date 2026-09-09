@@ -1850,6 +1850,63 @@ relative order), the raw file's bytes are unchanged after acceleration,
 and the source `segment_2.mp4` stand-in's bytes/mtime are completely
 unchanged throughout (read-only).
 
+## Running the construction frontier test (spends real money - max $0.50)
+
+Validation Test #1 proved individual board handling can look believable,
+but failed on ordered progression - additional decking appeared elsewhere
+on the platform even while the builder correctly installed real boards.
+`scripts/run_construction_frontier_test.py` tests the fix: the
+**CONSTRUCTION FRONTIER** principle - a single, strict spatial direction
+of progress with exactly one active boundary at all times. For decking:
+**right to left.**
+
+Same mechanism as Test #1 (freshly re-extracted real Segment 2 last
+frame, same camera, no Nano Banana Pro call, no "HARD TIME JUMP"
+language, FFmpeg-deferred acceleration) - only the prompt changes, now
+built around an explicit priority order:
+
+1. Ordered right-to-left progression
+2. The builder visibly causing that progression
+3. Believable board handling
+4. Fine tool detail (individual fastening motions) - **last**, and the
+   first thing simplified away if the model has to trade something off
+
+**Prompt excerpt** (states the frontier concept first, as "the single
+most important visual behavior," before any tool-handling detail):
+
+> ...at all times, the platform reads as three clear zones in a fixed left-to-right order - completed decking on the right, the builder working at the boundary in the middle, and untouched exposed joists on the left - and that entire boundary steadily advances from right to left over the course of the clip, like a progress bar filling in behind him. Nothing is ever allowed to leapfrog the builder: no board appears anywhere except directly beside the most recently completed board, immediately adjacent to his current position... Fine mechanical detail (how many screws, exact hand position) matters far less than this strict, unbroken right-to-left ordering - if anything must be simplified, simplify the small tool motions, never the ordering.
+
+```bash
+python -m scripts.run_construction_frontier_test
+python -m scripts.run_construction_frontier_test --yes
+```
+
+Same model settings as Test #1: Wan 3.0 standard, 480p, 9:16, 10s
+(`WAN_3_0_FRONTIER_TEST`, its own local config, separate from
+`WAN_3_0_CAUSAL_TEST` and every segment's own variant), `start_image_url`,
+no audio field. $0.50 (10s @ $0.05/s), zero image cost - **hard cap with
+zero margin.** Board count is explicitly not a pass/fail factor - 2-3
+correctly-sequenced boards passes; more boards with any ordering
+violation does not.
+
+Outputs land in `data/fal_construction_frontier_test/` (gitignored):
+`segment_2_real_last_frame.jpg`, `construction_frontier_raw.mp4`
+(preserved untouched), `construction_frontier_2x.mp4`, `_3x.mp4`,
+`_4x.mp4`, `manifest.json`, `last_job.json`.
+
+Verified entirely offline the same way as Test #1 (real fixture clip
+standing in for `segment_2.mp4`, real ffmpeg extraction and acceleration
+against genuine video data): no image-generation endpoint touched,
+correct payload shape, no "HARD TIME JUMP" language, the frontier/
+leapfrog/progress-bar language present in the prompt **before** the
+tool-handling language (confirmed by string position, not just presence),
+Test #1's heavier fastening-detail phrasing absent, no "3 to 5 boards"
+target language, cost exactly $0.50, three real accelerated files with
+correctly decreasing durations (via `ffprobe`), the raw file unchanged
+after acceleration, the source clip's bytes/mtime unchanged throughout,
+and Test #1's own config (`WAN_3_0_CAUSAL_TEST`) confirmed as a genuinely
+separate, unmutated object.
+
 ## Running the API server
 
 ```bash
@@ -2341,6 +2398,42 @@ provider-level rate limiting.
   locally from the same raw clip, without ever overwriting it, so the raw
   causal footage and all three accelerated versions can be compared side
   by side. See "Running the causal action test" below.
+- **Validation Test #1, run for real - partially successful**: individual
+  board handling was convincing (correct tool use, believable physical
+  placement) - but ORDERED PROGRESSION failed: after ~2 correctly-installed
+  boards, additional decking spontaneously appeared elsewhere on the
+  platform, still breaking the construction illusion even though each
+  individual action looked real.
+- **CONSTRUCTION FRONTIER, new permanent FORMA principle**: every
+  repetitive construction operation gets a single, strict spatial
+  direction of progress, with exactly one active boundary at all times
+  between completed work, the builder's current position, and untouched
+  work still to come (decking: side-to-side; studs: end-to-end; siding:
+  side-to-side or bottom-to-top; roof sheathing: edge-to-edge; glazing:
+  sequential across the facade). Nothing may leapfrog the builder's
+  position, and only one location is ever under construction at once.
+  Longer repetitive phases are expected to eventually be built as chained
+  clips (Clip A boards 1-3 -> extract last frame -> Clip B boards 4-6 ->
+  ...), each continuing the same frontier from the previous clip's real
+  final frame, then accelerated and concatenated - but that chaining
+  itself is not yet validated; Test #2 below tests the frontier concept
+  in a single clip first.
+- **Validation Test #2 (construction frontier), built and offline-
+  verified (result pending review)**: `scripts/run_construction_frontier_test.py`
+  reuses Test #1's exact mechanism (same real Segment 2 last frame,
+  freshly re-extracted; same camera; same no-Nano-Banana, no-time-jump-
+  language, FFmpeg-deferred-acceleration approach) with a prompt rewritten
+  around an explicit priority order matching the user's own: (1) ordered
+  right-to-left progression, (2) the builder visibly causing it, (3)
+  believable board handling, (4) fine tool detail - last, and the first
+  thing to sacrifice if the model has to trade something off. The prompt
+  states the frontier concept first and most emphatically ("the single
+  most important visual behavior"), explicitly forbids any board
+  "leapfrogging" the builder, and frames the target as a progress bar
+  filling in behind him - deliberately de-emphasizing the fastening-detail
+  language that got equal weight in Test #1's prompt. Board count is
+  explicitly not a pass/fail factor. Same $0.50 hard cap, same 2x/3x/4x
+  FFmpeg comparison. See "Running the construction frontier test" below.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

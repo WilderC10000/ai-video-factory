@@ -1613,6 +1613,72 @@ windows or doors" constraint intact), cost exactly $0.40, and the
 manifest updated correctly (image fields preserved, video fields newly
 populated).
 
+## Running the full video segment 2 test (spends real money - max $0.75)
+
+Segment 1B's real footage was reviewed: its actual appearance reads as a
+much smaller starter platform (~3m x 3m relative to the builder) than its
+own prompt implied. `scripts/run_full_video_segment_2_test.py` treats that
+ACTUAL appearance as the continuity truth (a new standing rule - see
+"What's next" above) rather than importing `SEGMENT_1B_END_STATE_S1`
+verbatim, and is entirely one transformation: that small platform expands
+on-camera into a substantially larger ~10m x 6m floor structure, several
+times its original size, with the original platform staying visually
+recognizable throughout - never magically swapped for a bigger one
+between cuts. No wall framing begins here; the completed floor platform,
+held clean for the segment's final ~1.5-2s, is this segment's own payoff.
+
+**Start state** (corrected to the actual Segment 1B footage, not its
+prompt text):
+
+> Current construction state (matching the actual generated appearance, not the original prompt's stated dimensions): a small, compact starter floor platform - roughly 3 meters by 3 meters relative to the builder's scale - sits on foundation piers, with a dense grid of floor joists already installed across it. Stacks of raw timber, a tool case, and a circular saw remain staged beside it. There is still no floor decking, no wall framing, no roof, and no windows or doors.
+
+**End state (S2)** - the new canonical ~10m x 6m footprint, locked from
+here onward for every future segment:
+
+> Current construction state: the original small starter platform is fully incorporated into a single, substantially larger floor structure, its foundation piers, perimeter beams, and joist grid now spanning roughly 10 meters wide by 6 meters deep - several times larger than the original starter platform, which remains recognizable as one section within it. The builder appears noticeably small relative to the completed floor platform. There is still no floor decking, no wall framing, no roof, and no windows or doors.
+
+**Camera** - first real implementation of the camera-variation rule:
+
+> Camera view: a substantially different observational angle from previous segments - positioned on the opposite side of the site, at a natural vantage point slightly higher than the platform, but with the camera axis kept near-horizontal rather than tilted downward. This reveals a fresh sweep of coastline, ocean, and cliff geography not yet shown, occupying a clearly major share of the frame alongside the structure - never a downward-looking construction shot. From this angle the small starter platform and the full extent of its expansion are both legible, with the builder appearing small against the completed floor structure and the surrounding landscape alike. Candid, fixed-camera construction-documentary feeling, not a posed or hero composition.
+
+**Video prompt structure**: opening 1.5-2s hold on the small platform as
+it actually appears, 4 distinct HARD TIME JUMP beats (new piers farther
+out -> perimeter beams establish the larger outline -> new joists extend
+outward from and integrate the original platform -> additional joists
+fill the expanded area), then a closing 1.5-2s hold on the completed
+~10m x 6m structure with the builder reading as noticeably small against
+it. No wall-framing language anywhere in this segment - that's segment 3's
+payoff.
+
+```bash
+python -m scripts.run_full_video_segment_2_test
+python -m scripts.run_full_video_segment_2_test --yes   (skips only the upfront cost confirmation - the image review gate always runs)
+```
+
+Model settings: Nano Banana Pro Generate (image, $0.15) then Wan 3.0
+standard 480p, 9:16, **12 seconds** (`WAN_3_0_SEGMENT_2`, a new local
+`dataclasses.replace()` variant, `extra_payload={"duration": 12}` -
+touching neither the shared module-level config nor any earlier segment's
+own duration variant), `start_image_url`, no audio field. $0.15 + $0.60
+(12s @ $0.05/s) = **$0.75 total, hard cap with zero margin**.
+
+Outputs land in `data/fal_full_video_segment_2/` (gitignored):
+`segment_2_start_frame.jpg`, `segment_2.mp4`, `manifest.json`,
+`last_job.json`. Verified entirely offline: a mocked-transport dry run
+confirms exactly 1 call to each endpoint, the image prompt starts with
+the byte-identical site bible + the corrected ~3x3m start state (and does
+NOT yet claim the 10x6m target on the start frame), the video payload
+uses `start_image_url`/bare-int `duration=12`/no audio field, the prompt
+contains the opening hold, all 4 distinct expansion beats, the closing
+hold on the completed structure, explicitly does NOT contain any
+wall-framing-begins language, still preserves "no floor decking, no wall
+framing, no roof, and no windows or doors" at the very end, the review
+gate fires exactly once and is not skippable by `--yes`, every earlier
+segment's own config (`WAN_3_0_SEGMENT_1A` duration=6,
+`WAN_3_0_SEGMENT_1B` duration=8) and the shared `WAN_3_0_STANDARD`
+(duration=15) are all asserted unchanged, and total cost is exactly
+$0.75.
+
 ## Running the API server
 
 ```bash
@@ -1963,10 +2029,51 @@ provider-level rate limiting.
   emphasis sentence was added this time - the prompt was approved as-is).
   Validates against the segment's own `manifest.json` (image already
   recorded, video not yet) before submitting, then updates it in place.
-- **Segment 2 (build state S1)**: with Segment 1B built (pending review),
-  Segment 2's script (not built yet) will start from
-  `SEGMENT_1B_END_STATE_S1` as its own hand-off, the same byte-identical-
-  import pattern used between 1A and 1B.
+- **Visual-truth-outranks-prompt-text rule, new standing rule**: Segment
+  1B's real generated video was reviewed, and its actual appearance reads
+  as a much smaller starter platform (~3m x 3m relative to the builder)
+  than `SEGMENT_1B_END_STATE_S1`'s own prompt text implied - no exact
+  footprint dimension was ever specified in that text, but the visual
+  result still read smaller than intended. New standing rule: the
+  ACTUAL generated output always outranks a prior segment's intended
+  prompt text when establishing continuity for the next segment - a
+  deliberate, one-time exception to the "always import the previous
+  segment's end state byte-identical" pattern, applied in Segment 2 below.
+- **New canonical footprint scale (~10m x 6m), locked from Segment 2's
+  completed state onward**: the cabin is now a substantial modern
+  structure, not the small shed-scale platform Segment 1B's real footage
+  showed. Segment 1B's structure is understood as the *core/initial
+  module* of this larger platform - nothing about 1B's locked video is
+  redone; Segment 2 shows the expansion happening on-camera, via its own
+  hard-time-jumps, with the original small platform staying visually
+  recognizable throughout (never magically swapped for a larger one
+  between cuts).
+- **New standing FORMA rules**: **camera variation** (change
+  observational angle at every hard-time-jump/build-state transition
+  between segments, cycling through wide environmental / opposite
+  three-quarter / occasional slightly-elevated angles to keep revealing
+  new coastline); **landscape equity** (ocean/cliffs/horizon/golden-hour
+  light must share real compositional weight with the structure in every
+  segment, never just background scenery); **scale contrast**
+  (deliberately dwarf the builder against both the structure and the
+  landscape in some shots, to reinforce the project's and the location's
+  scale).
+- **Segment 2, built and offline-verified (result pending review)**:
+  `scripts/run_full_video_segment_2_test.py` is entirely one
+  transformation - the small ~3x3m starter platform expands, on-camera,
+  into a substantially larger ~10m x 6m floor structure, several times
+  its original size, with the original platform remaining visually
+  recognizable throughout. No wall framing begins here - the completed
+  large floor platform, held clean for the final ~1.5-2s, is this
+  segment's own payoff (decking + walls rising is segment 3's payoff).
+  First real implementation of the camera-variation rule: a substantially
+  different angle from 1A/1B (opposite side of the site, a naturally
+  elevated vantage point, but the camera axis kept near-horizontal rather
+  than tilted down), revealing a fresh, compositionally major sweep of
+  coastline. The builder is used aggressively as a scale reference - by
+  the segment's end he reads as noticeably small against the completed
+  platform. Same mandatory image-review gate as 1A/1B. See "Running the
+  full video segment 2 test" below.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

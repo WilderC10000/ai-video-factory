@@ -1826,33 +1826,33 @@ provider-level rate limiting.
   "Running the full video segment 1A test" below) caught this before any
   video spend - the $0.30 video call was never made from the rejected
   image.
-- **Segment 1A start frame V2 candidate, built and offline-verified
-  (result pending review)**: `scripts/run_full_video_segment_1a_image_v2_test.py`
-  changes ONLY the camera/composition clause - builder identity, site
-  geometry, lighting, and the S0 untouched-construction-state text are
-  imported directly from the V1 script, byte-identical, not retyped. New
-  composition: camera at ~chest/eye height with a near-horizontal axis
-  (not elevated/downward), horizon clearly visible, ~40-50% of the frame
-  showing ocean/horizon/coastline, the builder occupying noticeably less
-  of the frame, and explicit front-to-back depth (foreground worksite ->
-  builder -> cliff/coast -> ocean/horizon). Saves to a new candidate path
-  (`segment_1a_start_frame_v2_candidate.jpg`) and writes its own
-  `candidate_v2_manifest.json` - the original rejected image and the
-  segment's main `manifest.json` are both left untouched. See "Running the
-  segment 1A image V2 candidate test" below.
-- **Segment 1A video-completion (resume) script, built and offline-
-  verified, on hold pending image approval**:
+- **Segment 1A start frame V2, run for real - APPROVED and LOCKED**:
+  `scripts/run_full_video_segment_1a_image_v2_test.py` changed ONLY the
+  camera/composition clause - builder identity, site geometry, lighting,
+  and the S0 untouched-construction-state text were imported directly from
+  the V1 script, byte-identical, not retyped. New composition: camera at
+  ~chest/eye height with a near-horizontal axis (not elevated/downward),
+  horizon clearly visible, ~40-50% of the frame showing ocean/horizon/
+  coastline, the builder occupying noticeably less of the frame, and
+  explicit front-to-back depth (foreground worksite -> builder ->
+  cliff/coast -> ocean/horizon). `segment_1a_start_frame_v2_candidate.jpg`
+  is now the **canonical, locked** starting image for Segment 1A - not to
+  be regenerated or modified. The rejected V1 image and the original
+  `manifest.json` were both left untouched throughout.
+- **Segment 1A video-completion (resume) script, updated to the locked
+  V2 image, built and offline-verified (result pending review)**:
   `scripts/run_full_video_segment_1a_resume_video_test.py` makes ONLY the
-  remaining Wan 3.0 video call from whichever start-frame image is
-  eventually approved, reusing that image as-is (no Nano Banana Pro call)
-  and importing the segment's approved video prompt byte-identical from
-  the V1 script plus one added emphasis sentence (the builder's attention
-  moves immediately and fully onto the clearing task; he must not look
-  toward the camera). It currently reads its source image from
-  `segment_1a_start_frame.jpg` (the V1 path) - once a final image is
-  approved (V2 candidate or a further revision), that file must be at
-  that exact path before this script is run, since it deliberately never
-  regenerates or picks an image itself.
+  remaining Wan 3.0 video call, reusing the approved, **locked V2**
+  candidate image as-is (no Nano Banana Pro call, and the rejected V1
+  image is never read) and importing the segment's approved video prompt
+  byte-identical from the V1 script plus one added emphasis sentence (the
+  builder's attention moves immediately and fully onto the clearing task;
+  he must not look toward the camera). It validates against
+  `candidate_v2_manifest.json` (not the stale V1-era `manifest.json`) to
+  confirm the V2 image path and that it was actually generated, then, on
+  completion, writes a fresh consolidated `manifest.json` with image
+  fields sourced from the approved V2 candidate, video fields from the
+  run, and a record of the rejected V1 path/reason for traceability.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

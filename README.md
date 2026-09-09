@@ -1971,6 +1971,54 @@ acceleration/concatenation, both of Test #2's source files completely
 unchanged throughout (read-only), and every other test's and segment's
 own config confirmed as a genuinely separate, unmutated object.
 
+## Running the camera transition edit test (spends real money - max $0.15)
+
+FORMA Video #1's planned camera-transition mechanism - `NANO_BANANA_PRO_EDIT`
+image-conditioned on a real previous frame, asked for a conservative
+angle nudge - has never been tested in this project. Everything tried
+before was either a small local correction (V2A, mechanical start/end
+frame tests) or a large-swing full regeneration (which failed once
+structures got geometrically complex, at Segment 3). `scripts/
+run_camera_transition_edit_test.py` tests the untested middle ground in
+isolation, using real, already-existing footage, before committing FORMA
+Video #1's architecture to it.
+
+**Source**: the real, literal last frame of the approved cliff-cabin
+Segment 2 video (`data/fal_full_video_segment_2/segment_2.mp4`),
+extracted locally via `extract_last_frame()` (read-only - the video file
+is never modified). Chosen deliberately for its existing structural
+complexity (expanded platform, joists, posts) rather than a simple scene.
+
+**Edit prompt** (image-conditioned - describes the change, not the whole
+scene from scratch):
+
+> Shift the camera position moderately - approximately 20 to 30 degrees around the site - to a nearby three-quarter viewpoint, as if a second camera had been placed a short distance away rather than in the exact same spot. Keep every element of the scene exactly as it currently appears: the same timber platform with the same proportions, the same joist spacing and layout, the same foundation posts in the same positions, the same builder (same identity, clothing, and pose intent), the same large flat grey boulder, the same cliff and coastline geometry, and the same golden-hour lighting direction. Do not add any new construction - no walls, no roof, no additional joists or boards beyond what is already present. Do not remove or alter anything already visible. This is purely a camera position change, not a redesign or rebuild of the scene.
+
+```bash
+python -m scripts.run_camera_transition_edit_test
+python -m scripts.run_camera_transition_edit_test --yes
+```
+
+Exactly 1 `NANO_BANANA_PRO_EDIT` call, no video call of any kind, no
+retries. $0.15 flat rate - **hard cap with zero margin**. This is a pure
+mechanism test - it does not touch Segments 1A, 1B, 2, or 3, any
+Validation Test #1-3 output, or FORMA Video #1 itself.
+
+Outputs land in `data/fal_camera_transition_edit_test/` (gitignored):
+`segment_2_real_last_frame.jpg` (the real source), `camera_transition_edit.jpg`
+(the result), `manifest.json`.
+
+Verified entirely offline: a mocked-transport dry run uses the repo's
+real fixture clip in place of `segment_2.mp4` so `extract_last_frame()`
+runs against genuine video data, confirms the `/edit` endpoint is used
+(never the text-to-image `/generate` endpoint), the exact real extracted
+frame's bytes are what gets uploaded, the prompt contains the 20-30
+degree instruction plus every preservation clause (platform proportions,
+joist spacing, post positions, builder identity, boulder, coastline,
+lighting) and both prohibition clauses (no new construction, nothing
+removed), cost is exactly $0.15, and the source clip's bytes/mtime are
+completely unchanged throughout.
+
 ## Running the API server
 
 ```bash
@@ -2533,6 +2581,38 @@ provider-level rate limiting.
   output, meant to be judged as one continuous timelapse the way a viewer
   would. Same $0.50 hard cap. See "Running the checkpoint chain test"
   below.
+- **FORMA Video #1, planning ("Waterfall Cave -> Glass Hideaway")**: the
+  first genuinely publishable FORMA video, applying every principle
+  validated on the cliff-cabin project (Construction Frontier, Causal
+  Labor, Sequential Progress, Checkpoint Chaining, Post-Production
+  Timelapse, Camera Chapters) to a new location. Locked production
+  targets: 61-65s finished (~63s preferred), 120-160s total paid raw
+  video (170s hard ceiling), 12-18 Wan generations, Wan 3.0 480p
+  throughout (no premium model), variable per-shot acceleration in the
+  ~2x-4x range chosen for finished-seconds-per-generation efficiency
+  rather than a fixed factor. Camera-chapter transitions between the
+  planned Foundation/Decking, Framing, and Glass/Exterior chapters will
+  use `NANO_BANANA_PRO_EDIT` image-conditioned on each chapter's own real
+  final frame (a conservative ~20-30 degree nudge) instead of a fresh
+  text-to-image re-anchor - directly answering the Segment 3 continuity
+  failure, since large-swing fresh regeneration was never reliable once a
+  structure has real geometric complexity. This mechanism is unproven for
+  camera changes specifically (only tested before for local corrections
+  and, separately, large-swing full regeneration) - see the validation
+  test below. Full production plan (chapter timeline, per-clip raw/accel/
+  finished breakdown, cost estimate, sound design layer, risk analysis)
+  is conversational/planning-stage only, not yet committed to any script.
+- **Camera-transition edit validation test, built and offline-verified
+  (result pending review)**: before committing FORMA Video #1's
+  architecture to the `NANO_BANANA_PRO_EDIT`-based transition mechanism,
+  `scripts/run_camera_transition_edit_test.py` tests it in isolation
+  against real, already-existing footage: the real last frame of the
+  approved cliff-cabin Segment 2 video (chosen specifically for its
+  existing structural complexity - platform, joists, posts), asking for
+  ONE conservative ~20-30 degree camera nudge while preserving structure,
+  landmarks, lighting, and builder identity. Exactly 1 image-edit call,
+  no video call, no other segment or prior test touched. See "Running the
+  camera transition edit test" below.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

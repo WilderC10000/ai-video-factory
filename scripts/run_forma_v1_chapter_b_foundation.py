@@ -24,6 +24,16 @@ clip - those are separate, later stages. The skid-steer machine from
 Chapter A remains visible but parked/unused, preserving continuity
 without implying it does foundation work.
 
+TIGHTENED before B1's first real run: "sets and secures one post firmly
+into the ground" was judged too vague a physical mechanism, leaving too
+much to Wan's imagination. Redesigned around one simple, visually
+obvious mechanical loop instead - POSITION -> DRIVE/SET -> SHIFT ->
+REPEAT - using a compact hydraulic post-driving tool operated by the
+builder. Each new post appears only where the driver is actively
+working; already-installed posts stay fixed; nothing appears ahead of
+the active frontier. Same "smallest visually powerful causal loop,
+repeated" formula already validated for Site Prep.
+
 Makes exactly ONE Wan 3.0 video call. No retries. Does NOT chain to
 Decking (Stage B2) - that is a separate script, run only after this
 stage's own output is reviewed and approved.
@@ -69,25 +79,34 @@ CAMERA_CLAUSE_B = (
     "held completely steady. No camera movement, no further angle change."
 )
 
-# Visual-only - no audio instructions, per explicit instruction. Single
-# bounded causal operation only: foundation posts, one at a time, one
-# direction. Explicitly excludes decking, framing, walls, and glass -
-# those are separate, later stages, not part of this clip.
+# Visual-only - no audio instructions, per explicit instruction. Built as
+# the smallest possible causal loop, repeated for nearly the whole clip:
+# POSITION -> DRIVE/SET -> SHIFT -> REPEAT, using a compact hydraulic
+# post-driving tool - not the vaguer "sets and secures" language this
+# prompt used before. Single bounded causal operation only: foundation
+# posts, one at a time, one direction. Explicitly excludes joists, beams,
+# decking, framing, walls, roof, and glass - those are separate, later
+# stages, not part of this clip.
 FOUNDATION_PROMPT = (
     "Vertical 9:16, realistic construction footage, documentary/observational style. "
     f"{CAMERA_CLAUSE_B} Continuing directly from the current state shown in the starting "
     "image.\n\n"
     "The cleared, leveled construction pad is empty - no foundation, no structure of any kind "
-    "yet. The builder installs foundation posts across the pad: he sets and secures one post "
-    "firmly into the ground, moves to the next position immediately adjacent to it, and repeats "
-    "the same action - setting and securing one post at a time, working in one continuous "
-    "direction across the pad. Each post is visibly placed and secured before he moves to the "
-    "next; nothing appears anywhere else on the pad while he works in one area. By the end of "
-    "the clip, a row of foundation posts stands across the worked section of the pad - the first "
-    "visible structural element of the build - but no decking, no floor boards, no framing, no "
-    "walls, and no glass appear yet. The compact tracked skid-steer remains parked at the edge of "
-    "the pad, unused during this clip. The waterfall remains visible and in motion beside the "
-    "cave; mist continues to drift. No posing, no presenter behavior."
+    "yet. The builder operates a compact hydraulic post-driving tool to install foundation posts "
+    "one at a time: he positions the driver over the next spot on the pad, drives the post firmly "
+    "into the ground with the tool, then immediately shifts himself and the driver to the next "
+    "position immediately adjacent to it and repeats the same action - position, drive, shift, "
+    "repeat, working in one continuous direction across the pad. A new post appears only where "
+    "the driver is actively working; posts already installed remain exactly where they were "
+    "placed, and no post ever appears ahead of where the builder and driver currently are. Behind "
+    "the working position, installed posts stand fixed in a row; at the working position, the "
+    "builder and driver are actively setting the current post; ahead of the working position, the "
+    "pad remains completely empty until the frontier reaches it. By the end of the clip, a row of "
+    "foundation posts stands across the worked section of the pad - the first visible structural "
+    "element of the build - but no joists, beams, decking, floor boards, framing, walls, roof, or "
+    "glass appear yet. The compact tracked skid-steer remains parked at the edge of the pad, "
+    "unused during this clip. The waterfall remains visible and in motion beside the cave; mist "
+    "continues to drift. No posing, no presenter behavior."
 )
 
 WAN_3_0_FORMA_V1_B_FOUNDATION = dataclasses.replace(WAN_3_0_STANDARD, extra_payload={"duration": 7})
@@ -257,14 +276,18 @@ def main() -> None:
     print(f"Foundation raw: {FOUNDATION_RAW_PATH}")
     print(f"Actual cost:     ${actual_cost:.4f}")
     print(f"Manifest:        {MANIFEST_PATH}")
-    print("\nSTOP HERE. Review foundation_raw.mp4 against:")
-    print("  1. this is ONE bounded causal operation - foundation posts only")
-    print("  2. posts are placed one at a time, in one consistent direction (no random jumps)")
-    print("  3. NO decking, floor boards, framing, walls, or glass appear anywhere in the clip")
-    print("  4. no unrelated structure spawns elsewhere on the pad")
-    print("  5. camera framing matches the Camera B edit - no drift")
-    print("  6. continues directly from camera_b_edit.jpg - the pad and debris ridge are unchanged")
-    print("     everywhere the builder has not worked")
+    print("\nSTOP HERE. Review foundation_raw.mp4 in this priority order:")
+    print("  1. the hydraulic post-driver visibly causes each post to be installed")
+    print("  2. POSITION -> DRIVE/SET -> SHIFT -> REPEAT reads as one clear mechanical loop")
+    print("  3. progress moves across one contiguous area in one consistent direction")
+    print("  4. installed posts | builder/driver | empty pad - frontier moving steadily,")
+    print("     no post ever appears ahead of the active frontier")
+    print("  5. already-installed posts remain fixed - nothing shifts once placed")
+    print("  Also: NO joists, beams, decking, framing, walls, roof, or glass appear anywhere;")
+    print("  no unrelated structure spawns elsewhere on the pad;")
+    print("  camera framing matches the Camera B edit - no drift;")
+    print("  continues directly from camera_b_edit.jpg - the pad and debris ridge are unchanged")
+    print("  everywhere the builder has not worked")
     print("\nDo NOT run Stage B2 (Decking) until you have reviewed and approved this clip.")
     print("Stage B2 has not been built yet - Framing is flagged as the highest-risk compressed")
     print("stage in this shorter plan and will need its own constrained, single-frontier design.")

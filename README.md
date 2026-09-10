@@ -2019,6 +2019,38 @@ lighting) and both prohibition clauses (no new construction, nothing
 removed), cost is exactly $0.15, and the source clip's bytes/mtime are
 completely unchanged throughout.
 
+## FORMA production phases (permanent project note)
+
+FORMA operates in two distinct phases, and the target video length is a
+deliberate function of which phase the account is in - not a fixed
+creative decision:
+
+- **Phase 1 - audience growth (current phase).** TikTok's Creator Rewards
+  structure only pays out meaningfully once an account qualifies for it;
+  until then there is no monetization reason to pay for 61-65 second
+  videos every time. Phase 1 targets **~28-35 second finished videos
+  (~30-32s preferred)**, built cheaper and faster so more concepts can be
+  tested and the account can grow on views, not payout-per-video. The
+  standard is NOT lowered in Phase 1 - every video still needs to be a
+  complete transformation (HOOK -> PREP -> STRUCTURE -> RECOGNIZABLE
+  BUILD -> FINISH -> PAYOFF), still uses the same visual quality bar and
+  the same FORMA identity, and still follows every locked production
+  principle (Causal Labor, Construction Frontier, Checkpoint Chaining,
+  the FORMA Site Prep Rule, the camera-transition rule). What changes is
+  scale: fewer paid generations, fewer camera chapters, stages combined
+  or compressed rather than chained into micro-steps, and less footage
+  overall - the production is shortened, not the standard.
+- **Phase 2 - monetization.** Once FORMA qualifies for Creator Rewards
+  (or another monetization mechanism where longer runtime materially
+  increases payout), the target format switches back to **~61-65 second
+  finished videos**, the original full-scale production plan (~12-18 Wan
+  generations, 120-160s total raw video, more camera chapters, longer
+  chained construction sequences).
+
+Switching phases is a deliberate, explicit decision - not something
+inferred from a single video's constraints - and should be recorded here
+when it happens.
+
 ## Running FORMA Video #1 - Chapter A (spends real money - max $0.95 across 3 gated stages)
 
 Chapter A (Hook + Site Prep) is FORMA Video #1's first production chapter,
@@ -2773,6 +2805,42 @@ provider-level rate limiting.
   and `_prep2.py` re-verified offline (same mocked-transport dry runs,
   updated assertions for the new machine/obstacle/pile language); full
   suite still 88 passed. Not yet re-generated for real.
+- **Prep 1 (mechanical excavator), real result: still rejected as the
+  permanent formula**: visual quality was fine, but repeated scoop/swing/
+  dump cycles into a static pile were judged weaker than a single
+  continuous sweeping action. Prep 1 was redesigned again around a
+  compact tracked skid-steer with a wide grading blade - PUSH -> CLEAR ->
+  ADVANCE -> COMPLETE, a single sweeping frontier (cleared pad | machine/
+  blade | rough site) rather than scoop cycles - generated for real and
+  **APPROVED**. Prep 2 was then rewritten to continue the same approved
+  blade machine from Prep 1's actual real last frame (ADVANCE ->
+  PUSH/LEVEL -> SHIFT -> COMPLETE) and also approved. **Chapter A (Hook +
+  Site Prep) is now fully approved** - Hook, Prep 1, and Prep 2 all keep
+  their real generated footage; the blade-based prep formula replaces the
+  excavator formula as the permanent FORMA site-prep approach going
+  forward, whenever terrain allows a single sweeping machine action.
+- **FORMA PHASE 1 STRATEGY PIVOT**: before continuing FORMA Video #1
+  past Chapter A, adopted a permanent two-phase production strategy (see
+  "FORMA production phases" above) - Phase 1 (audience growth, current)
+  targets ~28-35s finished videos (~30-32s preferred) at lower cost and
+  generation count, while the account builds toward TikTok Creator
+  Rewards qualification; Phase 2 (monetization) returns to the original
+  ~61-65s full-scale format once longer runtime materially matters for
+  payout. This is a scale decision, not a quality one - every locked
+  principle (Causal Labor, Construction Frontier, Checkpoint Chaining,
+  FORMA Site Prep Rule, camera-transition rule) still applies.
+- **FORMA Video #1, revised remaining production plan (Phase 1 scale)**:
+  rebuilt the rest of Waterfall Cave -> Glass Hideaway around a ~31s
+  total finished runtime instead of ~63s, keeping all approved Chapter A
+  footage unchanged (~9.1s finished contribution) and compressing the
+  remaining chapters (Foundation, Decking, Framing, Glass Facade, Reveal)
+  to one clip each instead of multi-clip chains, with "minimal finishing"
+  folded into the tail of the Glass Facade clip rather than its own
+  generation. 5 remaining Wan video generations + 3 camera-transition
+  `NANO_BANANA_PRO_EDIT` calls, ~38s remaining raw video, ~$2.35
+  remaining estimated cost (~$3.30 total for the whole video including
+  the $0.95 already spent on Chapter A). Planning only - not yet
+  implemented as scripts, no paid calls made.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

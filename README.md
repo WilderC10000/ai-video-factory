@@ -2136,10 +2136,12 @@ review before running Stage A4.**
 ### Stage A4 - Local assembly (free - no API calls, no FAL_API_KEY needed)
 
 Runnable only after all three raw clips exist. Pure local FFmpeg:
-accelerates each raw clip individually (Hook 1.3x, Prep 1 ~2.33x, Prep 2
-~2.67x - easily adjustable by editing the `*_FACTOR` constants and
-re-running, a free and instant step), then concatenates the accelerated
-clips into one combined preview:
+accelerates each raw clip individually (Hook 4.0x, Prep 1 3.5x, Prep 2
+4.0x -> ~5.0s finished total, retuned down from an earlier ~9.1s cut
+under the FORMA Phase 1 ~31s target so the freed screen time goes to
+Foundation/Decking instead - easily adjustable by editing the
+`*_FACTOR` constants and re-running, a free and instant step), then
+concatenates the accelerated clips into one combined preview:
 
 ```bash
 python -m scripts.run_forma_v1_chapter_a_assemble
@@ -2832,12 +2834,24 @@ provider-level rate limiting.
 - **FORMA Video #1, revised remaining production plan (Phase 1 scale)**:
   rebuilt the rest of Waterfall Cave -> Glass Hideaway around a ~31s
   total finished runtime instead of ~63s, keeping all approved Chapter A
-  footage unchanged (~9.1s finished contribution) and compressing the
-  remaining chapters (Foundation, Decking, Framing, Glass Facade, Reveal)
-  to one clip each instead of multi-clip chains, with "minimal finishing"
-  folded into the tail of the Glass Facade clip rather than its own
-  generation. 5 remaining Wan video generations + 3 camera-transition
-  `NANO_BANANA_PRO_EDIT` calls, ~38s remaining raw video, ~$2.35
+  raw footage unchanged (no regeneration) and compressing the remaining
+  chapters (Foundation, Decking, Framing, Glass Facade, Reveal) to one
+  clip each instead of multi-clip chains, with "minimal finishing" folded
+  into the tail of the Glass Facade clip rather than its own generation.
+  Chapter A's own finished-seconds budget was then retuned down further,
+  from ~9.1s to **~5.0s** (Stage A4's Hook/Prep1/Prep2 factors retuned to
+  4.0x/3.5x/4.0x, a free local change - no regeneration, no cost change),
+  specifically to free screen time for Foundation and Decking rather than
+  the Hook/Prep setup - "don't compromise on the timelapse" means keeping
+  the actual build stages unhurried, not the establishing chapter. Freed
+  time went to Foundation (7s raw / 1.27x -> 5.5s finished) and Decking
+  (7s raw / 1.27x -> 5.5s finished, checkpoint-chained from Foundation's
+  real last frame), both intentionally close to real-time so the causal
+  build reads clearly rather than rushed; Framing (8s raw/2.0x -> 4.0s),
+  Glass Facade (8s raw/2.0x -> 4.0s), and Reveal (8s raw/~1.14x -> 7.0s)
+  are unchanged from the original revised plan. 5 remaining Wan video
+  generations + 3 camera-transition `NANO_BANANA_PRO_EDIT` calls, ~38s
+  remaining raw video, ~$2.35
   remaining estimated cost (~$3.30 total for the whole video including
   the $0.95 already spent on Chapter A). Planning only - not yet
   implemented as scripts, no paid calls made.

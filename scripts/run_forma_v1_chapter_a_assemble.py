@@ -12,11 +12,17 @@ existing concatenate_videos() - the same "accelerate each clip, then
 concatenate the accelerated versions" order already validated in
 Validation Test #3, not concatenate-then-accelerate.
 
-Default acceleration factors match the approved Chapter A preflight
-(Hook near-real-time, Site Prep clips compressed to ~3s finished each):
-  Hook:   4s raw / 1.3x  -> ~3.1s finished
-  Prep 1: 7s raw / 2.333x -> ~3.0s finished
-  Prep 2: 8s raw / 2.667x -> ~3.0s finished
+RETUNED for the FORMA Phase 1 (audience-growth) ~31s cut of FORMA Video
+#1: Chapter A's finished-seconds budget was deliberately shrunk from
+~9.1s to ~5.0s so the freed screen time could go to Foundation and
+Decking instead (the actual build stages) rather than the Hook/Prep
+setup - "don't compromise on the timelapse" refers to keeping the build
+chapters unhurried, which this frees room for:
+  Hook:   4s raw / 4.0x -> 1.0s finished
+  Prep 1: 7s raw / 3.5x -> 2.0s finished
+  Prep 2: 8s raw / 4.0x -> 2.0s finished
+  (sum: 5.0s finished - unchanged raw footage, unchanged cost, purely a
+  free local re-tune of these factors)
 These are easily adjustable by editing the *_FACTOR constants below and
 re-running this script - it's a free, local, instantly-repeatable step,
 so there's no need to get the factors exactly right on the first pass.
@@ -37,9 +43,9 @@ from scripts.run_forma_v1_chapter_a_hook import HOOK_RAW_PATH, MANIFEST_PATH, OU
 from scripts.run_forma_v1_chapter_a_prep1 import PREP1_RAW_PATH
 from scripts.run_forma_v1_chapter_a_prep2 import PREP2_RAW_PATH
 
-HOOK_FACTOR = 1.3
-PREP1_FACTOR = 7 / 3
-PREP2_FACTOR = 8 / 3
+HOOK_FACTOR = 4.0
+PREP1_FACTOR = 3.5
+PREP2_FACTOR = 4.0
 
 HOOK_ACCEL_PATH = OUTPUT_DIR / "hook_accelerated.mp4"
 PREP1_ACCEL_PATH = OUTPUT_DIR / "site_prep_clip1_accelerated.mp4"
@@ -126,10 +132,11 @@ def main() -> None:
     print("=" * 70)
     print(f"Combined preview: {COMBINED_PREVIEW_PATH}")
     print(f"Manifest:         {MANIFEST_PATH}")
-    print("\nReview chapter_a_combined_preview.mp4 as one continuous ~9s piece:")
+    print("\nReview chapter_a_combined_preview.mp4 as one continuous ~5s piece:")
     print("  - reads as one escalating chapter, not three disconnected clips")
-    print("  - Hook's real-time establishing beat, then Site Prep's accelerated progress")
+    print("  - Hook's quick establishing beat, then Site Prep's accelerated progress")
     print("  - no visible seam/discontinuity between clips")
+    print("  - intentionally tight: this budget was shrunk to give Foundation/Decking more room")
 
 
 if __name__ == "__main__":

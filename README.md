@@ -2161,6 +2161,61 @@ confirms it fails cleanly when clips are missing and otherwise produces
 real, valid accelerated clips and a real combined preview via genuine
 ffmpeg operations, with none of the three raw clips ever modified.
 
+## Running FORMA Video #1 - Chapter B (spends real money - max $0.50 across 2 gated stages)
+
+Chapter B (Foundation/Floor) is FORMA Video #1's second production
+chapter, under the FORMA Phase 1 ~31s target. Same hard-gate pattern as
+Chapter A: each stage stops completely after its own paid call, and the
+next stage requires its own explicit "have you reviewed and approved
+the previous output?" confirmation - not skippable by `--yes` - before
+its own cost-confirmation prompt even appears.
+
+### Stage B0 - Camera B transition edit (spends real money - max $0.15)
+
+Runnable only after Chapter A's `site_prep_clip2_raw.mp4` exists.
+Extracts its real last frame locally (free), then requires typing `yes`
+at the upstream-approval prompt before the cost-confirmation prompt:
+
+```bash
+python -m scripts.run_forma_v1_chapter_b_camera_edit
+python -m scripts.run_forma_v1_chapter_b_camera_edit --yes
+```
+
+`NANO_BANANA_PRO_EDIT`, a conservative ~20-30 degree camera nudge,
+conditioned on the real extracted frame - per the locked camera-
+transition rule. Preserves the cleared/leveled pad, the single debris
+ridge, the skid-steer machine, and the cave/waterfall exactly; adds no
+construction of any kind. Output: `data/forma_video_1_chapter_b/camera_b_edit.jpg`.
+**Stop here and review before running Stage B1** - only after this edit
+is approved does Foundation become eligible to run.
+
+### Stage B1 - Foundation/Floor (spends real money - max $0.35)
+
+Runnable only after `camera_b_edit.jpg` exists and is approved. Uses the
+edit image directly as the starting image (no frame extraction needed -
+it's already a still image):
+
+```bash
+python -m scripts.run_forma_v1_chapter_b_foundation
+python -m scripts.run_forma_v1_chapter_b_foundation --yes
+```
+
+Wan 3.0 standard, 480p, 9:16, 7s. A single bounded causal operation per
+explicit instruction: the builder installs foundation posts across the
+pad one at a time, in one continuous direction - no decking, no framing,
+no walls, and no glass appear in this clip; those are separate, later
+stages. Output: `data/forma_video_1_chapter_b/foundation_raw.mp4`. **Stop
+here and review** - Decking (Stage B2) has not been built yet.
+
+Verified entirely offline: mocked-transport dry runs for both stages
+confirm exactly 1 call each (image edit for B0, video for B1) with the
+correct endpoint, no video endpoint touched by B0 and no image endpoint
+touched by B1, no audio field/language anywhere, and that declining the
+upstream-approval prompt makes zero calls (B0 doesn't even extract a
+frame); cost is exactly $0.15 (B0) / $0.35 (B1); the upstream file
+(`site_prep_clip2_raw.mp4` / `camera_b_edit.jpg`) is completely unchanged
+throughout each dry run.
+
 ## Running the API server
 
 ```bash
@@ -2855,6 +2910,22 @@ provider-level rate limiting.
   remaining estimated cost (~$3.30 total for the whole video including
   the $0.95 already spent on Chapter A). Planning only - not yet
   implemented as scripts, no paid calls made.
+- **FORMA Video #1, Chapter B (Foundation/Floor) preflight and
+  implementation**: Chapter B's Camera B transition and Foundation clip,
+  built with the same hard-gate architecture as Chapter A - `scripts/
+  run_forma_v1_chapter_b_camera_edit.py` (Stage B0: `NANO_BANANA_PRO_EDIT`
+  camera nudge conditioned on the real extracted last frame of Chapter
+  A's approved `site_prep_clip2_raw.mp4`, per the locked camera-transition
+  rule) and `scripts/run_forma_v1_chapter_b_foundation.py` (Stage B1:
+  Foundation, a single bounded causal operation - foundation posts one at
+  a time, in one direction - explicitly excluding decking, framing,
+  walls, and glass, which are separate later stages). Foundation is only
+  eligible to run after Stage B0's edit is explicitly approved via its
+  own upstream-approval gate, distinct from the cost-confirmation gate.
+  See "Running FORMA Video #1 - Chapter B" below. Framing was flagged as
+  the highest-risk compressed stage in the shorter Phase 1 plan and will
+  need its own constrained, single-frontier design when reached - not yet
+  built.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

@@ -2071,6 +2071,43 @@ no moved/added posts or beams, no altered site, no next-phase elements),
 cost is exactly $0.15, and the source clip's bytes/mtime are completely
 unchanged throughout.
 
+## FORMA Video #1 pivot: cliffside cabin, not waterfall cave (permanent project note)
+
+The cliffside cabin build (Segments 1A/1B/2 + the Construction Frontier
+Test's decking clip) is now FORMA's first real posted video - it is
+simpler, already more validated (three approved/locked real segments
+plus a passed decking test), and lower-risk than the Waterfall Cave
+concept, which becomes a later project. Nothing about the Waterfall Cave
+planning/scripts already built is discarded - it's simply not next.
+
+## Running the cliffside rough assembly (free - no API calls, no FAL_API_KEY needed)
+
+Pure local FFmpeg, no spend of any kind. Before any new paid generation
+for the cliffside video, this answers a simple question for free: how
+much of the 30-32s Phase 1 target is already covered by footage that is
+APPROVED, LOCKED, and already paid for? Accelerates and concatenates the
+four existing real clips (Segment 1A, Segment 1B, Segment 2, and the
+Construction Frontier Test's decking clip) into one rough preview,
+covering the "existing material" ~17.5s of the final video - Framing,
+Finishing, and the Reveal are new generation, not included here.
+
+```bash
+python -m scripts.run_cliffside_video_1_rough_assembly
+```
+
+Requires `segment_1a.mp4`, `segment_1b.mp4`, `segment_2.mp4`, and
+`construction_frontier_raw.mp4` to already exist (from prior real runs of
+their own scripts) - fails clearly listing whichever are missing. None of
+the four source clips are ever modified. Output:
+`data/cliffside_video_1/rough_assembly_preview.mp4`, `manifest.json`.
+
+Verified entirely offline: a dry run using the repo's real fixture clip
+as a stand-in for all four source files confirms it fails cleanly when
+clips are missing and otherwise produces real, valid accelerated clips at
+the documented factors (1.5x/2.0x/2.2x/2.5x) and a real combined preview
+via genuine ffmpeg operations, with none of the four source clips ever
+modified.
+
 ## FORMA production phases (permanent project note)
 
 FORMA operates in two distinct phases, and the target video length is a
@@ -3056,6 +3093,39 @@ provider-level rate limiting.
   landmarks, lighting, and builder identity and introducing no next-phase
   elements. Exactly 1 image-edit call, no video call, no other file
   touched. See "Running the compound edit validation test" above.
+- **FORMA Video #1 pivot: cliffside cabin becomes the first real posted
+  video**: after studying the reference TikTok footage, the cliffside
+  build (Segments 1A/1B/2, plus the passed Construction Frontier decking
+  test) was judged simpler, more validated, and lower-risk than Waterfall
+  Cave, which becomes a later project. See "FORMA Video #1 pivot" above.
+- **Cliffside Video #1, revised ~30-32s production plan (planning only)**:
+  reuses four already-approved, already-paid-for real clips as the
+  existing-material portion of the video (literal cuts/concatenation, no
+  new continuity mechanism needed - each is independently approved
+  footage): Segment 1A (6s raw/1.5x->4.0s, coastal establishing beat),
+  Segment 1B (8s raw/2.0x->4.0s, foundation/joists), Segment 2 (12s
+  raw/2.2x->5.5s, platform expansion - the strongest visual beat, given
+  more finished screen time), Construction Frontier Test's decking clip
+  (10s raw/2.5x->4.0s, right-to-left decking, ends with joists still
+  partially exposed) - ~17.5s total, free to assemble via `scripts/
+  run_cliffside_video_1_rough_assembly.py` (see above). Three NEW jump
+  cuts complete the story per the FORMA jump-cut grammar: (1) EDIT -
+  decking-completion + modest camera nudge, conditioned on the
+  Construction Frontier Test's own real last frame (the same mechanism
+  the compound edit validation test proved, redirected to this real,
+  confirmed-existing source rather than the unconfirmed Checkpoint Chain
+  Test output); (2) a new Framing mechanism clip (6s raw/1.5x->4.0s,
+  demonstrates 1-3 studs only, the highest-risk compressed stage,
+  constrained to one frontier) followed by an EDIT - framing-completion +
+  modest camera nudge; (3) a new Finishing mechanism clip (5s raw/
+  1.3x->3.8s, demonstrates one window/door installation) followed by an
+  EDIT - finishing-completion (full windows/door/roof done). The Reveal
+  (7s raw/1.1x->6.4s, in-generation camera pull-back, no edit - per the
+  already-locked safest-reveal method) runs directly from the finishing-
+  completion edit's own image. Total: ~31.7s finished, 3 new Wan
+  generations (18s raw, ~$0.90) + 3 new edits (~$0.45) = **~$1.35
+  remaining generation cost**. Not yet implemented as scripts beyond the
+  free rough assembly above - no paid calls made.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

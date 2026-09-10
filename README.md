@@ -2108,6 +2108,86 @@ the documented factors (1.5x/2.0x/2.2x/2.5x) and a real combined preview
 via genuine ffmpeg operations, with none of the four source clips ever
 modified.
 
+## Cliffside cabin permanent structure definition (construction spec)
+
+The finished structure is a small modern single-story cliffside cabin,
+built directly on the existing approved platform and never growing
+beyond its footprint. These are visual anchors, not engineering
+requirements - the actual generated platform pixels remain authoritative
+if there is ever a conflict:
+
+- overall footprint: approximately 12 feet wide by 16 feet deep, simple
+  rectangular perimeter
+- wall height: approximately 8 feet
+- roof peak: approximately 10-11 feet
+- single story only, no second floor, no balcony beyond the existing
+  platform
+- lightweight timber-frame construction, modern minimalist design
+- ocean-facing wall carries the largest glass area (2-3 panels,
+  each roughly 3-4 feet wide by 7-8 feet tall - not floor-to-ceiling)
+- one primary doorway on the landward/side wall
+- dark-stained timber or charcoal-toned exterior cladding, natural wood
+  accents, clean modern lines - premium but restrained
+- no oversized/luxury-villa proportions, no random wings or extensions,
+  no extra rooms, no chimneys/solar panels/decorative clutter unless
+  already planned
+
+## Running Cliffside Video #1, Part 2 (spends real money - max $1.60 across 7 gated stages)
+
+Part 2 (Framing -> Finishing -> Reveal) continues directly from Part 1's
+approved rough assembly, per the FORMA jump-cut grammar: DEMONSTRATE (a
+short Wan mechanism clip, 1-3 repetitions only) -> JUMP CUT (a
+`NANO_BANANA_PRO_EDIT` that advances construction to a logical completed
+state, per the construction spec above, plus a modest ~15-20 degree
+camera nudge) -> NEXT LOGICAL STAGE. Same hard-gate pattern as every
+other stage in this project: each script stops completely after its own
+paid call, and the next stage requires its own explicit upstream-approval
+confirmation - not skippable by `--yes` - before its own cost
+confirmation even appears.
+
+| # | Script | Type | Source | Output | Cost |
+|---|---|---|---|---|---|
+| C0 | `run_cliffside_video_1_decking_complete_edit.py` | EDIT | Construction Frontier Test's real last frame | `decking_complete_edit.jpg` | $0.15 |
+| 1 | `run_cliffside_video_1_part2_framing.py` | Wan (6s) | C0's edit | `framing_raw.mp4` | $0.30 |
+| 2 | `run_cliffside_video_1_part2_framing_edit.py` | EDIT | Shot 1's real last frame | `framing_complete_edit.jpg` | $0.15 |
+| 3 | `run_cliffside_video_1_part2_glass.py` | Wan (5s) | Jump Cut 1's edit | `glass_raw.mp4` | $0.25 |
+| 4 | `run_cliffside_video_1_part2_exterior_edit.py` | EDIT | Shot 2's real last frame | `exterior_complete_edit.jpg` | $0.15 |
+| 5 | `run_cliffside_video_1_part2_final_detail.py` | Wan (5s) | Jump Cut 2's edit | `final_detail_raw.mp4` | $0.25 |
+| 6 | `run_cliffside_video_1_part2_reveal.py` | Wan (7s), no edit | Shot 5's real last frame | `reveal_raw.mp4` | $0.35 |
+
+```bash
+python -m scripts.run_cliffside_video_1_decking_complete_edit
+python -m scripts.run_cliffside_video_1_part2_framing
+python -m scripts.run_cliffside_video_1_part2_framing_edit
+python -m scripts.run_cliffside_video_1_part2_glass
+python -m scripts.run_cliffside_video_1_part2_exterior_edit
+python -m scripts.run_cliffside_video_1_part2_final_detail
+python -m scripts.run_cliffside_video_1_part2_reveal
+```
+
+Each accepts `--yes` to skip only its own cost-confirmation prompt - the
+upstream-approval prompt always fires and is never skippable. All output
+lands in `data/cliffside_video_1/` alongside Part 1's rough assembly,
+sharing one `manifest.json` (each script only writes its own top-level
+key). Stage C0 is a precondition for Shot 1: Part 1's rough assembly ends
+on the Construction Frontier Test's decking-in-progress footage, and
+Framing needs a fully-decked floor to start from - not one of the
+user-numbered "6 gated steps," but load-bearing for all of them. The
+Reveal (Shot 6) is checkpoint-chained directly from Final Detail's real
+last frame with NO edit in between, per the already-locked safest-reveal
+method.
+
+Verified entirely offline: a consolidated mocked-transport dry run
+chains through all 7 stages in sequence (each stage's fake output feeding
+the next, using the repo's real fixture clip wherever a later stage
+extracts a real last frame), confirming for every stage that the decline
+path makes zero calls, the accept path makes exactly 1 call to the
+correct endpoint only (no video endpoint touched by any EDIT stage, no
+image endpoint touched by any Wan stage), every prompt carries its
+dimension/material/exclusion language, no audio field or language
+anywhere, costs are exactly as documented ($1.60 total), and every
+upstream file is completely unchanged throughout its own stage.
+
 ## FORMA production phases (permanent project note)
 
 FORMA operates in two distinct phases, and the target video length is a
@@ -3126,6 +3206,17 @@ provider-level rate limiting.
   generations (18s raw, ~$0.90) + 3 new edits (~$0.45) = **~$1.35
   remaining generation cost**. Not yet implemented as scripts beyond the
   free rough assembly above - no paid calls made.
+- **Cliffside Video #1, Part 2 (Framing -> Finishing -> Reveal) built and
+  offline-verified (result pending review)**: a construction-spec-driven
+  rewrite of the remaining ~14s, with exact dimensions (12x16ft footprint,
+  8ft walls, 10-11ft roof peak, 3-4ft x 7-8ft glass panels) so nothing
+  important is left to the model's imagination - see "Cliffside cabin
+  permanent structure definition" and "Running Cliffside Video #1, Part 2"
+  above. 7 hard-gated stages (1 precondition edit + 3 DEMONSTRATE/JUMP-CUT
+  pairs + a no-edit checkpoint-chained Reveal), $1.60 total (up from the
+  originally estimated ~$1.35 - the user's detailed spec added a
+  dedicated Final Detail shot beyond the original 3-video plan). Not yet
+  run for real - no paid calls made.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

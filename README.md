@@ -2194,6 +2194,74 @@ dimension/material/exclusion language, no audio field or language
 anywhere, costs are exactly as documented ($1.35 total), and every
 upstream file is completely unchanged throughout its own stage.
 
+## Execution model (permanent project note)
+
+Claude's sandbox for this project has no network path to fal.ai (no
+`FAL_API_KEY`, no reachable `fal.run`/`queue.fal.run`) and never has, for
+the life of this project. Every real generation described anywhere in
+this README - every approved segment, every passed validation test, the
+approved Framing clip - was produced by the user running the exact
+script and command shown, on their own machine, with their own API key,
+then reporting the real result back. Claude's role is to design the
+production grammar, write and offline-verify every script (mocked HTTP
+transport standing in for fal.ai, the repo's real fixture clip standing
+in for real footage where ffmpeg needs genuine video data), and hand over
+exact commands - never to execute paid calls itself. "Authorize Claude to
+make the paid calls" is not something this sandbox can act on directly;
+the useful equivalent is finishing every remaining script, gate, and
+assembly step so the user can run the whole remaining sequence themselves
+in one sitting without coming back for a new preflight after each one.
+
+## Running the Cliffside Video #1 budget check (free - no API calls, no FAL_API_KEY needed)
+
+Reads `data/cliffside_video_1/manifest.json` and sums every stage's real
+`actual_cost_usd` against a cap (defaults to $5.00, the Part 2
+completion budget) so you can check remaining budget before any paid
+call without doing the arithmetic by hand:
+
+```bash
+python -m scripts.run_cliffside_video_1_budget_check
+python -m scripts.run_cliffside_video_1_budget_check 3.00
+```
+
+Prints each Part 2 stage's real cost (or "not run" if it hasn't happened
+yet), total spent, and remaining budget against the cap - warns if spend
+already exceeds it.
+
+## Running the Cliffside Video #1 final assembly (free - no API calls, no FAL_API_KEY needed)
+
+Pure local FFmpeg. Combines all seven real clips (Segment 1A, 1B, 2, the
+Construction Frontier decking clip, Framing, Glass, Reveal) into one
+finished ~30-32s cut. The jump-cut EDIT images
+(`decking_complete_edit.jpg`, `framing_complete_edit.jpg`,
+`exterior_complete_edit.jpg`) are never separate visible shots - they
+only ever conditioned the next Wan generation; the "jump cut" the viewer
+sees is the trimmed+accelerated transition straight from one real clip
+into the next.
+
+```bash
+python -m scripts.run_cliffside_video_1_final_assembly
+```
+
+Each clip gets its own trim (in/out seconds via the new `trim_video()` in
+`app/services/video_assembly.py` - "don't preserve footage just because
+it was paid for") and its own acceleration factor, tuned as plain
+constants in `CLIP_SPECS` - free, local, instantly re-editable after
+watching the real raw clips, no re-generation needed. Requires all seven
+source clips to already exist; fails clearly listing whichever are
+missing. Output: `data/cliffside_video_1/cliffside_video_1_final_visual.mp4`,
+per-clip trimmed/accelerated intermediates under `data/cliffside_video_1/final/`,
+`manifest.json["final_assembly"]` (per-clip trim/factor/finished-seconds
+breakdown, final duration, target range).
+
+Verified entirely offline: a dry run using the repo's real fixture clip
+as a stand-in for all seven source files confirms it fails cleanly when
+clips are missing and otherwise produces real trimmed/accelerated clips
+and a real concatenated final master via genuine ffmpeg operations
+(including `trim_video()`, covered by its own real, non-mocked tests in
+`tests/test_video_assembly.py`), with none of the seven source clips ever
+modified.
+
 ## FORMA production phases (permanent project note)
 
 FORMA operates in two distinct phases, and the target video length is a

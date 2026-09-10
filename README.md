@@ -2019,6 +2019,58 @@ lighting) and both prohibition clauses (no new construction, nothing
 removed), cost is exactly $0.15, and the source clip's bytes/mtime are
 completely unchanged throughout.
 
+## Running the compound edit validation test (spends real money - max $0.15)
+
+FORMA's redesigned jump-cut architecture (see "FORMA jump-cut grammar"
+below) depends on a bigger ask of `NANO_BANANA_PRO_EDIT` than the
+camera-transition rule above ever tested: can a single edit call both
+advance an already-visible construction phase to its logical completion
+AND make a modest camera nudge, while preserving everything else? The
+camera-transition test proved the nudge alone, on an otherwise-unchanged
+structure - it never asked the edit to also complete construction.
+`scripts/run_edit_advance_completion_test.py` tests this compound
+behavior in isolation, before it's relied on anywhere in FORMA Video #1.
+
+**Source**: the real, literal last frame of the cliff-cabin Checkpoint
+Chain Test's own raw output (`data/fal_checkpoint_chain_test/clip_b_raw.mp4`),
+extracted locally via `extract_last_frame()` (read-only - the video file
+is never modified). Chosen deliberately because it shows a partially-decked,
+exposed-joist floor - a clean, already-existing example of a partially
+completed but clearly recognizable construction phase that doesn't
+depend on any unfinished Waterfall Cave footage.
+
+**Edit prompt** (asks for phase completion + a small camera nudge, names
+every preservation and prohibition clause explicitly):
+
+> This is an intentional editorial jump cut - the same construction project, filmed again some time later, with the same decking phase now further along - not a different or redesigned version of the build. Keep the underlying structure exactly as it is: the same platform proportions, the same foundation posts and perimeter beams in the same positions, the same joist spacing and layout, the same builder (same identity, clothing, and pose intent), the same site, cliff, boulder, and coastline geometry, and the same lighting direction. Shift the camera only slightly - approximately 15 to 20 degrees around the site - to a nearby, modestly different viewpoint, as if a second camera had been placed a short distance away. Advance ONLY the decking: complete the remaining exposed joists with the same style and spacing of deck boards already visible, so the section of floor that was still exposed joists in the starting image now reads as fully decked, matching and continuing the boards already installed. Do not change the platform's size or shape, do not move or add any posts or beams, do not alter the site or landscape, and do not begin or imply any next construction phase - no walls, no roof, no glass, no framing beyond the existing joists. This is purely completing the current decking phase and a small camera nudge, not inventing new construction.
+
+```bash
+python -m scripts.run_edit_advance_completion_test
+python -m scripts.run_edit_advance_completion_test --yes
+```
+
+Exactly 1 `NANO_BANANA_PRO_EDIT` call, no video call of any kind, no
+retries. $0.15 flat rate - **hard cap with zero margin**. This is a pure
+mechanism test - it does not touch any cliff-cabin segment, Validation
+Test #1-3, the Checkpoint Chain Test's own output, or FORMA Video #1
+itself.
+
+Outputs land in `data/fal_edit_advance_completion_test/` (gitignored):
+`checkpoint_chain_real_last_frame.jpg` (the real source),
+`advanced_completion_edit.jpg` (the result), `manifest.json`.
+
+Verified entirely offline: a mocked-transport dry run uses the repo's
+real fixture clip in place of `clip_b_raw.mp4` so `extract_last_frame()`
+runs against genuine video data, confirms the `/edit` endpoint is used
+(never the text-to-image `/generate` endpoint), the exact real extracted
+frame's bytes are what gets uploaded, the prompt contains the 15-20
+degree instruction plus every preservation clause (platform proportions,
+posts/beams, joist spacing/layout, builder identity, site/cliff/boulder/
+coastline, lighting) and every prohibition clause (no size/shape change,
+no moved/added posts or beams, no altered site, no next-phase elements),
+cost is exactly $0.15, and the source clip's bytes/mtime are completely
+unchanged throughout.
+
 ## FORMA production phases (permanent project note)
 
 FORMA operates in two distinct phases, and the target video length is a
@@ -2992,6 +3044,18 @@ provider-level rate limiting.
   A's ~5s). Not yet implemented as scripts, no paid calls made - the
   advance-and-nudge edit mechanism itself is flagged as unvalidated and
   a small real test is recommended before committing to it at scale.
+- **Compound edit validation test, built and offline-verified (result
+  pending review)**: before committing FORMA Video #1's jump-cut
+  architecture to the advance-and-nudge edit mechanism,
+  `scripts/run_edit_advance_completion_test.py` tests it in isolation
+  against real, already-existing cliff-cabin footage: the real last frame
+  of the Checkpoint Chain Test's own raw output (chosen for its
+  partially-decked, exposed-joist floor), asking for ONE compound edit
+  that both completes the visible decking phase and applies a
+  conservative ~15-20 degree camera nudge, while preserving structure,
+  landmarks, lighting, and builder identity and introducing no next-phase
+  elements. Exactly 1 image-edit call, no video call, no other file
+  touched. See "Running the compound edit validation test" above.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

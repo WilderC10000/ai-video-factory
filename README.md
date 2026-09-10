@@ -2132,9 +2132,9 @@ if there is ever a conflict:
   no extra rooms, no chimneys/solar panels/decorative clutter unless
   already planned
 
-## Running Cliffside Video #1, Part 2 (spends real money - max $1.60 across 7 gated stages)
+## Running Cliffside Video #1, Part 2 (spends real money - max $1.35 across 6 gated stages)
 
-Part 2 (Framing -> Finishing -> Reveal) continues directly from Part 1's
+Part 2 (Framing -> Glass -> Reveal) continues directly from Part 1's
 approved rough assembly, per the FORMA jump-cut grammar: DEMONSTRATE (a
 short Wan mechanism clip, 1-3 repetitions only) -> JUMP CUT (a
 `NANO_BANANA_PRO_EDIT` that advances construction to a logical completed
@@ -2145,6 +2145,12 @@ paid call, and the next stage requires its own explicit upstream-approval
 confirmation - not skippable by `--yes` - before its own cost
 confirmation even appears.
 
+A dedicated Final Detail shot was cut after the first pass on cost/
+pacing grounds: for a ~30s Phase 1 video, a 5s/$0.25 generation for one
+finishing gesture didn't earn its screen time or cost. The Reveal now
+runs directly off the exterior-completion edit's own image - no
+intermediate video checkpoint needed.
+
 | # | Script | Type | Source | Output | Cost |
 |---|---|---|---|---|---|
 | C0 | `run_cliffside_video_1_decking_complete_edit.py` | EDIT | Construction Frontier Test's real last frame | `decking_complete_edit.jpg` | $0.15 |
@@ -2152,8 +2158,7 @@ confirmation even appears.
 | 2 | `run_cliffside_video_1_part2_framing_edit.py` | EDIT | Shot 1's real last frame | `framing_complete_edit.jpg` | $0.15 |
 | 3 | `run_cliffside_video_1_part2_glass.py` | Wan (5s) | Jump Cut 1's edit | `glass_raw.mp4` | $0.25 |
 | 4 | `run_cliffside_video_1_part2_exterior_edit.py` | EDIT | Shot 2's real last frame | `exterior_complete_edit.jpg` | $0.15 |
-| 5 | `run_cliffside_video_1_part2_final_detail.py` | Wan (5s) | Jump Cut 2's edit | `final_detail_raw.mp4` | $0.25 |
-| 6 | `run_cliffside_video_1_part2_reveal.py` | Wan (7s), no edit | Shot 5's real last frame | `reveal_raw.mp4` | $0.35 |
+| 5 | `run_cliffside_video_1_part2_reveal.py` | Wan (7s), no edit | Jump Cut 2's edit, directly | `reveal_raw.mp4` | $0.35 |
 
 ```bash
 python -m scripts.run_cliffside_video_1_decking_complete_edit
@@ -2161,7 +2166,6 @@ python -m scripts.run_cliffside_video_1_part2_framing
 python -m scripts.run_cliffside_video_1_part2_framing_edit
 python -m scripts.run_cliffside_video_1_part2_glass
 python -m scripts.run_cliffside_video_1_part2_exterior_edit
-python -m scripts.run_cliffside_video_1_part2_final_detail
 python -m scripts.run_cliffside_video_1_part2_reveal
 ```
 
@@ -2173,19 +2177,21 @@ key). Stage C0 is a precondition for Shot 1: Part 1's rough assembly ends
 on the Construction Frontier Test's decking-in-progress footage, and
 Framing needs a fully-decked floor to start from - not one of the
 user-numbered "6 gated steps," but load-bearing for all of them. The
-Reveal (Shot 6) is checkpoint-chained directly from Final Detail's real
-last frame with NO edit in between, per the already-locked safest-reveal
-method.
+Reveal (Shot 5) runs directly from `exterior_complete_edit.jpg` - no
+frame extraction, no further edit - per the already-locked safest-reveal
+method (the edit already happened at Jump Cut 2; this shot runs straight
+off its output, the same pattern already used for FORMA Video #1's
+Foundation stage running directly off Camera B's edit).
 
 Verified entirely offline: a consolidated mocked-transport dry run
-chains through all 7 stages in sequence (each stage's fake output feeding
+chains through all 6 stages in sequence (each stage's fake output feeding
 the next, using the repo's real fixture clip wherever a later stage
 extracts a real last frame), confirming for every stage that the decline
 path makes zero calls, the accept path makes exactly 1 call to the
 correct endpoint only (no video endpoint touched by any EDIT stage, no
 image endpoint touched by any Wan stage), every prompt carries its
 dimension/material/exclusion language, no audio field or language
-anywhere, costs are exactly as documented ($1.60 total), and every
+anywhere, costs are exactly as documented ($1.35 total), and every
 upstream file is completely unchanged throughout its own stage.
 
 ## FORMA production phases (permanent project note)
@@ -3206,17 +3212,20 @@ provider-level rate limiting.
   generations (18s raw, ~$0.90) + 3 new edits (~$0.45) = **~$1.35
   remaining generation cost**. Not yet implemented as scripts beyond the
   free rough assembly above - no paid calls made.
-- **Cliffside Video #1, Part 2 (Framing -> Finishing -> Reveal) built and
+- **Cliffside Video #1, Part 2 (Framing -> Glass -> Reveal) built and
   offline-verified (result pending review)**: a construction-spec-driven
   rewrite of the remaining ~14s, with exact dimensions (12x16ft footprint,
   8ft walls, 10-11ft roof peak, 3-4ft x 7-8ft glass panels) so nothing
   important is left to the model's imagination - see "Cliffside cabin
   permanent structure definition" and "Running Cliffside Video #1, Part 2"
-  above. 7 hard-gated stages (1 precondition edit + 3 DEMONSTRATE/JUMP-CUT
-  pairs + a no-edit checkpoint-chained Reveal), $1.60 total (up from the
-  originally estimated ~$1.35 - the user's detailed spec added a
-  dedicated Final Detail shot beyond the original 3-video plan). Not yet
-  run for real - no paid calls made.
+  above. Originally 7 hard-gated stages including a dedicated Final Detail
+  shot ($1.60 total); the Final Detail shot was then cut on cost/pacing
+  grounds (a 5s/$0.25 generation for one finishing gesture didn't earn
+  its screen time in a ~30s video) - the Reveal now runs directly off the
+  exterior-completion edit's own image, no intermediate video checkpoint.
+  6 hard-gated stages (1 precondition edit + 2 DEMONSTRATE/JUMP-CUT pairs
+  + a no-edit Reveal sourced straight from the last edit), **$1.35
+  total**. Not yet run for real - no paid calls made.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

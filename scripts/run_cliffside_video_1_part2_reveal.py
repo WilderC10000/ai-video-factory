@@ -1,25 +1,30 @@
 #!/usr/bin/env python3
 """CLIFFSIDE VIDEO #1, PART 2 - SHOT 4: FINAL REVEAL.
 
-Only runnable after Shot 3 (Final Detail) has been generated AND
-approved - requires final_detail_raw.mp4 to already exist, and
-additionally asks you to explicitly confirm you've reviewed and approved
-it before submitting anything. final_detail_raw.mp4 is only ever read,
-never modified.
+Only runnable after Jump Cut 2 (exterior-completion edit) has been
+generated AND approved - requires exterior_complete_edit.jpg to already
+exist, and additionally asks you to explicitly confirm you've reviewed
+and approved it before submitting anything. exterior_complete_edit.jpg is
+only ever read, never modified.
 
-Starting image is the REAL last frame of final_detail_raw.mp4, extracted
-locally via extract_last_frame() - pure ffmpeg, free, no API call. NO
-Nano Banana Pro edit is used immediately before this shot, per the
+SIMPLIFIED per cost/pacing review: the dedicated Final Detail shot was
+removed entirely - for a ~30s Phase 1 video, a 5s/$0.25 generation for
+one small finishing gesture didn't earn its screen time or cost. The
+Reveal now runs directly from exterior_complete_edit.jpg (already a
+still image - no extract_last_frame() call needed, same pattern as
+Foundation running directly from Camera B's edit in FORMA Video #1).
+Still NO Nano Banana Pro edit immediately before this shot, per the
 already-locked safest-reveal method: risking the completed structure
 through an edit right before the payoff is exactly the failure mode that
-rule exists to avoid.
+rule exists to avoid - the edit already happened at Jump Cut 2, and this
+shot runs straight off its output.
 
 Makes exactly ONE Wan 3.0 video call (an in-generation camera pull-back,
 not an edit). No retries. This is Part 2's final stage - no downstream
 chaining.
 
 Usage (from the repo root, with FAL_API_KEY set in your .env, and
-final_detail_raw.mp4 already generated and reviewed):
+exterior_complete_edit.jpg already generated and reviewed):
     python -m scripts.run_cliffside_video_1_part2_reveal
     python -m scripts.run_cliffside_video_1_part2_reveal --yes   (skips only the cost confirmation - the upstream-approval confirmation always runs)
 """
@@ -32,8 +37,7 @@ from datetime import datetime, timezone
 from app.config import settings
 from app.providers.base import ProviderJobState, VideoGenerationRequest, VideoProviderError
 from app.providers.video.fal import WAN_3_0_STANDARD, FalVideoProvider
-from app.services.frame_extraction import FrameExtractionError, extract_last_frame
-from scripts.run_cliffside_video_1_part2_final_detail import FINAL_DETAIL_RAW_PATH
+from scripts.run_cliffside_video_1_part2_exterior_edit import EXTERIOR_COMPLETE_EDIT_PATH
 from scripts.run_cliffside_video_1_rough_assembly import MANIFEST_PATH, OUTPUT_DIR
 
 ASPECT_RATIO = "9:16"
@@ -43,13 +47,12 @@ DURATION_SECONDS = 7.0
 POLL_INTERVAL_SECONDS = 3
 MAX_WAIT_SECONDS = 300
 
-REVEAL_START_FRAME_PATH = OUTPUT_DIR / "reveal_start_frame.jpg"
 REVEAL_RAW_PATH = OUTPUT_DIR / "reveal_raw.mp4"
 JOB_STATE_PATH = OUTPUT_DIR / "reveal_last_job.json"
 
 # Visual-only - no audio instructions. No construction of any kind - this
-# is a pure camera move, near real-time, from the real last frame of
-# Final Detail. Environment and structure both get real compositional
+# is a pure camera move, near real-time, from the exterior-completion
+# edit's own image. Environment and structure both get real compositional
 # weight; builder is small/secondary, never presenting to camera.
 REVEAL_PROMPT = (
     "Vertical 9:16, realistic documentary-style footage, near real-time pace. Continuing directly "
@@ -98,32 +101,25 @@ def main() -> None:
     if not settings.fal_api_key:
         fail("FAL_API_KEY is not set. Add FAL_API_KEY=your_key_here to your .env file and try again.")
 
-    if not FINAL_DETAIL_RAW_PATH.exists():
+    if not EXTERIOR_COMPLETE_EDIT_PATH.exists():
         fail(
-            f"{FINAL_DETAIL_RAW_PATH} not found - Shot 3 (Final Detail) has not been generated "
-            "yet. Run scripts/run_cliffside_video_1_part2_final_detail.py first."
+            f"{EXTERIOR_COMPLETE_EDIT_PATH} not found - Jump Cut 2 (exterior-completion edit) has "
+            "not been generated yet. Run scripts/run_cliffside_video_1_part2_exterior_edit.py first."
         )
 
-    print(f"\nUpstream file found: {FINAL_DETAIL_RAW_PATH}")
+    print(f"\nUpstream file found: {EXTERIOR_COMPLETE_EDIT_PATH}")
     approval = input(
-        "Have you reviewed and approved final_detail_raw.mp4? Type 'yes' to confirm before "
+        "Have you reviewed and approved exterior_complete_edit.jpg? Type 'yes' to confirm before "
         "proceeding (anything else stops here, nothing generated): "
     ).strip().lower()
     if approval != "yes":
-        print("Stopped - Final Detail was not confirmed as approved. Nothing was generated.")
+        print("Stopped - the exterior-completion edit was not confirmed as approved. Nothing was generated.")
         sys.exit(0)
-
-    print("\n[1/2] Extracting the real last frame of final_detail_raw.mp4 locally (no API call)...")
-    try:
-        extract_last_frame(FINAL_DETAIL_RAW_PATH, REVEAL_START_FRAME_PATH)
-    except FrameExtractionError as e:
-        fail(f"Frame extraction failed: {e}")
-    print(f"      Done -> {REVEAL_START_FRAME_PATH} (final_detail_raw.mp4 was only read, never modified)")
 
     video_provider = FalVideoProvider(WAN_3_0_CLIFFSIDE_REVEAL)
     video_request = VideoGenerationRequest(
         prompt=REVEAL_PROMPT,
-        reference_image_path=str(REVEAL_START_FRAME_PATH),
+        reference_image_path=str(EXTERIOR_COMPLETE_EDIT_PATH),
         aspect_ratio=ASPECT_RATIO,
         duration_seconds=DURATION_SECONDS,
         extra_params={"resolution": RESOLUTION},
@@ -134,7 +130,7 @@ def main() -> None:
     print("CLIFFSIDE VIDEO #1 - PART 2 - SHOT 4 (FINAL REVEAL) - THIS WILL SPEND REAL MONEY")
     print("=" * 70)
     print(f"Video model: {WAN_3_0_CLIFFSIDE_REVEAL.submit_path}  ({RESOLUTION}, {ASPECT_RATIO}, {DURATION_SECONDS:.0f}s)")
-    print(f"Source image: {REVEAL_START_FRAME_PATH} (real extracted pixels from Final Detail's raw output)")
+    print(f"Source image: {EXTERIOR_COMPLETE_EDIT_PATH} (Jump Cut 2's approved exterior-completion edit)")
     print(f"\nVideo prompt:\n  {REVEAL_PROMPT}")
     print(f"\nEstimated cost: ${video_cost:.4f}")
     print(f"Hard cap:       ${MAX_SPEND_USD:.2f}")
@@ -157,7 +153,7 @@ def main() -> None:
         "aspect_ratio": ASPECT_RATIO,
         "duration_seconds": DURATION_SECONDS,
         "video_prompt": REVEAL_PROMPT,
-        "start_frame_path": str(REVEAL_START_FRAME_PATH),
+        "start_frame_path": str(EXTERIOR_COMPLETE_EDIT_PATH),
         "max_spend_usd": MAX_SPEND_USD,
         "estimated_cost_usd": video_cost,
         "raw_video_path": None,
@@ -166,7 +162,7 @@ def main() -> None:
     }
     save_manifest(manifest)
 
-    print(f"\n[2/2] Submitting Final Reveal video generation job (Wan 3.0 standard, {RESOLUTION})...")
+    print(f"\n[1/1] Submitting Final Reveal video generation job (Wan 3.0 standard, {RESOLUTION})...")
     t0 = time.monotonic()
     try:
         submitted = video_provider.submit_video_job(video_request)
@@ -245,7 +241,7 @@ def main() -> None:
     print("  5. no further construction happens - the cabin does not change")
     print("\nPart 2 is now complete. Combine with Part 1's rough assembly and this Part 2 sequence")
     print("(decking-completion edit, framing, framing-completion edit, glass, exterior-completion")
-    print("edit, final detail, reveal) via local FFmpeg assembly - no further paid calls needed.")
+    print("edit, reveal) via local FFmpeg assembly - no further paid calls needed.")
 
 
 if __name__ == "__main__":

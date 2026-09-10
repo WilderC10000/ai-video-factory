@@ -2262,6 +2262,103 @@ and a real concatenated final master via genuine ffmpeg operations
 `tests/test_video_assembly.py`), with none of the seven source clips ever
 modified.
 
+## Running FORMA Video #2 (spends real money - max $6.50 hard ceiling across 15 gated stages)
+
+Turquoise Alpine Lake -> Modern Glass A-Frame Hideaway, built entirely on
+the FORMA v2 jump-cut grammar (90% Process Rule, visible-completion-per-
+dollar, required interior phase, shorter reveal). Same hard-gate pattern
+as every other stage in this project: each script stops completely after
+its own paid call, and the next stage requires its own explicit
+upstream-approval confirmation - not skippable by `--yes` - before its
+own cost confirmation even appears. `enforce_budget()` in
+`scripts/run_alpine_video_2_common.py` additionally sums every real spend
+already recorded in the shared manifest and hard-refuses any call that
+would push total spend past the $6.50 cap, independent of that call's
+own per-stage cap.
+
+| # | Script | Type | Source | Output | Raw duration | Cost |
+|---|---|---|---|---|---|---|
+| 0 | `run_alpine_video_2_site_reference.py` | GENERATE | none (text-to-image) | `site_reference.jpg` | - | $0.15 |
+| 1 | `run_alpine_video_2_shot1_opening_prep.py` | Wan | site reference, directly | `shot1_opening_prep_raw.mp4` | 7s | $0.35 |
+| 2 | `run_alpine_video_2_shot2_base_floor.py` | Wan | Shot 1's real last frame | `shot2_base_floor_raw.mp4` | 10s | $0.50 |
+| 3 | `run_alpine_video_2_edit1_base_floor_complete.py` | EDIT | Shot 2's real last frame | `edit1_base_floor_complete.jpg` | - | $0.15 |
+| 4 | `run_alpine_video_2_shot3_floorboards.py` | Wan | Edit 1, directly | `shot3_floorboards_raw.mp4` | 13s | $0.65 |
+| 5 | `run_alpine_video_2_edit2_floor_complete.py` | EDIT | Shot 3's real last frame | `edit2_floor_complete.jpg` | - | $0.15 |
+| 6 | `run_alpine_video_2_shot4_aframe_ribs.py` | Wan (**HERO**) | Edit 2, directly | `shot4_aframe_ribs_raw.mp4` | 15s | $0.75 |
+| 7 | `run_alpine_video_2_edit3_framing_complete.py` | EDIT | Shot 4's real last frame | `edit3_framing_complete.jpg` | - | $0.15 |
+| 8 | `run_alpine_video_2_shot5_roof_cladding.py` | Wan | Edit 3, directly | `shot5_roof_cladding_raw.mp4` | 12s | $0.60 |
+| 9 | `run_alpine_video_2_edit4_roof_complete.py` | EDIT | Shot 5's real last frame | `edit4_roof_complete.jpg` | - | $0.15 |
+| 10 | `run_alpine_video_2_shot6_glass.py` | Wan | Edit 4, directly | `shot6_glass_raw.mp4` | 11s | $0.55 |
+| 11 | `run_alpine_video_2_edit5_glass_complete.py` | EDIT | Shot 6's real last frame | `edit5_glass_complete_interior.jpg` | - | $0.15 |
+| 12 | `run_alpine_video_2_shot7_interior.py` | Wan | Edit 5, directly | `shot7_interior_raw.mp4` | 10s | $0.50 |
+| 13 | `run_alpine_video_2_edit6_exterior_reveal_viewpoint.py` | EDIT | Shot 7's real last frame | `edit6_exterior_reveal_viewpoint.jpg` | - | $0.15 |
+| 14 | `run_alpine_video_2_shot8_reveal.py` | Wan, no further edit | Edit 6, directly | `shot8_reveal_raw.mp4` | 5s | $0.25 |
+
+**Total: $5.20 baseline, $1.30 retry reserve against the $6.50 cap.**
+
+```bash
+python -m scripts.run_alpine_video_2_site_reference
+python -m scripts.run_alpine_video_2_shot1_opening_prep
+python -m scripts.run_alpine_video_2_shot2_base_floor
+python -m scripts.run_alpine_video_2_edit1_base_floor_complete
+python -m scripts.run_alpine_video_2_shot3_floorboards
+python -m scripts.run_alpine_video_2_edit2_floor_complete
+python -m scripts.run_alpine_video_2_shot4_aframe_ribs
+python -m scripts.run_alpine_video_2_edit3_framing_complete
+python -m scripts.run_alpine_video_2_shot5_roof_cladding
+python -m scripts.run_alpine_video_2_edit4_roof_complete
+python -m scripts.run_alpine_video_2_shot6_glass
+python -m scripts.run_alpine_video_2_edit5_glass_complete
+python -m scripts.run_alpine_video_2_shot7_interior
+python -m scripts.run_alpine_video_2_edit6_exterior_reveal_viewpoint
+python -m scripts.run_alpine_video_2_shot8_reveal
+```
+
+Each accepts `--yes` to skip only its own cost-confirmation prompt - the
+upstream-approval prompt always fires and is never skippable. All output
+lands in `data/alpine_video_2/`, sharing one `manifest.json` (each script
+only writes its own top-level key). Per the user's explicit instruction
+to avoid an ambitious in-generation interior-to-exterior camera move,
+Edit 6 re-establishes a wide exterior vantage of the finished cabin as a
+still image (a bigger-than-usual compositional change, flagged in its own
+review checklist), so Shot 8 - the final Reveal - only needs a simple
+Wan pull-back from an already-exterior composition, the safest possible
+reveal method.
+
+Two free, local, no-API-key helper scripts mirror Cliffside Video #1's:
+
+```bash
+python -m scripts.run_alpine_video_2_budget_check
+python -m scripts.run_alpine_video_2_final_assembly
+```
+
+`run_alpine_video_2_budget_check.py` reads the shared manifest and prints
+each of the 15 stages' real cost (or "not run") plus total spent and
+remaining budget against the $6.50 cap. `run_alpine_video_2_final_assembly.py`
+is pure local FFmpeg - it accelerates all 8 real Wan clips (no trimming;
+every duration was already tuned upstream, per shot, to hit its 90%
+Process Rule target) and concatenates them into
+`alpine_video_2_final_visual.mp4`. The 7 Nano Banana Pro stills are never
+separate visible shots - they only ever conditioned the next Wan
+generation. Acceleration factors are tuned as plain constants in
+`CLIP_SPECS` (2.0x/3.3x/3.7x/3.33x/3.3x/2.9x/2.5x/1.1x, in story order),
+chosen to land the finished cut at ~30.5s while keeping the A-frame rib
+hero shot and final reveal at their approved finished-duration floors -
+free, local, instantly re-editable after watching the real raw clips, no
+re-generation needed.
+
+Verified entirely offline: a consolidated mocked-transport dry run chains
+through all 15 gated stages in sequence (each stage's fake output feeding
+the next, using the repo's real fixture clip wherever a later stage
+extracts a real last frame), confirming for every stage that the decline
+path makes zero calls, the accept path makes exactly 1 call to the
+correct endpoint only, every prompt carries its location/structure/
+material/exclusion language, costs sum to exactly $5.20, `enforce_budget()`
+correctly refuses a call under an artificially low cap, and the final
+assembly script correctly accelerates and concatenates all 8 clips (real
+durations differ in the dry run only because the fixture clip is 1s long,
+not because of any logic difference).
+
 ## FORMA production phases (permanent project note)
 
 FORMA operates in two distinct phases, and the target video length is a
@@ -3335,19 +3432,34 @@ provider-level rate limiting.
   3x-5x+ acceleration once construction begins, a required interior-
   design/furnishing phase for any habitable structure, and a shorter
   reveal (~3.5-4.5s of a ~30-32s video, down from Video #1's 6+s).
-- **FORMA Video #2 concept planned: Turquoise Alpine Lake -> Modern Glass
-  A-Frame Hideaway (planning only, no paid calls)**: applies the v2
-  grammar to a new location (dramatic peninsula/lakeshore, glacial-blue
-  water, snowcapped mountains, evergreen shoreline) and a compact A-frame
-  structure (~10-12ft wide x 14-16ft long, ~12-14ft peak, steep
-  symmetrical roof, dark cladding, large lake-facing glass). 8 Wan
-  generations + 6 Nano Banana Pro calls (1 initial site-reference image +
-  5 phase-completion/camera-transition edits), ~87s raw video, targeting
-  ~29.6s finished (opening/prep, base/floor, floorboards, A-frame rib
-  framing as the hero moment, roof/cladding, glass facade, interior
-  furnishing, then an interior-to-exterior pull-back reveal). Baseline
-  cost ~$5.25 against a $6.50 hard ceiling, leaving a ~$1.25 retry
-  reserve. Not yet implemented as scripts - no paid calls made.
+- **FORMA Video #2, implemented: Turquoise Alpine Lake -> Modern Glass
+  A-Frame Hideaway (scripts + offline dry run complete, no paid calls
+  made)**: applies the v2 grammar to a new location (dramatic
+  peninsula/lakeshore, glacial-blue water, snowcapped mountains,
+  evergreen shoreline) and a compact A-frame structure (~10-12ft wide x
+  14-16ft long, ~12-14ft peak, steep symmetrical roof, dark cladding,
+  large lake-facing glass). A final cost-efficiency pass trimmed three
+  raw Wan durations (opening/prep 8s->7s, roof/cladding 14s->12s, glass
+  12s->11s) without shortening the protected shots (A-frame rib hero,
+  interior furnishing, final reveal) or weakening the 90% Process Rule -
+  see "Running FORMA Video #2" below for the full 15-stage table. 8 Wan
+  generations (83s raw total) + 7 Nano Banana Pro calls (1
+  site-reference GENERATE + 6 phase-completion/camera-transition EDITs).
+  Per the user's explicit instruction to avoid an ambitious in-generation
+  interior-to-exterior camera move, Edit 6 does that compositional work
+  as a still image first (interior vantage -> wide exterior vantage of
+  the finished cabin), so the final Reveal (Shot 8) only needs a simple
+  Wan pull-back from an already-exterior composition. Baseline cost
+  **exactly $5.20** against the $6.50 hard ceiling, leaving a **$1.30**
+  retry reserve - even better than the requested $5.25 target. Verified
+  entirely offline: a consolidated mocked-transport dry run chains
+  through all 15 gated stages in sequence (using the repo's real fixture
+  clip wherever a stage extracts a real last frame), confirming every
+  stage's simulated cost matches the documented total exactly and that
+  `enforce_budget()` correctly refuses a call under an artificially low
+  cap. Design target for the finished cut is ~30.5s (see the per-clip
+  acceleration table below) - not yet run for real, so this is the
+  planned rather than the observed final duration.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

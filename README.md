@@ -2294,47 +2294,75 @@ Switching phases is a deliberate, explicit decision - not something
 inferred from a single video's constraints - and should be recorded here
 when it happens.
 
-## FORMA jump-cut grammar (permanent project note)
+## FORMA jump-cut grammar (permanent project note, v2 - supersedes v1)
 
-Derived directly from studying real reference TikTok construction-timelapse
-footage (a well-performing "DIY Secret Cabin in a Hollow Tree" video),
-which showed FORMA had been over-constraining continuous construction -
-every prior clip tried to have Wan simulate an entire construction phase
-from beginning to end. The reference never does this: it demonstrates a
-mechanism briefly, then jump-cuts to the phase already completed and the
-next task already underway.
+v1 of this grammar (DEMONSTRATE 1-3 repetitions, THEN jump-cut to the
+entire phase complete) was derived from reference footage and validated
+in isolation, then used to build the whole of Cliffside Video #1. Having
+now watched the complete 30.63s finished video, that rule is **replaced**
+- it was too aggressive: showing one glass panel then cutting straight to
+the entire finished exterior reads as "AI-generated before/after images,"
+not as watching a house get built. The compound-edit mechanism itself
+(advance a construction phase's state via `NANO_BANANA_PRO_EDIT` +
+camera nudge) is retained and now considered validated by production
+use; only how much of each phase Wan is asked to carry changes.
 
-- **DEMONSTRATE, THEN SKIP.** Wan's job is to show a credible physical
-  mechanism, not to simulate an entire construction phase to completion.
-  Intentional jump cuts are allowed to contain large amounts of elapsed
-  construction time. At a jump cut: the previous phase may now be fully
-  completed, additional materials may now be present, the camera may
-  change to a nearby logical angle, and the builder should immediately be
-  beginning the next logical operation. This is editorial time
-  compression, not a continuity failure - it does not violate Causal
-  Labor or Construction Frontier, which still govern what happens
-  *within* each demonstrated mechanism shot.
-- **The shot formula.** Every shot should communicate visible progress
-  almost immediately: MATERIAL ENTERS/IS AVAILABLE -> BUILDER POSITIONS
-  IT -> BUILDER SECURES IT -> 1-3 REPETITIONS -> CUT. Materials may enter
-  from off-camera or be visibly staged nearby - their delivery process
-  never needs to be documented. Avoid long setup motions, machine/tool
-  startup, walking around, excessive fastening detail, and showing every
-  repetitive piece.
-- **Mechanism-clip + EDIT jump-cut architecture.** Rather than paying Wan
-  to generate an entire repetitive phase, a jump cut can be built as: real
-  previous frame -> short Wan mechanism clip (demonstrates the technique
-  only, 1-3 repetitions) -> literal last frame -> image-conditioned
-  `NANO_BANANA_PRO_EDIT` that both advances the completed-construction
-  state (per DEMONSTRATE, THEN SKIP) and makes a modest camera change ->
-  next Wan mechanism clip. Actual prior pixels still ground every edit.
-  This is a larger ask of the edit endpoint than anything validated so
-  far - the locked camera-transition rule only proved a conservative
-  camera nudge that preserves an otherwise-unchanged structure; asking
-  the same call to also complete an entire construction phase is a
-  bigger, compound change and should be treated as unvalidated until a
-  small real test confirms it holds up, the same way the camera-only
-  transition was validated before being relied on for FORMA Video #1.
+- **FORMA 90% Process Rule.** For visually important, repetitive
+  construction phases (flooring, structural framing, roofing, glass,
+  furnishing), the viewer should watch approximately **70-90% of that
+  phase's visible progress happen on camera**. The jump cut skips only
+  the repetitive *final* portion, and starts the next shot with that
+  phase already finished. WRONG: first floorboard placed -> CUT -> floor
+  entirely finished. RIGHT: floorboards sweep across ~80-90% of the
+  floor on camera -> CUT -> next shot opens on a finished floor,
+  immediately beginning the next task. This is now how the mechanism-
+  clip + EDIT architecture is used: Wan carries the large majority of
+  the visible transformation; the edit only closes the last stretch and
+  makes the camera move.
+- **Optimize for visible completion per dollar, not per API call.** Do
+  not default to many short/cheap clips. A single longer raw clip,
+  accelerated more aggressively, that lets a repetitive frontier sweep
+  across most of a phase can be far more satisfying - and no more
+  expensive - than several short clips each showing one action. Evaluate
+  cost against how much real visible progress a viewer gets to watch,
+  not against minimizing generation count.
+- **Aggressive, readable acceleration.** Once construction begins,
+  target roughly **3x-5x** (higher where the motion stays legible) for
+  repetitive phases - chosen for maximum visible progress per finished
+  second, not for preserving ordinary-paced human motion. Almost every
+  0.5-1s of finished footage should carry new, meaningful progress.
+  Minimize walking, surveying, idle movement, tool setup, and long
+  fastening detail - the builder should be constantly contributing
+  material to the structure.
+- **Material flow stays visible.** MATERIAL ARRIVES/IS GRABBED -> BUILDER
+  POSITIONS IT -> IT BECOMES PART OF THE STRUCTURE -> NEXT MATERIAL,
+  repeated. Materials may enter from off-camera or an established nearby
+  stack - their delivery never needs to be documented - but a piece must
+  never simply appear already installed; the structure grows because
+  material visibly moves into it.
+- **Each major category earns real screen time.** Distinct visible
+  categories (flooring, framing, roofing, glazing, furnishing, etc.)
+  each get enough screen time to watch most of that specific
+  transformation, not a rapid skim across all of them. Jump cuts land
+  late in a task (after the 70-90% mark), never immediately after it
+  starts: START TASK -> RAPID VISIBLE PROGRESSION -> ~80-90% COMPLETE ->
+  CUT -> NEXT TASK.
+- **Interior design/furnishing is a required phase** for any FORMA
+  structure with a habitable interior - shown briefly but really watched
+  (70-90% of the furnishing transformation on camera: furniture/decor
+  physically brought in and placed), never one item followed by a cut to
+  a fully finished room.
+- **Shorter reveal, more build.** The reveal is the payoff, not the
+  majority of the runtime - target roughly 3.5-4.5s of a ~30-32s video
+  (Video #1's ran 6+s). The build itself is the entertainment; time
+  saved from a tighter reveal goes to more construction screen time.
+
+The compound mechanism-clip + EDIT architecture (real previous frame ->
+Wan clip carrying most of a phase's visible progress -> literal last
+frame -> `NANO_BANANA_PRO_EDIT` closing out the remainder + a modest
+camera nudge -> next Wan clip) is unchanged in mechanics from v1 - only
+the *proportion* of each phase Wan is asked to carry changed, from "just
+enough to demonstrate the mechanism" to "most of the visible phase."
 
 ## Running FORMA Video #1 - Chapter A (spends real money - max $0.95 across 3 gated stages)
 
@@ -3294,6 +3322,32 @@ provider-level rate limiting.
   6 hard-gated stages (1 precondition edit + 2 DEMONSTRATE/JUMP-CUT pairs
   + a no-edit Reveal sourced straight from the last edit), **$1.35
   total**. Not yet run for real - no paid calls made.
+- **Cliffside Video #1, complete (30.63s) - reviewed as a finished piece,
+  jump-cut grammar corrected to v2**: the finished proof-of-concept
+  surfaced that v1's grammar (demonstrate 1-3 repetitions, then jump-cut
+  to the whole phase complete) reads as "before/after images," not
+  watching a house get built - clearest in the glass phase (one panel ->
+  cut -> entire exterior finished). Replaced with the FORMA 90% Process
+  Rule and related corrections - see "FORMA jump-cut grammar (permanent
+  project note, v2 - supersedes v1)" above. Also locks: optimize for
+  visible completion per dollar rather than API-call count (fewer,
+  longer, more aggressively accelerated clips over many short ones),
+  3x-5x+ acceleration once construction begins, a required interior-
+  design/furnishing phase for any habitable structure, and a shorter
+  reveal (~3.5-4.5s of a ~30-32s video, down from Video #1's 6+s).
+- **FORMA Video #2 concept planned: Turquoise Alpine Lake -> Modern Glass
+  A-Frame Hideaway (planning only, no paid calls)**: applies the v2
+  grammar to a new location (dramatic peninsula/lakeshore, glacial-blue
+  water, snowcapped mountains, evergreen shoreline) and a compact A-frame
+  structure (~10-12ft wide x 14-16ft long, ~12-14ft peak, steep
+  symmetrical roof, dark cladding, large lake-facing glass). 8 Wan
+  generations + 6 Nano Banana Pro calls (1 initial site-reference image +
+  5 phase-completion/camera-transition edits), ~87s raw video, targeting
+  ~29.6s finished (opening/prep, base/floor, floorboards, A-frame rib
+  framing as the hero moment, roof/cladding, glass facade, interior
+  furnishing, then an interior-to-exterior pull-back reveal). Baseline
+  cost ~$5.25 against a $6.50 hard ceiling, leaving a ~$1.25 retry
+  reserve. Not yet implemented as scripts - no paid calls made.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

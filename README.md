@@ -2051,6 +2051,48 @@ Switching phases is a deliberate, explicit decision - not something
 inferred from a single video's constraints - and should be recorded here
 when it happens.
 
+## FORMA jump-cut grammar (permanent project note)
+
+Derived directly from studying real reference TikTok construction-timelapse
+footage (a well-performing "DIY Secret Cabin in a Hollow Tree" video),
+which showed FORMA had been over-constraining continuous construction -
+every prior clip tried to have Wan simulate an entire construction phase
+from beginning to end. The reference never does this: it demonstrates a
+mechanism briefly, then jump-cuts to the phase already completed and the
+next task already underway.
+
+- **DEMONSTRATE, THEN SKIP.** Wan's job is to show a credible physical
+  mechanism, not to simulate an entire construction phase to completion.
+  Intentional jump cuts are allowed to contain large amounts of elapsed
+  construction time. At a jump cut: the previous phase may now be fully
+  completed, additional materials may now be present, the camera may
+  change to a nearby logical angle, and the builder should immediately be
+  beginning the next logical operation. This is editorial time
+  compression, not a continuity failure - it does not violate Causal
+  Labor or Construction Frontier, which still govern what happens
+  *within* each demonstrated mechanism shot.
+- **The shot formula.** Every shot should communicate visible progress
+  almost immediately: MATERIAL ENTERS/IS AVAILABLE -> BUILDER POSITIONS
+  IT -> BUILDER SECURES IT -> 1-3 REPETITIONS -> CUT. Materials may enter
+  from off-camera or be visibly staged nearby - their delivery process
+  never needs to be documented. Avoid long setup motions, machine/tool
+  startup, walking around, excessive fastening detail, and showing every
+  repetitive piece.
+- **Mechanism-clip + EDIT jump-cut architecture.** Rather than paying Wan
+  to generate an entire repetitive phase, a jump cut can be built as: real
+  previous frame -> short Wan mechanism clip (demonstrates the technique
+  only, 1-3 repetitions) -> literal last frame -> image-conditioned
+  `NANO_BANANA_PRO_EDIT` that both advances the completed-construction
+  state (per DEMONSTRATE, THEN SKIP) and makes a modest camera change ->
+  next Wan mechanism clip. Actual prior pixels still ground every edit.
+  This is a larger ask of the edit endpoint than anything validated so
+  far - the locked camera-transition rule only proved a conservative
+  camera nudge that preserves an otherwise-unchanged structure; asking
+  the same call to also complete an entire construction phase is a
+  bigger, compound change and should be treated as unvalidated until a
+  small real test confirms it holds up, the same way the camera-only
+  transition was validated before being relied on for FORMA Video #1.
+
 ## Running FORMA Video #1 - Chapter A (spends real money - max $0.95 across 3 gated stages)
 
 Chapter A (Hook + Site Prep) is FORMA Video #1's first production chapter,
@@ -2926,6 +2968,30 @@ provider-level rate limiting.
   the highest-risk compressed stage in the shorter Phase 1 plan and will
   need its own constrained, single-frontier design when reached - not yet
   built.
+- **Stage B1 (Foundation, vertical posts), real result: REJECTED as a
+  design, not a quality problem**: after studying real reference TikTok
+  construction-timelapse footage, the vertical-post foundation concept
+  was judged visually inappropriate for Waterfall Cave -> Glass Hideaway,
+  and continuous-phase generation in general was judged too slow/costly
+  compared to how the reference actually paces a build (see "FORMA
+  jump-cut grammar" above). The generated clip is discarded and must not
+  be used downstream; its $0.35 spend is sunk. Camera B0's edit
+  (`camera_b_edit.jpg`) is unaffected and remains valid - it becomes the
+  starting image for the redesigned floor-structure mechanism shot below
+  instead of the rejected vertical-post clip.
+- **FORMA Video #1, remaining shots redesigned around the jump-cut
+  grammar (planning only)**: replaces the vertical-post Foundation/
+  Decking/Framing/Glass/Reveal plan with a horizontal structural sequence
+  (cleared pad -> perimeter/floor frame -> wall framing -> glass ->
+  final detail -> reveal), each phase demonstrated in one short Wan
+  mechanism clip and then jump-cut to completed via
+  `NANO_BANANA_PRO_EDIT`, per the mechanism-clip + EDIT architecture
+  above. 5 remaining Wan generations (29s raw, ~$1.45) + 3
+  advance-and-nudge edits (~$0.45) = **~$1.90 remaining**, targeting
+  ~23.5s finished across the 5 clips (~28.5s total video with Chapter
+  A's ~5s). Not yet implemented as scripts, no paid calls made - the
+  advance-and-nudge edit mechanism itself is flagged as unvalidated and
+  a small real test is recommended before committing to it at scale.
 - **Milestone 3+**: once the physical-interaction and composition problems
   are solved well enough and a production model is chosen, implement the
   Stage/Clip architecture, the hybrid continuity system (structured build

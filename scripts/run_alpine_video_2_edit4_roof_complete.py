@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""FORMA VIDEO #2 - JUMP CUT 4: ROOF + CLADDING COMPLETE.
+"""FORMA VIDEO #2 - JUMP CUT 4: CLADDING COMPLETE.
 
-Only runnable after Shot 5 is generated AND approved. Closes the last
-stretch of sheathing/cladding and nudges the camera to face the
-lake-facing glass wall for Shot 6.
+Only runnable after Shot 5 is generated AND approved. Roof sheathing is
+already 100% complete by Shot 5's own midpoint, so this only closes the
+final ~15-25% of exterior cladding (per the FORMA continuity rule, a jump
+cut may skip only a task's final repetitive 10-30%, never the majority)
+and nudges the camera to face the lake-facing glass wall for Shot 6.
 """
 from scripts.run_alpine_video_2_common import MAX_SPEND_USD_EDIT, OUTPUT_DIR, run_gated_edit
 from scripts.run_alpine_video_2_shot5_roof_cladding import SHOT5_RAW_PATH
@@ -13,16 +15,17 @@ EDIT4_OUTPUT_PATH = OUTPUT_DIR / "edit4_roof_complete.jpg"
 
 EDIT_PROMPT = (
     "This is an intentional editorial jump cut - the same construction project, filmed again "
-    "some time later, with the roof and exterior cladding now fully complete - not a different "
-    "or redesigned build. Keep the underlying structure exactly as it is: the same footprint, "
-    "wall/roof proportions, and rib positions already established, the same site, lake, "
+    "some time later, with the exterior cladding now fully complete - not a different or "
+    "redesigned build. Keep the underlying structure exactly as it is: the same footprint, "
+    "fully-sheathed roof, and rib positions already established, the same site, lake, "
     "mountains, and shoreline geometry, the same builder identity, and the same lighting "
     "direction. Shift the camera to face the lake-facing side of the cabin directly, "
     "approximately 15 to 20 degrees from the previous angle - this will be the vantage for "
-    "installing the glass facade. Advance ONLY the roof and cladding: complete the remaining "
-    "sheathing and dark charcoal cladding across the entire exterior shell, with the framed "
-    "openings for the door and lake-facing glass clearly visible but still empty. Do not install "
-    "any glass or door yet - this is purely completing the shell and repositioning the camera."
+    "installing the glass facade. Advance ONLY the cladding: complete the final remaining "
+    "stretch of dark charcoal cladding across the exterior shell - the roof sheathing is "
+    "already complete and stays exactly as it was - with the framed openings for the door and "
+    "lake-facing glass clearly visible but still empty. Do not install any glass or door yet - "
+    "this is purely finishing the last of the cladding and repositioning the camera."
 )
 
 
@@ -38,7 +41,7 @@ def main() -> None:
         output_image_path=EDIT4_OUTPUT_PATH,
         max_spend_usd=MAX_SPEND_USD_EDIT,
         review_checklist=[
-            "roof/cladding fully complete across the whole shell",
+            "cladding fully complete across the whole shell; roof sheathing unchanged from Shot 5",
             "framed door + glass openings visible but empty - no glass/door installed yet",
             "camera now faces the lake-facing wall directly for the glass shot",
         ],

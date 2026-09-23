@@ -2454,6 +2454,34 @@ use; only how much of each phase Wan is asked to carry changes.
   (Video #1's ran 6+s). The build itself is the entertainment; time
   saved from a tighter reveal goes to more construction screen time.
 
+### FORMA continuity rule (tightens the 90% Process Rule, permanent)
+
+Every major visible result must be **earned on screen**. A jump cut may
+skip a task's final repetitive **10-30%**, but never its majority. Every
+major material, fixture, finish, or furnishing item must have a **visible
+source** (a staged stack, a carried-in item - delivery itself never needs
+documenting, but the item must not simply appear), a **visible
+installation process** (carried, positioned, fastened/placed), and
+**visible progression** (a stated majority percentage, not just "begins
+appearing") before the next jump cut is allowed to treat it as complete.
+**If logical continuity conflicts with speed, preserve logic and increase
+acceleration rather than skipping steps** - pacing is a post-hoc lever
+(`accelerate_video()` in final assembly), never a reason to cut content
+out of a raw generation prompt.
+
+This caught a real violation during Video #2's build: Shot 5's original
+prompt had roof sheathing sweep to 75-85% (compliant) but let dark
+cladding merely "begin visibly appearing on the finished sections" with
+no stated source, no installation action, and no completion percentage -
+leaving Edit 4 to silently jump cladding from an unknown, possibly small
+fraction to fully complete, i.e. skipping the majority of that finish.
+Fixed by splitting Shot 5 into two fully-specified material passes in one
+clip (sheathing sweeps to 100% by the midpoint, then cladding gets its
+own staged stack, its own carry/position/fasten action, and an explicit
+75-85% target by the end) and narrowing Edit 4 to close only the final
+~15-25% of cladding - sheathing no longer needs closing at all, since
+Shot 5 already finishes it on screen.
+
 The compound mechanism-clip + EDIT architecture (real previous frame ->
 Wan clip carrying most of a phase's visible progress -> literal last
 frame -> `NANO_BANANA_PRO_EDIT` closing out the remainder + a modest

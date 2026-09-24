@@ -1,5 +1,5 @@
 import { splitLabel, usd } from "../format";
-import type { Approval, Budget, ProjectInfo, Room, Stage } from "../types";
+import type { Approval, AudioReport, Budget, ProjectInfo, Room, Stage } from "../types";
 import { StageThumb } from "./StageThumb";
 
 interface Props {
@@ -8,7 +8,19 @@ interface Props {
   stages: Stage[];
   budget: Budget | null;
   approvals: Approval[];
+  audio?: AudioReport;
 }
+
+export const FINAL_AUDIO_TEXT: Record<AudioReport["final_status"], string> = {
+  not_assembled: "Final cut not assembled yet",
+  preserved: "Source audio — preserved in final cut",
+  discarded: "Final cut: source audio discarded (older assembly)",
+  no_source_audio: "Final cut: silent (no source audio)",
+  unknown: "Final cut audio unknown",
+};
+
+export const clipAudioClass = (hasAudio: boolean | null) =>
+  hasAudio === true ? "has" : hasAudio === false ? "none" : "unknown";
 
 const tick = (s: Stage) => (s.status === "complete" ? "✓" : s.status === "started" ? "…" : "○");
 
@@ -23,7 +35,7 @@ function NoData({ label }: { label: string }) {
 }
 
 /** The room's wall screen. Every number and image here comes from the snapshot. */
-export function RoomScreen({ room, project, stages, budget, approvals }: Props) {
+export function RoomScreen({ room, project, stages, budget, approvals, audio }: Props) {
   const mine = stages.filter((s) => s.room_id === room.id);
   const pending = approvals.filter((a) => a.status === "pending");
 
@@ -166,7 +178,35 @@ export function RoomScreen({ room, project, stages, budget, approvals }: Props) 
       );
     }
 
+    case "sound_booth": {
+      if (!audio || !audio.ffprobe_available) return <NoData label="ffprobe not found - can't inspect audio" />;
+      const found =
+        audio.clips_total === 0
+          ? "no clips yet"
+          : audio.clips_with_audio === 0
+            ? "none"
+            : `${audio.clips_with_audio}/${audio.clips_total} clips`;
+      return (
+        <div className="screen screen--audio">
+          <div className="audio__row">
+            <span className="audio__label">Source audio</span>
+            <b>{found}</b>
+          </div>
+          <div className="audio__clips">
+            {audio.clips.map((c) => (
+              <span key={c.stage_key} className={`audio__clip ${clipAudioClass(c.has_audio)}`} title={c.label} />
+            ))}
+          </div>
+          <div className={`audio__final is-${audio.final_status}`}>{FINAL_AUDIO_TEXT[audio.final_status]}</div>
+          <div className="audio__row audio__row--muted">
+            <span className="audio__label">Additional sound design</span>
+            <span>not implemented yet</span>
+          </div>
+        </div>
+      );
+    }
+
     default:
-      return <NoData label={room.id === "sound_booth" ? "Audio isn't in the pipeline yet" : "Nothing published yet"} />;
+      return <NoData label="Nothing published yet" />;
   }
 }

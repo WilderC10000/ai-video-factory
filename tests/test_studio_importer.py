@@ -304,7 +304,7 @@ def test_agents_seeded_for_every_room_without_fake_status(db_session, data_dir):
     agents = db_session.scalars(select(StudioAgent)).all()
     assert sorted(a.room_id for a in agents) == sorted(r.id for r in ROOMS)
     assert all(a.status == AgentStatus.IDLE for a in agents)
-    assert db_session.get(StudioAgent, "sound_booth").status_reason == "No data source yet"
+    assert db_session.get(StudioAgent, "analytics_observatory").status_reason == "No data source yet"
 
 
 def test_planned_costs_match_pipeline_script_caps():

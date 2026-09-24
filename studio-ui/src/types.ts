@@ -178,6 +178,32 @@ export interface ProjectInfo {
   stages_total: number;
 }
 
+export interface AudioProbe {
+  has_audio: boolean | null;
+  codec: string | null;
+  channels: number | null;
+  sample_rate: number | null;
+  error: string | null;
+}
+
+export interface AudioClip extends AudioProbe {
+  stage_key: string;
+  label: string;
+  file: string;
+}
+
+export interface AudioReport {
+  ffprobe_available: boolean;
+  clips: AudioClip[];
+  clips_total: number;
+  clips_with_audio: number;
+  clips_unknown: number;
+  final: AudioClip | null;
+  final_status: "not_assembled" | "preserved" | "discarded" | "no_source_audio" | "unknown";
+  assembly_code_note: string;
+  sound_design_implemented: boolean;
+}
+
 export interface Snapshot {
   projects: { slug: string; name: string; is_active: boolean; source: string }[];
   project: ProjectInfo | null;
@@ -188,6 +214,7 @@ export interface Snapshot {
   events?: StudioEvent[];
   jobs?: Job[];
   active_job?: Job | null;
+  audio?: AudioReport;
   execution: Execution;
 }
 

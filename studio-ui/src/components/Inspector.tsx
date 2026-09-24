@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { SEVERITY_LABEL, STATUS_LABEL, timeAgo } from "../format";
-import type { Approval, Budget, Execution, Job, Room, Selection, Stage, StudioEvent } from "../types";
+import type { Approval, AudioReport, Budget, Execution, Job, Room, Selection, Stage, StudioEvent } from "../types";
 import { Avatar } from "./Avatar";
 import { JobProgress } from "./JobProgress";
 import { ReviewPanel } from "./ReviewPanel";
+import { FINAL_AUDIO_TEXT, clipAudioClass } from "./RoomScreen";
 import { ROOM_ACCENT } from "./RoomCard";
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
   budget: Budget | null;
   execution: Execution;
   activeJob: Job | null;
+  audio?: AudioReport;
   onSelectStage: (stage: Stage) => void;
   onChanged: () => void;
   onClose: () => void;
@@ -36,6 +38,58 @@ function FilePath({ path, exists }: { path: string; exists?: boolean | null }) {
       <code>{path}</code>
       {exists === false && <span className="sev-chip sev--medium">missing</span>}
     </li>
+  );
+}
+
+function probeText(c: AudioReport["clips"][number]): string {
+  if (c.has_audio === true) return `${c.codec ?? "audio"} · ${c.channels ?? "?"}ch · ${c.sample_rate ?? "?"} Hz`;
+  if (c.has_audio === false) return "no audio stream";
+  return `unknown (${c.error})`;
+}
+
+function AudioDetails({
+  audio,
+  stages,
+  onSelectStage,
+}: {
+  audio: AudioReport;
+  stages: Stage[];
+  onSelectStage: (s: Stage) => void;
+}) {
+  return (
+    <div className="audio-report">
+      <h3>Source audio</h3>
+      <p className="fineprint">Audio already embedded in the generated clips, read from each file with ffprobe.</p>
+      <ul className="audio-list">
+        {audio.clips.map((c) => {
+          const stage = stages.find((s) => s.key === c.stage_key);
+          return (
+            <li key={c.stage_key}>
+              <button type="button" className="audio-list__item" onClick={() => stage && onSelectStage(stage)}>
+                <span className={`audio__clip ${clipAudioClass(c.has_audio)}`} />
+                <span className="audio-list__label">{c.label}</span>
+                <span className="audio-list__meta">{probeText(c)}</span>
+              </button>
+            </li>
+          );
+        })}
+        {audio.clips.length === 0 && <li className="ref__empty">No generated clips yet.</li>}
+      </ul>
+
+      <h3>Final Assembly</h3>
+      <p className={`audio__final is-${audio.final_status}`}>{FINAL_AUDIO_TEXT[audio.final_status]}</p>
+      {audio.final && (
+        <p className="fineprint">
+          <code>{audio.final.file}</code>: {probeText(audio.final)}
+        </p>
+      )}
+      <p className="fineprint">{audio.assembly_code_note}</p>
+
+      <h3>Additional sound design</h3>
+      <p className="ref__empty">
+        Not implemented yet - deliberate post-production audio (music, SFX, voice) on top of the source audio.
+      </p>
+    </div>
   );
 }
 
@@ -70,6 +124,7 @@ export function Inspector({
   budget,
   execution,
   activeJob,
+  audio,
   onSelectStage,
   onChanged,
   onClose,
@@ -132,6 +187,7 @@ export function Inspector({
         {agent.status_reason && <p className="inspector__reason">{agent.status_reason}</p>}
         {!room.data_source && <p className="fineprint">This room has no real data source in v0.1, so it stays idle.</p>}
         {activeJob && room.id === "command_deck" && <JobProgress job={activeJob} compact />}
+        {room.id === "sound_booth" && audio && <AudioDetails audio={audio} stages={stages} onSelectStage={onSelectStage} />}
 
         {stage && (
           <>

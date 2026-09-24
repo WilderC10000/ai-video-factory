@@ -24,6 +24,7 @@ export function Building({ snap, selection, onSelectRoom, onSelectStage }: Props
         stages={stages}
         budget={budget}
         approvals={approvals}
+        audio={snap.audio}
         selected={selection?.roomId === room.id}
         onSelect={onSelectRoom}
       />

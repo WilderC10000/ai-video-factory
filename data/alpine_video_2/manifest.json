@@ -1,0 +1,306 @@
+{
+  "experiment": "alpine_video_2",
+  "created_at": "2026-09-10T05:18:19.270667+00:00",
+  "budget_cap_usd": 6.5,
+  "site_reference": {
+    "image_model": "fal-ai/nano-banana-pro",
+    "image_prompt": "A wide vertical establishing photograph of a dramatic rocky peninsula on the shore of an intensely turquoise glacial lake, huge snowcapped mountains filling the horizon behind it, dark evergreen forest along portions of the shoreline, dramatic clouds moving around the distant peaks, and warm late-afternoon natural light with visible reflections and gentle water movement on the lake. The peninsula is empty and untouched - no structure, no construction materials, no builder visible yet. Realistic documentary photography style, not illustration or painting. The lake, mountains, and shoreline should occupy a major share of the frame - this location should be beautiful enough to stop scrolling on its own, before any construction begins.",
+    "max_spend_usd": 0.15,
+    "estimated_cost_usd": 0.15,
+    "output_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\site_reference.jpg",
+    "actual_cost_usd": 0.15,
+    "completed_at": "2026-09-10T05:18:41.275861+00:00"
+  },
+  "shot1": {
+    "video_model": "alibaba/wan-3.0/image-to-video",
+    "resolution": "480p",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 7.0,
+    "video_prompt": "Vertical 9:16, realistic documentary-style footage. Wide environmental establishing shot at approximately human chest/eye height, near-horizontal axis. Fixed camera position, no movement, no angle change.\n\nThe site is a dramatic rocky peninsula on the shore of an intensely turquoise glacial lake, huge snowcapped mountains filling the horizon behind it, dark evergreen forest along portions of the shoreline, dramatic clouds moving around the distant peaks, and warm late-afternoon natural light with visible reflections and gentle water movement on the lake, completely untouched at first - no structure, no builder action visible for the opening moment. Then a compact tracked mini-dozer with a wide grading blade, already aligned at the edge of the intended build pad with the blade down, drives steadily forward, pushing loose rock and debris ahead of it into one coherent ridge. Behind the blade, the ground reads visibly cleaner and flatter; ahead of it, the rough ground remains untouched until the machine reaches it. By the end of the clip, approximately 70 to 80 percent of the intended build pad reads as cleared and leveled - one clear frontier: cleared pad behind, machine/blade in the middle, rough site ahead. No structure of any kind appears. The lake, mountains, and shoreline remain a major visual element throughout, never reduced to background scenery. No posing, no presenter behavior.",
+    "start_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\site_reference.jpg",
+    "max_spend_usd": 0.35,
+    "estimated_cost_usd": 0.35,
+    "raw_video_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot1_opening_prep_raw.mp4",
+    "actual_cost_usd": 0.35,
+    "completed_at": "2026-09-10T05:21:49.075778+00:00"
+  },
+  "shot2": {
+    "video_model": "alibaba/wan-3.0/image-to-video",
+    "resolution": "480p",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 10.0,
+    "video_prompt": "Vertical 9:16, realistic construction footage, documentary/observational style. Camera view: same fixed viewpoint as the previous shot, held completely steady. No camera movement, no angle change. Continuing directly from the current state shown in the starting image.\n\nThe build pad is cleared and leveled - no structure yet. The builder positions a horizontal perimeter base beam at the edge of the pad and secures it, then positions a floor joist perpendicular to it and secures that, then shifts to the next joist position immediately adjacent and repeats - advancing steadily in one continuous direction across the pad, matching the direction the site was cleared in. Materials come from a timber stack staged at the edge of the pad. By the end of the clip, the perimeter base is complete and approximately 70 to 80 percent of the floor joists are placed, still with a visible section of bare cleared pad ahead of the working frontier. No decking, no walls, no roof appear. The lake, mountains, and shoreline remain clearly visible and important throughout. No posing, no presenter behavior.",
+    "start_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot2_start_frame.jpg",
+    "max_spend_usd": 0.5,
+    "estimated_cost_usd": 0.5,
+    "raw_video_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot2_base_floor_raw.mp4",
+    "actual_cost_usd": 0.5,
+    "completed_at": "2026-09-10T05:25:24.382981+00:00"
+  },
+  "edit1_base_floor_complete": {
+    "image_model": "fal-ai/nano-banana-pro/edit",
+    "source_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit1_source_frame.jpg",
+    "edit_prompt": "This is an intentional editorial jump cut - the same construction project, filmed again some time later, with the base and floor structure now fully complete - not a different or redesigned build. Keep the underlying structure exactly as it is: the same pad size and position, the same site, lake, mountains, and shoreline geometry, the same builder identity, and the same lighting direction. Shift the camera only slightly - approximately 15 to 20 degrees - to a nearby, modestly different viewpoint. Advance ONLY the base/floor structure: complete the remaining floor joists so the entire perimeter base and full joist run are now finished, matching the style and spacing already established. Do not add any decking, walls, roof, or glass - this is purely completing the joist structure and a small camera nudge, not inventing new construction.",
+    "max_spend_usd": 0.15,
+    "estimated_cost_usd": 0.15,
+    "output_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit1_base_floor_complete.jpg",
+    "actual_cost_usd": 0.15,
+    "completed_at": "2026-09-10T05:28:15.969242+00:00"
+  },
+  "shot3": {
+    "video_model": "alibaba/wan-3.0/image-to-video",
+    "resolution": "480p",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 13.0,
+    "video_prompt": "Vertical 9:16, realistic construction footage, documentary/observational style. Camera view: the fixed viewpoint established by the previous edit, held completely steady. No camera movement, no further angle change. Continuing directly from the current state shown in the starting image.\n\nThe base and floor joist structure is complete - no decking yet. The builder lays floorboard after floorboard in rapid succession, each one visibly picked up from a staged board stack, positioned onto the joists, and secured, before moving immediately to the next adjacent position - sweeping steadily across the floor in one continuous direction. The frontier reads clearly: installed floor on one side, the builder actively working at the current position, exposed joists still ahead until reached. By the end of the clip, approximately 85 to 90 percent of the floor is decked, with only a small section of exposed joists remaining. No walls, no roof, no glass appear. The lake, mountains, and shoreline remain clearly visible and important. No posing, no presenter behavior.",
+    "start_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit1_base_floor_complete.jpg",
+    "max_spend_usd": 0.65,
+    "estimated_cost_usd": 0.65,
+    "raw_video_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot3_floorboards_raw.mp4",
+    "actual_cost_usd": 0.65,
+    "completed_at": "2026-09-10T05:32:25.641464+00:00"
+  },
+  "edit2_floor_complete": {
+    "image_model": "fal-ai/nano-banana-pro/edit",
+    "source_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit2_source_frame.jpg",
+    "edit_prompt": "This is an intentional editorial jump cut - the same construction project, filmed again some time later, with the floor now fully decked - not a different or redesigned build. Keep the underlying structure exactly as it is: the same floor footprint and proportions, the same site, lake, mountains, and shoreline geometry, the same builder identity, and the same lighting direction. Shift the camera to a nearby viewpoint that looks down the long axis of the floor, approximately 15 to 20 degrees from the previous angle, so the full length of the floor is visible - this will be the vantage for the next construction phase. Advance ONLY the decking: complete the remaining floorboards so the entire floor is now finished, matching the boards already installed. Do not add any walls, roof, or glass - this is purely completing the floor and repositioning the camera, not inventing new construction.",
+    "max_spend_usd": 0.15,
+    "estimated_cost_usd": 0.15,
+    "output_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit2_floor_complete.jpg",
+    "actual_cost_usd": 0.15,
+    "completed_at": "2026-09-10T05:34:58.286663+00:00"
+  },
+  "shot4": {
+    "video_model": "alibaba/wan-3.0/image-to-video",
+    "resolution": "480p",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 15.0,
+    "video_prompt": "Vertical 9:16, realistic construction footage, documentary/observational style. Camera view: the fixed viewpoint established by the previous edit, looking down the cabin's long axis, held completely steady. No camera movement, no further angle change. Continuing directly from the current state shown in the starting image.\n\nThe floor is complete - no structure above it yet. This cabin will become a compact modern glass A-frame hideaway, approximately 10 to 12 feet wide and 14 to 16 feet long, with a steep symmetrical A-frame roof reaching approximately 12 to 14 feet at its peak, single-story with a compact loftless feel, natural timber structural ribs, dark charcoal exterior cladding, and a large lake-facing glass facade - small enough that one builder plausibly constructs it alone, never a mansion, no second story, no extra wings, no oversized balcony The builder has pre-fabricated triangular A-frame rib sections staged nearby. He carries one rib to the floor's edge, raises it upright, and secures it plumb in position, then immediately moves to the next position along the floor's length and repeats - erecting ribs one after another in one continuous direction: the first rib stands alone, then two ribs, then three, then four, then five or more, each new rib appearing immediately adjacent to the last. The builder remains at the active working frontier throughout; every already-erected rib stays fixed exactly where it was placed, and no rib ever appears ahead of where the builder is currently working. By the end of the clip, approximately 80 to 90 percent of the rib structure along the cabin's length is erected, reading as a growing row of triangular timber frames. No roof, no glass, no siding appear yet. The lake, mountains, and shoreline remain clearly visible and important throughout, sharing the frame with the rising structure. No posing, no presenter behavior.",
+    "start_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit2_floor_complete.jpg",
+    "max_spend_usd": 0.75,
+    "estimated_cost_usd": 0.75,
+    "raw_video_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot4_aframe_ribs_raw.mp4",
+    "actual_cost_usd": 0.75,
+    "completed_at": "2026-09-10T05:38:36.410759+00:00"
+  },
+  "edit3_framing_complete": {
+    "image_model": "fal-ai/nano-banana-pro/edit",
+    "source_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit3_source_frame.jpg",
+    "edit_prompt": "This is an intentional editorial jump cut - the same construction project, filmed again some time later, with the A-frame rib structure now fully complete along the cabin's entire length - not a different or redesigned build. Keep the underlying structure exactly as it is: the same floor footprint, the same rib spacing and style already established, the same overall scale (a compact modern glass A-frame hideaway, approximately 10 to 12 feet wide and 14 to 16 feet long, with a steep symmetrical A-frame roof reaching approximately 12 to 14 feet at its peak, single-story with a compact loftless feel, natural timber structural ribs, dark charcoal exterior cladding, and a large lake-facing glass facade - small enough that one builder plausibly constructs it alone, never a mansion, no second story, no extra wings, no oversized balcony), the same site, lake, mountains, and shoreline geometry, the same builder identity, and the same lighting direction. Shift the camera only slightly - approximately 15 to 20 degrees - to a vantage well suited to viewing the roof and sheathing work to come. Advance ONLY the framing: complete the remaining ribs so the full triangular frame structure now stands along the entire length, matching what is already built. Do not add any roof surface, siding, glass, or door yet - this is purely completing the rib structure and a small camera reposition.",
+    "max_spend_usd": 0.15,
+    "estimated_cost_usd": 0.15,
+    "output_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit3_framing_complete.jpg",
+    "actual_cost_usd": 0.15,
+    "completed_at": "2026-09-10T05:40:19.887380+00:00"
+  },
+  "shot5": {
+    "video_model": "alibaba/wan-3.0/image-to-video",
+    "resolution": "480p",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 12.0,
+    "video_prompt": "Vertical 9:16, realistic construction footage, documentary/observational style. Camera view: the fixed viewpoint established by the previous edit, held completely steady. No camera movement, no further angle change. Continuing directly from the current state shown in the starting image.\n\nThe A-frame rib structure stands complete along the cabin's full length - no roof surface, no siding, no glass yet. The builder installs roof sheathing panels one after another, each carried from a staged stack and fastened onto the sloped rib faces, sweeping steadily from one end of the roof toward the other. By roughly the midpoint of the clip, approximately 75 to 85 percent of the roof sheathing is complete, and dark charcoal exterior cladding begins visibly appearing on the finished sections, panel by panel. No glass, no door, no siding appears on sections that are not yet sheathed. The lake, mountains, and shoreline remain clearly visible around the structure. No posing, no presenter behavior.",
+    "start_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit3_framing_complete.jpg",
+    "max_spend_usd": 0.6,
+    "estimated_cost_usd": 0.6,
+    "raw_video_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot5_roof_cladding_raw.mp4",
+    "actual_cost_usd": 0.6,
+    "completed_at": "2026-09-10T05:43:58.867566+00:00"
+  },
+  "edit4_roof_complete": {
+    "image_model": "fal-ai/nano-banana-pro/edit",
+    "source_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit4_source_frame.jpg",
+    "edit_prompt": "This is an intentional editorial jump cut - the same construction project, filmed again some time later, with the roof and exterior cladding now fully complete - not a different or redesigned build. Keep the underlying structure exactly as it is: the same footprint, wall/roof proportions, and rib positions already established, the same site, lake, mountains, and shoreline geometry, the same builder identity, and the same lighting direction. Shift the camera to face the lake-facing side of the cabin directly, approximately 15 to 20 degrees from the previous angle - this will be the vantage for installing the glass facade. Advance ONLY the roof and cladding: complete the remaining sheathing and dark charcoal cladding across the entire exterior shell, with the framed openings for the door and lake-facing glass clearly visible but still empty. Do not install any glass or door yet - this is purely completing the shell and repositioning the camera.",
+    "max_spend_usd": 0.15,
+    "estimated_cost_usd": 0.15,
+    "output_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit4_roof_complete.jpg",
+    "actual_cost_usd": 0.15,
+    "completed_at": "2026-09-23T18:45:27.041214+00:00"
+  },
+  "shot6": {
+    "video_model": "alibaba/wan-3.0/image-to-video",
+    "resolution": "480p",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 11.0,
+    "video_prompt": "Vertical 9:16, realistic construction footage, documentary/observational style. Camera view: the fixed viewpoint established by the previous edit, facing the lake-facing wall directly, held completely steady. No camera movement, no further angle change. Continuing directly from the current state shown in the starting image.\n\nThe cabin's shell is complete with dark cladding, and the lake-facing wall shows large empty framed openings for glass - no panels installed yet. The builder guides one large glass panel from a staged stack into the first opening, aligns it, seats it into the frame, and secures its edges, then moves to the next adjacent opening and repeats - installing panel after panel across the facade in one continuous direction. By the end of the clip, approximately 75 to 90 percent of the lake-facing facade is glazed, with only one or two openings still empty. No siding changes, no additional windows appear elsewhere, no second story, no furniture. The turquoise lake and mountains are visible through the installed glass, reinforcing the view it will offer. No posing, no presenter behavior.",
+    "start_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit4_roof_complete.jpg",
+    "max_spend_usd": 0.55,
+    "estimated_cost_usd": 0.55,
+    "raw_video_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot6_glass_raw.mp4",
+    "actual_cost_usd": 0.55,
+    "completed_at": "2026-09-24T00:31:33.725509+00:00"
+  },
+  "edit5_glass_complete": {
+    "image_model": "fal-ai/nano-banana-pro/edit",
+    "source_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit5_source_frame.jpg",
+    "edit_prompt": "This is an intentional editorial jump cut - the same construction project, filmed again some time later, with the glass facade now fully installed - not a different or redesigned build. Keep the underlying structure exactly as it is: the same footprint, wall/roof proportions, window and door positions already established, the same site, lake, mountains, and shoreline geometry visible through the glass, the same builder identity, and the same lighting direction. Move the camera to a vantage INSIDE the cabin, looking out through the now-complete glass facade toward the lake and mountains - an empty, unfurnished interior space, structurally finished but with no furniture yet. Advance ONLY the glass: complete the one or two remaining panels so the entire lake-facing facade is now glazed, matching the panels already installed. Do not add any furniture, rugs, or decor yet - this is purely completing the glazing and moving the camera inside.",
+    "max_spend_usd": 0.15,
+    "estimated_cost_usd": 0.15,
+    "output_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit5_glass_complete_interior.jpg",
+    "actual_cost_usd": 0.15,
+    "completed_at": "2026-09-24T00:33:11.739578+00:00"
+  },
+  "shot7": {
+    "video_model": "alibaba/wan-3.0/image-to-video",
+    "resolution": "480p",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 10.0,
+    "video_prompt": "Vertical 9:16, realistic footage, documentary/observational style. Camera view: the fixed interior viewpoint established by the previous edit, looking out through the glass toward the lake, held completely steady. Continuing directly from the current state shown in the starting image.\n\nThe interior is structurally finished but completely empty - no furniture, no rug, no fixtures. The builder carries in a compact bed platform and positions it against one wall, then places a mattress and simple bedding onto it, then carries in a small wooden bench or table and places it nearby, then unrolls a rug that sweeps across most of the floor as it is laid out. Each item is carried in and positioned in turn - no item simply appears already in place. By the end of the clip, the space reads as a warm, minimalist, uncluttered, premium small cabin interior with the lake and mountains still clearly visible through the glass. No posing, no presenter behavior.",
+    "start_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit5_glass_complete_interior.jpg",
+    "max_spend_usd": 0.5,
+    "estimated_cost_usd": 0.5,
+    "raw_video_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot7_interior_raw.mp4",
+    "actual_cost_usd": 0.5,
+    "completed_at": "2026-09-24T00:37:14.983061+00:00"
+  },
+  "edit6_exterior_reveal_viewpoint": {
+    "image_model": "fal-ai/nano-banana-pro/edit",
+    "source_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit6_source_frame.jpg",
+    "edit_prompt": "This is an intentional editorial jump cut - the same construction project, filmed again some time later, moving the camera back outside the now fully finished cabin - not a different or redesigned build. Keep the underlying structure exactly as it is: a compact modern glass A-frame hideaway, approximately 10 to 12 feet wide and 14 to 16 feet long, with a steep symmetrical A-frame roof reaching approximately 12 to 14 feet at its peak, single-story with a compact loftless feel, natural timber structural ribs, dark charcoal exterior cladding, and a large lake-facing glass facade - small enough that one builder plausibly constructs it alone, never a mansion, no second story, no extra wings, no oversized balcony, with the same footprint, roof, cladding, and glass already established. Keep the site exactly as established: a dramatic rocky peninsula on the shore of an intensely turquoise glacial lake, huge snowcapped mountains filling the horizon behind it, dark evergreen forest along portions of the shoreline, dramatic clouds moving around the distant peaks, and warm late-afternoon natural light with visible reflections and gentle water movement on the lake. Keep the same furnished interior visible through the glass (bed, bench/table, rug), the same builder identity, and the same lighting direction. Move the camera to a wide exterior vantage that shows the entire completed cabin against the lake and mountains, positioned and framed so a smooth pull-back from here would naturally reveal the full landscape - the cabin should occupy a moderate portion of the frame, not fill it entirely, leaving clear room for the lake, mountains, and shoreline around it. Do not add any new construction or change anything about the finished cabin - this is purely re-establishing the camera outside.",
+    "max_spend_usd": 0.15,
+    "estimated_cost_usd": 0.15,
+    "output_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit6_exterior_reveal_viewpoint.jpg",
+    "actual_cost_usd": 0.15,
+    "completed_at": "2026-09-24T00:38:15.392169+00:00"
+  },
+  "shot8": {
+    "video_model": "alibaba/wan-3.0/image-to-video",
+    "resolution": "480p",
+    "aspect_ratio": "9:16",
+    "duration_seconds": 5.0,
+    "video_prompt": "Vertical 9:16, realistic footage, documentary/observational style. Camera view: starting from the exact exterior vantage established in the starting image, then slowly and smoothly pulling back / widening to reveal more of the surrounding lake, mountains, and shoreline around the finished cabin. No cuts, no swooping or orbiting move, no push toward the structure - a simple, steady pull-back only. Continuing directly from the current state shown in the starting image.\n\nThe cabin is fully finished - complete dark cladding, complete lake-facing glass facade, furnished interior faintly visible through the glass - sitting on the rocky peninsula with the turquoise glacial lake, snowcapped mountains, and evergreen shoreline around it in warm late-afternoon light. No construction activity of any kind, no builder visible, no tools or equipment remaining on site. As the camera pulls back, the full context of the finished cabin against the dramatic landscape is revealed as the final hero image of the piece. No posing, no presenter behavior, no text overlays.",
+    "start_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\edit6_exterior_reveal_viewpoint.jpg",
+    "max_spend_usd": 0.25,
+    "estimated_cost_usd": 0.25,
+    "raw_video_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot8_reveal_raw.mp4",
+    "actual_cost_usd": 0.25,
+    "completed_at": "2026-09-24T00:40:57.495488+00:00"
+  },
+  "final_assembly": {
+    "clips": [
+      {
+        "name": "01_shot1_opening_prep",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot1_opening_prep_raw.mp4",
+        "accel_factor": 2.0,
+        "source_has_audio": true,
+        "finished_seconds": 3.57
+      },
+      {
+        "name": "02_shot2_base_floor",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot2_base_floor_raw.mp4",
+        "accel_factor": 3.3,
+        "source_has_audio": true,
+        "finished_seconds": 3.1
+      },
+      {
+        "name": "03_shot3_floorboards",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot3_floorboards_raw.mp4",
+        "accel_factor": 3.7,
+        "source_has_audio": true,
+        "finished_seconds": 3.57
+      },
+      {
+        "name": "04_shot4_aframe_ribs",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot4_aframe_ribs_raw.mp4",
+        "accel_factor": 3.33,
+        "source_has_audio": true,
+        "finished_seconds": 4.57
+      },
+      {
+        "name": "05_shot5_roof_cladding",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot5_roof_cladding_raw.mp4",
+        "accel_factor": 3.3,
+        "source_has_audio": true,
+        "finished_seconds": 3.7
+      },
+      {
+        "name": "06_shot6_glass",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot6_glass_raw.mp4",
+        "accel_factor": 2.9,
+        "source_has_audio": true,
+        "finished_seconds": 3.87
+      },
+      {
+        "name": "07_shot7_interior",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot7_interior_raw.mp4",
+        "accel_factor": 2.5,
+        "source_has_audio": true,
+        "finished_seconds": 4.07
+      },
+      {
+        "name": "08_shot8_reveal",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot8_reveal_raw.mp4",
+        "accel_factor": 1.1,
+        "source_has_audio": true,
+        "finished_seconds": 4.6
+      }
+    ],
+    "audio": "source audio preserved: each clip's audio atempo-retimed by its accel factor (silence where a clip has none), AAC 44.1 kHz stereo",
+    "final_visual_master_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\alpine_video_2_final_with_source_audio.mp4",
+    "final_duration_seconds": 31.03,
+    "target_range_seconds": [
+      30.5,
+      31.5
+    ],
+    "completed_at": "2026-09-24T21:09:20.788359+00:00"
+  },
+  "final_assembly__attempt1": {
+    "clips": [
+      {
+        "name": "01_shot1_opening_prep",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot1_opening_prep_raw.mp4",
+        "accel_factor": 2.0,
+        "finished_seconds": 3.57
+      },
+      {
+        "name": "02_shot2_base_floor",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot2_base_floor_raw.mp4",
+        "accel_factor": 3.3,
+        "finished_seconds": 3.1
+      },
+      {
+        "name": "03_shot3_floorboards",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot3_floorboards_raw.mp4",
+        "accel_factor": 3.7,
+        "finished_seconds": 3.57
+      },
+      {
+        "name": "04_shot4_aframe_ribs",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot4_aframe_ribs_raw.mp4",
+        "accel_factor": 3.33,
+        "finished_seconds": 4.57
+      },
+      {
+        "name": "05_shot5_roof_cladding",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot5_roof_cladding_raw.mp4",
+        "accel_factor": 3.3,
+        "finished_seconds": 3.7
+      },
+      {
+        "name": "06_shot6_glass",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot6_glass_raw.mp4",
+        "accel_factor": 2.9,
+        "finished_seconds": 3.87
+      },
+      {
+        "name": "07_shot7_interior",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot7_interior_raw.mp4",
+        "accel_factor": 2.5,
+        "finished_seconds": 4.07
+      },
+      {
+        "name": "08_shot8_reveal",
+        "source": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\shot8_reveal_raw.mp4",
+        "accel_factor": 1.1,
+        "finished_seconds": 4.6
+      }
+    ],
+    "final_visual_master_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\alpine_video_2\\alpine_video_2_final_visual.mp4",
+    "final_duration_seconds": 31.03,
+    "target_range_seconds": [
+      30.5,
+      31.5
+    ],
+    "completed_at": "2026-09-24T00:45:59.830384+00:00",
+    "archived_at": "2026-09-24T21:09:20.788359+00:00"
+  }
+}

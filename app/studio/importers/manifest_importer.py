@@ -238,7 +238,7 @@ def import_project(db: Session, pdef: ProjectDef, data_dir: Path | None = None) 
             cost = _cost(value.get("actual_cost_usd"))
             rec.event(f"archived:{key}", type="note", room_id="library_archive",
                       occurred_at=_parse_ts(value.get("archived_at")),
-                      message=f"Earlier attempt {attempt} of '{base_key}' archived before a retry"
+                      message=f"Earlier attempt {attempt} of '{base_key}' kept as an archived record"
                               f"{f' (${cost:.2f}, still counted in spend)' if cost else ''}.")
             continue
         if isinstance(value, dict) and key not in known:

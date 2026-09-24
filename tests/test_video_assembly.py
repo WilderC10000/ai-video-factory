@@ -172,3 +172,118 @@ def test_trim_video_output_directory_created_if_missing(tmp_path):
     trim_video(FIXTURE_CLIP, out, start=0.0, end=0.5)
 
     assert out.exists()
+
+
+# --- source audio: preserved, retimed, normalized, synchronized ------------------------------
+
+from app.services.video_assembly import ATEMPO_MAX, ATEMPO_MIN, atempo_chain, has_audio_stream  # noqa: E402
+
+SYNC_TOLERANCE_S = 0.08
+
+
+def _make_clip(path: Path, seconds: float = 2.0, audio: str | None = "sine", rate: int = 48000) -> Path:
+    """Real test clip: 64x64 test pattern, optionally with audio.
+    audio="sine" -> tone throughout; "late_tone" -> silence for the first half, tone in the
+    second half (lets a test tell retiming apart from truncation); None -> no audio stream."""
+    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", f"testsrc=size=64x64:rate=24:duration={seconds}"]
+    if audio == "sine":
+        cmd += ["-f", "lavfi", "-i", f"sine=frequency=440:sample_rate={rate}:duration={seconds}", "-ac", "1"]
+    elif audio == "late_tone":
+        half = seconds / 2
+        cmd += ["-f", "lavfi", "-i", f"sine=frequency=440:sample_rate={rate}:duration={seconds}",
+                "-af", f"volume=enable='lt(t,{half})':volume=0"]
+    if audio:
+        cmd += ["-c:a", "aac", "-shortest"]
+    cmd += ["-c:v", "libx264", "-pix_fmt", "yuv420p", str(path)]
+    subprocess.run(cmd, check=True, capture_output=True)
+    return path
+
+
+def _stream(path: Path, stream: str, entries: str) -> list[str]:
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", stream, "-show_entries", f"stream={entries}",
+         "-of", "default=noprint_wrappers=1:nokey=1", str(path)],
+        capture_output=True, text=True, check=True,
+    ).stdout.split()
+    return out
+
+
+def _durations(path: Path) -> tuple[float, float]:
+    return float(_stream(path, "v:0", "duration")[0]), float(_stream(path, "a:0", "duration")[0])
+
+
+def _assert_normalized_audio(path: Path) -> None:
+    codec, rate, channels = _stream(path, "a:0", "codec_name,sample_rate,channels")
+    assert (codec, rate, channels) == ("aac", "44100", "2")
+
+
+def _mean_volume(path: Path, start: float, end: float) -> float:
+    err = subprocess.run(
+        ["ffmpeg", "-v", "info", "-i", str(path), "-af", f"atrim={start}:{end},volumedetect", "-f", "null", "-"],
+        capture_output=True, text=True,
+    ).stderr
+    line = next(l for l in err.splitlines() if "mean_volume" in l)
+    return float(line.split("mean_volume:")[1].split("dB")[0])
+
+
+@pytest.mark.parametrize("factor, expected", [
+    (1.1, [1.1]), (2.0, [2.0]), (3.7, [2.0, 1.85]), (4.5, [2.0, 2.0, 1.125]), (0.3, [0.5, 0.6]),
+])
+def test_atempo_chain_stays_within_portable_limits_and_multiplies_to_factor(factor, expected):
+    parts = [float(p.split("=")[1]) for p in atempo_chain(factor).split(",")]
+    assert parts == pytest.approx(expected)
+    assert all(ATEMPO_MIN <= p <= ATEMPO_MAX for p in parts)
+    product = 1.0
+    for p in parts:
+        product *= p
+    assert product == pytest.approx(factor)
+
+
+@pytest.mark.parametrize("factor", [1.1, 2.0, 3.7])
+def test_accelerate_preserves_and_retimes_source_audio(tmp_path, factor):
+    src = _make_clip(tmp_path / "src.mp4", seconds=3.0, audio="sine")
+    out = accelerate_video(src, tmp_path / f"out_{factor}.mp4", factor=factor)
+
+    assert has_audio_stream(out)
+    _assert_normalized_audio(out)
+    video, audio = _durations(out)
+    assert video == pytest.approx(3.0 / factor, abs=0.1)  # visual timing unchanged from before
+    assert abs(audio - video) <= SYNC_TOLERANCE_S
+
+
+def test_accelerate_retimes_audio_rather_than_truncating_it(tmp_path):
+    src = _make_clip(tmp_path / "late.mp4", seconds=2.0, audio="late_tone")
+    out = accelerate_video(src, tmp_path / "late_2x.mp4", factor=2.0)
+    # The tone started at 1.0s in the source; at 2x it must start at ~0.5s. Plain truncation
+    # to 1s would have kept only the silent first half.
+    assert _mean_volume(out, 0.05, 0.40) < -60
+    assert _mean_volume(out, 0.60, 0.95) > -40
+
+
+def test_accelerate_adds_matching_silence_when_source_has_no_audio(tmp_path):
+    src = _make_clip(tmp_path / "silent_src.mp4", seconds=2.0, audio=None)
+    assert not has_audio_stream(src)
+    out = accelerate_video(src, tmp_path / "silent_2x.mp4", factor=2.0)
+    assert has_audio_stream(out)
+    _assert_normalized_audio(out)
+    video, audio = _durations(out)
+    assert abs(audio - video) <= SYNC_TOLERANCE_S
+    assert _mean_volume(out, 0.0, 0.9) < -80
+
+
+def test_concatenate_mixed_clips_outputs_synchronized_audio(tmp_path):
+    with_audio = accelerate_video(_make_clip(tmp_path / "a.mp4", 3.0, "sine", rate=48000), tmp_path / "a_fast.mp4", 3.7)
+    raw_with_audio = _make_clip(tmp_path / "b.mp4", 2.0, "sine", rate=22050)  # different rate, mono
+    no_audio = _make_clip(tmp_path / "c.mp4", 2.0, None)
+
+    out = concatenate_videos([with_audio, raw_with_audio, no_audio], tmp_path / "final.mp4")
+
+    assert has_audio_stream(out)
+    assert _stream(out, "v:0", "codec_name") == ["h264"]
+    _assert_normalized_audio(out)
+    video, audio = _durations(out)
+    assert video == pytest.approx(3.0 / 3.7 + 2.0 + 2.0, abs=0.15)
+    assert abs(audio - video) <= SYNC_TOLERANCE_S
+    # The silent clip's segment really is silent, the others carry the tone.
+    assert _mean_volume(out, video - 1.5, video - 0.2) < -80
+    assert _mean_volume(out, 1.2, 2.5) > -40

@@ -1,5 +1,5 @@
 import { STATUS_LABEL } from "../format";
-import type { Approval, Budget, ProjectInfo, Room, Stage } from "../types";
+import type { Approval, AudioReport, Budget, ProjectInfo, Room, Stage } from "../types";
 import { Avatar } from "./Avatar";
 import { RoomScreen } from "./RoomScreen";
 
@@ -23,11 +23,12 @@ interface Props {
   stages: Stage[];
   budget: Budget | null;
   approvals: Approval[];
+  audio?: AudioReport;
   selected: boolean;
   onSelect: (roomId: string) => void;
 }
 
-export function RoomCard({ room, project, stages, budget, approvals, selected, onSelect }: Props) {
+export function RoomCard({ room, project, stages, budget, approvals, audio, selected, onSelect }: Props) {
   const { agent } = room;
   const accent = ROOM_ACCENT[room.id] ?? "#94a3b8";
   const dim = room.data_source === null;
@@ -65,7 +66,7 @@ export function RoomCard({ room, project, stages, budget, approvals, selected, o
         </button>
         <div className="room__screen-wrap">
           {agent.status === "working" && <span className="room__activity" aria-hidden="true" />}
-          <RoomScreen room={room} project={project} stages={stages} budget={budget} approvals={approvals} />
+          <RoomScreen room={room} project={project} stages={stages} budget={budget} approvals={approvals} audio={audio} />
         </div>
       </div>
 

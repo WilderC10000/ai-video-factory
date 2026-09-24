@@ -23,7 +23,9 @@ def test_snapshot_derives_agent_status_from_real_state(client, db_session, data_
     assert agents["render_bay"]["status"] == "waiting_for_approval"
     assert agents["render_bay"]["requires_human_review"] is False  # normal waiting, not waiting on you
     assert agents["continuity_office"]["status"] == "complete"
-    assert agents["sound_booth"]["status"] == "idle" and "No data source" in agents["sound_booth"]["status_reason"]
+    assert agents["analytics_observatory"]["status"] == "idle" and "No data source" in agents["analytics_observatory"]["status_reason"]
+    # The fixture's clips are placeholder bytes, so the booth must say it can't tell - not "none".
+    assert "could not be determined" in agents["sound_booth"]["status_reason"]
     assert body["budget"]["spent_usd"] == 3.6
 
     cliff = client.get("/studio/snapshot?project=cliffside_video_1").json()

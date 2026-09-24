@@ -36,7 +36,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from app.services.video_assembly import VideoAssemblyError, accelerate_video, concatenate_videos
+from app.services.video_assembly import VideoAssemblyError, accelerate_video, concatenate_videos, has_audio_stream
 from scripts.run_alpine_video_2_common import MANIFEST_PATH, OUTPUT_DIR
 from scripts.run_alpine_video_2_edit3_framing_complete import EDIT3_OUTPUT_PATH  # noqa: F401 (documents chain)
 from scripts.run_alpine_video_2_shot1_opening_prep import SHOT1_RAW_PATH
@@ -48,8 +48,12 @@ from scripts.run_alpine_video_2_shot6_glass import SHOT6_RAW_PATH
 from scripts.run_alpine_video_2_shot7_interior import SHOT7_RAW_PATH
 from scripts.run_alpine_video_2_shot8_reveal import SHOT8_RAW_PATH
 
-FINAL_DIR = OUTPUT_DIR / "final"
-FINAL_VISUAL_MASTER_PATH = OUTPUT_DIR / "alpine_video_2_final_visual.mp4"
+# Source audio is now preserved (atempo-retimed with each clip). New output names,
+# so the earlier silent master (alpine_video_2_final_visual.mp4) and its silent
+# per-clip files in final/ are kept untouched rather than overwritten.
+FINAL_DIR = OUTPUT_DIR / "final_with_audio"
+FINAL_VISUAL_MASTER_PATH = OUTPUT_DIR / "alpine_video_2_final_with_source_audio.mp4"
+SILENT_MASTER_PATH = OUTPUT_DIR / "alpine_video_2_final_visual.mp4"
 
 # name -> (source_path, accel_factor). Order = final story/timeline order.
 # Factor chosen so raw_seconds / factor ~= that shot's approved finished-
@@ -143,6 +147,7 @@ def assemble_final(
         finished_duration = _ffprobe_duration(accel_path)
         per_clip_report.append({
             "name": name, "source": str(source), "accel_factor": factor,
+            "source_has_audio": has_audio_stream(source),
             "finished_seconds": round(finished_duration, 2),
         })
         accelerated_paths.append(accel_path)
@@ -156,8 +161,17 @@ def assemble_final(
     total_duration = _ffprobe_duration(master_path)
 
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {"experiment": "alpine_video_2", "created_at": _now()}
+    previous = manifest.get("final_assembly")
+    if isinstance(previous, dict):
+        # Keep the earlier assembly's record instead of overwriting it; its files are untouched.
+        n = 1
+        while f"final_assembly__attempt{n}" in manifest:
+            n += 1
+        manifest[f"final_assembly__attempt{n}"] = {**previous, "archived_at": _now()}
     manifest["final_assembly"] = {
         "clips": per_clip_report,
+        "audio": "source audio preserved: each clip's audio atempo-retimed by its accel factor "
+                 "(silence where a clip has none), AAC 44.1 kHz stereo",
         "final_visual_master_path": str(master_path),
         "final_duration_seconds": round(total_duration, 2),
         "target_range_seconds": [TARGET_MIN_SECONDS, TARGET_MAX_SECONDS],
@@ -192,7 +206,7 @@ def main() -> None:
     for c in per_clip_report:
         print(f"  {c['name']}: {c['finished_seconds']}s ({c['accel_factor']:g}x)")
 
-    print("\nReview alpine_video_2_final_visual.mp4 against:")
+    print(f"\nReview {FINAL_VISUAL_MASTER_PATH.name} against:")
     print("  - each phase shows real, on-camera visible completion before its jump cut (70-90% rule)")
     print("  - pacing accelerates through construction, eases for interior and the reveal")
     print("  - the A-frame rib hero moment and final reveal both get real screen time")

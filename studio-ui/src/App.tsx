@@ -171,6 +171,7 @@ export function App() {
           budget={full.budget}
           execution={full.execution}
           activeJob={full.active_job ?? null}
+          audio={full.audio}
           onSelectStage={openStage}
           onChanged={load}
           onClose={close}

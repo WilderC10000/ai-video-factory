@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.studio.actions import get_action, stage_intent
 from app.studio.execution import execution_info
+from app.studio.media_probe import AudioProbe, ffprobe_available, probe_audio
 from app.studio.models import (
     ACTIVE_JOB_STATUSES,
     AgentStatus,
@@ -119,6 +120,79 @@ def _approval_out(a: StudioApproval, stage_keys: dict[str, str]) -> dict:
     }
 
 
+ASSEMBLY_AUDIO_NOTE = (
+    "Final assembly keeps each clip's source audio, retimed with atempo by the same factor as its "
+    "video (silence where a clip has none), as AAC 44.1 kHz stereo. Masters assembled before this "
+    "change are silent."
+)
+
+
+def _probe_stage(s: StudioStage) -> AudioProbe:
+    if not s.latest_output_exists:
+        return AudioProbe(has_audio=None, error="file missing")
+    return probe_audio(s.latest_output_path)
+
+
+def audio_report(stages: list[StudioStage]) -> dict:
+    """SOURCE AUDIO = audio streams already embedded in generated clips, read from the
+    files with ffprobe. SOUND DESIGN = deliberate post-production audio (not built yet)."""
+    clips = []
+    for s in stages:
+        if s.kind == StageKind.VIDEO and s.status == StageStatus.COMPLETE and s.latest_output_path:
+            clips.append({"stage_key": s.key, "label": s.label, "file": Path(s.latest_output_path).name,
+                          **_probe_stage(s).as_dict()})
+    assembly = next((s for s in reversed(stages) if s.kind == StageKind.ASSEMBLY), None)
+    final = None
+    if assembly and assembly.status == StageStatus.COMPLETE and assembly.latest_output_path:
+        final = {"stage_key": assembly.key, "label": assembly.label,
+                 "file": Path(assembly.latest_output_path).name, **_probe_stage(assembly).as_dict()}
+    with_audio = sum(c["has_audio"] is True for c in clips)
+    if final is None:
+        final_status = "not_assembled"
+    elif final["has_audio"] is True:
+        final_status = "preserved"
+    elif final["has_audio"] is False:
+        final_status = "discarded" if with_audio else "no_source_audio"
+    else:
+        final_status = "unknown"
+    return {
+        "ffprobe_available": ffprobe_available(),
+        "clips": clips,
+        "clips_total": len(clips),
+        "clips_with_audio": with_audio,
+        "clips_unknown": sum(c["has_audio"] is None for c in clips),
+        "final": final,
+        "final_status": final_status,
+        "assembly_code_note": ASSEMBLY_AUDIO_NOTE,
+        "sound_design_implemented": False,
+    }
+
+
+def _sound_booth(audio: dict) -> dict:
+    if not audio["ffprobe_available"]:
+        return _out(AgentStatus.IDLE, "ffprobe not found on PATH - source audio can't be inspected.")
+    total, found, unknown = audio["clips_total"], audio["clips_with_audio"], audio["clips_unknown"]
+    if total == 0:
+        reason = "No generated clips yet - nothing to inspect."
+    elif unknown == total:
+        reason = f"Source audio could not be determined for {total} clip(s) (unreadable or missing files)."
+    elif found == 0:
+        reason = "Source audio detected: none"
+    else:
+        reason = f"Source audio detected: {found}/{total} generated clips"
+    if unknown and unknown != total:
+        reason += f" ({unknown} unreadable)"
+    final_text = {
+        "not_assembled": "Source audio - final cut not assembled yet",
+        "preserved": "Source audio - preserved in the final cut",
+        "discarded": "Source audio - discarded by an older assembly (re-run Final Assembly to keep it)",
+        "no_source_audio": "Source audio - none to keep; final cut is silent",
+        "unknown": "Source audio - final cut could not be checked",
+    }[audio["final_status"]]
+    return _out(AgentStatus.IDLE, reason, final_text,
+                "Additional sound design (music, SFX, voice) - not implemented yet.")
+
+
 class _State:
     """Everything agent derivation needs about one project, computed once."""
 
@@ -156,13 +230,16 @@ def _out(status, reason, task=None, action=None, needs_you=False, phase=None):
             "requires_human_review": needs_you, "job_phase": phase}
 
 
-def _derive_agent(room_id: str, st: _State) -> dict:
+def _derive_agent(room_id: str, st: _State, audio: dict | None = None) -> dict:
     stages, budget, frontier, running = st.stages, st.budget, st.frontier, st.running
     mine = [s for s in stages if s.room_id == room_id]
     review_pending = frontier is not None and frontier.approval_state == ApprovalStatus.PENDING
     rejected = frontier is not None and frontier.approval_state == ApprovalStatus.REJECTED
 
-    if room_id in ("sound_booth", "analytics_observatory"):
+    if room_id == "sound_booth":
+        return _sound_booth(audio if audio is not None else audio_report(stages))
+
+    if room_id == "analytics_observatory":
         return _out(AgentStatus.IDLE, "No data source yet - nothing in the pipeline feeds this room.")
 
     if room_id == "command_deck":
@@ -284,6 +361,7 @@ def build_snapshot(db: Session, slug: str | None = None) -> dict:
     budget = project.budget
     st = _State(stages, approvals, jobs, budget)
     agents = {a.id: a for a in db.scalars(select(StudioAgent)).all()}
+    audio = audio_report(stages)
 
     rooms = []
     for room in ROOMS:
@@ -297,7 +375,7 @@ def build_snapshot(db: Session, slug: str | None = None) -> dict:
             "warning_count": len(room_events), "worst_severity": worst.value if worst else None,
             "agent": {"name": agent.name if agent else room.agent_name,
                       "role": agent.role if agent else room.agent_role,
-                      **_derive_agent(room.id, st)},
+                      **_derive_agent(room.id, st, audio)},
         })
 
     jobs_sorted = sorted(jobs, key=lambda j: _naive(j.created_at), reverse=True)
@@ -330,5 +408,6 @@ def build_snapshot(db: Session, slug: str | None = None) -> dict:
         "approvals": [_approval_out(a, stage_keys) for a in approvals],
         "events": [_event_out(e, stage_keys) for e in events[:60]],
         "jobs": [job_out(j) for j in jobs_sorted[:15]],
+        "audio": audio,
         "active_job": job_out(st.running) if st.running else None,
     }

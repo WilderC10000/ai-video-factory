@@ -417,9 +417,10 @@ def execute_edit(
 
 
 def default_generate_provider():
-    from app.providers.image.fal import NANO_BANANA_PRO, FalImageProvider
+    # Same model constant and request shape as the proven scripts/run_alpine_video_2_site_reference.py.
+    from app.providers.image.fal import NANO_BANANA_PRO_GENERATE, FalImageProvider
 
-    return FalImageProvider(NANO_BANANA_PRO)
+    return FalImageProvider(NANO_BANANA_PRO_GENERATE)
 
 
 def execute_generate(

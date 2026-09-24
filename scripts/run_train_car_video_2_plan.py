@@ -68,7 +68,7 @@ FINAL_SECONDS_PER_CHECKPOINT = 3.0
 # Unit prices already used by this repo (app/providers/*/fal.py). The Wan 3.0
 # first/last-frame price is ASSUMED equal to its image-to-video price - fal's
 # API docs confirm end_image_url exists but this repo has never run it.
-PRICE_IMAGE_GENERATE_USD = 0.15   # NANO_BANANA_PRO (site/establishing still)
+PRICE_IMAGE_GENERATE_USD = 0.15   # NANO_BANANA_PRO_GENERATE (site/establishing still)
 PRICE_IMAGE_EDIT_USD = 0.15       # NANO_BANANA_PRO_EDIT, flat per image
 PRICE_VIDEO_PER_SECOND_USD = {"480p": 0.05, "720p": 0.10}  # WAN_3_0_STANDARD
 

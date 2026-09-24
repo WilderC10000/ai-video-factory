@@ -7,7 +7,7 @@ facade - this was Video #1's single biggest weakness (one panel then
 magic-finished facade), so this must clearly show several panels going
 in.
 """
-from scripts.run_alpine_video_2_common import OUTPUT_DIR, run_gated_video_shot
+from scripts.run_alpine_video_2_common import OUTPUT_DIR, VideoShotSpec, run_gated_video_shot
 from scripts.run_alpine_video_2_edit4_roof_complete import EDIT4_OUTPUT_PATH
 
 MAX_SPEND_USD = 0.55
@@ -33,29 +33,32 @@ PROMPT = (
 )
 
 
+SPEC = VideoShotSpec(
+    shot_key="shot6",
+    title="SHOT 6 (GLASS FACADE)",
+    upstream_path=EDIT4_OUTPUT_PATH,
+    upstream_label="Edit 4 (Roof/Cladding Complete)",
+    needs_frame_extraction=False,
+    start_frame_path=EDIT4_OUTPUT_PATH,
+    prompt=PROMPT,
+    duration_seconds=DURATION_SECONDS,
+    max_spend_usd=MAX_SPEND_USD,
+    raw_output_path=SHOT6_RAW_PATH,
+    job_state_path=JOB_STATE_PATH,
+    review_checklist=[
+        "HIGH PRIORITY: multiple distinct glass panels visibly installed in sequence",
+        "~75-90% of the facade glazed by the end - not one panel then a jump",
+        "lake/mountains visible through the installed glass",
+    ],
+    next_step_note=(
+        "Do NOT run Edit 5 (Glass Complete + Interior Move) until you have reviewed and "
+        "approved this clip. That is scripts/run_alpine_video_2_edit5_glass_complete.py."
+    ),
+)
+
+
 def main() -> None:
-    run_gated_video_shot(
-        shot_key="shot6",
-        title="SHOT 6 (GLASS FACADE)",
-        upstream_path=EDIT4_OUTPUT_PATH,
-        upstream_label="Edit 4 (Roof/Cladding Complete)",
-        needs_frame_extraction=False,
-        start_frame_path=EDIT4_OUTPUT_PATH,
-        prompt=PROMPT,
-        duration_seconds=DURATION_SECONDS,
-        max_spend_usd=MAX_SPEND_USD,
-        raw_output_path=SHOT6_RAW_PATH,
-        job_state_path=JOB_STATE_PATH,
-        review_checklist=[
-            "HIGH PRIORITY: multiple distinct glass panels visibly installed in sequence",
-            "~75-90% of the facade glazed by the end - not one panel then a jump",
-            "lake/mountains visible through the installed glass",
-        ],
-        next_step_note=(
-            "Do NOT run Edit 5 (Glass Complete + Interior Move) until you have reviewed and "
-            "approved this clip. That is scripts/run_alpine_video_2_edit5_glass_complete.py."
-        ),
-    )
+    run_gated_video_shot(SPEC)
 
 
 if __name__ == "__main__":

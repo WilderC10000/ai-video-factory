@@ -361,7 +361,8 @@ class FalVideoProvider(VideoProvider):
         status = data.get("status")
 
         if status in ("IN_QUEUE", "IN_PROGRESS"):
-            return VideoJobStatusResult(status=ProviderJobState.PROCESSING)
+            # Keep fal's own finer-grained state so callers can show queued vs generating.
+            return VideoJobStatusResult(status=ProviderJobState.PROCESSING, meta={"provider_status": status})
 
         if status == "COMPLETED":
             result_url = meta.get("response_url") or (

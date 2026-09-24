@@ -11,7 +11,7 @@ Makes exactly ONE Nano Banana Pro EDIT call. No video call. No retries.
 """
 import sys
 
-from scripts.run_alpine_video_2_common import MAX_SPEND_USD_EDIT, OUTPUT_DIR, run_gated_edit
+from scripts.run_alpine_video_2_common import EditSpec, MAX_SPEND_USD_EDIT, OUTPUT_DIR, run_gated_edit
 from scripts.run_alpine_video_2_shot2_base_floor import SHOT2_RAW_PATH
 
 SHOT2_LAST_FRAME_PATH = OUTPUT_DIR / "edit1_source_frame.jpg"
@@ -31,27 +31,30 @@ EDIT_PROMPT = (
 )
 
 
+SPEC = EditSpec(
+    edit_key="edit1_base_floor_complete",
+    title="JUMP CUT 1 (BASE/FLOOR COMPLETE)",
+    upstream_path=SHOT2_RAW_PATH,
+    upstream_label="Shot 2 (Base + Floor Structure)",
+    needs_frame_extraction=True,
+    start_frame_path=SHOT2_LAST_FRAME_PATH,
+    edit_prompt=EDIT_PROMPT,
+    output_image_path=EDIT1_OUTPUT_PATH,
+    max_spend_usd=MAX_SPEND_USD_EDIT,
+    review_checklist=[
+        "entire floor joist structure now complete - no gaps",
+        "no decking, walls, roof, or glass appear",
+        "camera change modest (~15-20 degrees), pad/site/lighting preserved",
+    ],
+    next_step_note=(
+        "Do NOT run Shot 3 (Floorboards) until you have reviewed and approved this edit. "
+        "That is scripts/run_alpine_video_2_shot3_floorboards.py."
+    ),
+)
+
+
 def main() -> None:
-    run_gated_edit(
-        edit_key="edit1_base_floor_complete",
-        title="JUMP CUT 1 (BASE/FLOOR COMPLETE)",
-        upstream_path=SHOT2_RAW_PATH,
-        upstream_label="Shot 2 (Base + Floor Structure)",
-        needs_frame_extraction=True,
-        start_frame_path=SHOT2_LAST_FRAME_PATH,
-        edit_prompt=EDIT_PROMPT,
-        output_image_path=EDIT1_OUTPUT_PATH,
-        max_spend_usd=MAX_SPEND_USD_EDIT,
-        review_checklist=[
-            "entire floor joist structure now complete - no gaps",
-            "no decking, walls, roof, or glass appear",
-            "camera change modest (~15-20 degrees), pad/site/lighting preserved",
-        ],
-        next_step_note=(
-            "Do NOT run Shot 3 (Floorboards) until you have reviewed and approved this edit. "
-            "That is scripts/run_alpine_video_2_shot3_floorboards.py."
-        ),
-    )
+    run_gated_edit(SPEC)
 
 
 if __name__ == "__main__":

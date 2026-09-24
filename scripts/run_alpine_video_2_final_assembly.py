@@ -102,30 +102,43 @@ def _ffprobe_duration(path: Path) -> float:
     return float(result.stdout.strip())
 
 
-def main() -> None:
-    missing = [(name, p) for name, p, _ in CLIP_SPECS if not p.exists()]
+class AssemblyError(Exception):
+    """Final assembly could not run or failed; nothing was written to the manifest."""
+
+
+def assemble_final(
+    clip_specs: list[tuple[str, Path, float]] = CLIP_SPECS,
+    final_dir: Path = FINAL_DIR,
+    master_path: Path = FINAL_VISUAL_MASTER_PATH,
+    manifest_path: Path = MANIFEST_PATH,
+    log=print,
+) -> dict:
+    """Non-interactive service form of the final assembly (used by the FORMA
+    Virtual Studio job runner). Local FFmpeg only - never any API call or spend.
+    Raises AssemblyError instead of exiting."""
+    missing = [(name, p) for name, p, _ in clip_specs if not p.exists()]
     if missing:
-        fail(
+        raise AssemblyError(
             "Not all eight real clips exist yet:\n"
             + "\n".join(f"  - {name}: {p}" for name, p in missing)
             + "\nRun each stage's own script (approved individually) before this step."
         )
 
-    print("=" * 70)
-    print("FORMA VIDEO #2 - FINAL ASSEMBLY - NO API CALLS, NO SPEND")
-    print("=" * 70)
+    log("=" * 70)
+    log("FORMA VIDEO #2 - FINAL ASSEMBLY - NO API CALLS, NO SPEND")
+    log("=" * 70)
 
     accelerated_paths: list[Path] = []
     per_clip_report = []
-    for i, (name, source, factor) in enumerate(CLIP_SPECS, 1):
-        print(f"\n[{i}/{len(CLIP_SPECS)}] {name}: accelerate {factor:g}x")
-        accel_path = FINAL_DIR / f"{name}_final.mp4"
+    for i, (name, source, factor) in enumerate(clip_specs, 1):
+        log(f"\n[{i}/{len(clip_specs)}] {name}: accelerate {factor:g}x")
+        accel_path = final_dir / f"{name}_final.mp4"
 
         try:
             accelerate_video(source, accel_path, factor=factor)
         except VideoAssemblyError as e:
-            fail(f"{name}: acceleration failed: {e}")
-        print(f"      accelerated -> {accel_path}")
+            raise AssemblyError(f"{name}: acceleration failed: {e}") from e
+        log(f"      accelerated -> {accel_path}")
 
         finished_duration = _ffprobe_duration(accel_path)
         per_clip_report.append({
@@ -134,23 +147,33 @@ def main() -> None:
         })
         accelerated_paths.append(accel_path)
 
-    print(f"\n[{len(CLIP_SPECS) + 1}/{len(CLIP_SPECS) + 1}] Concatenating all {len(accelerated_paths)} clips into the final visual master...")
+    log(f"\n[{len(clip_specs) + 1}/{len(clip_specs) + 1}] Concatenating all {len(accelerated_paths)} clips into the final visual master...")
     try:
-        concatenate_videos(accelerated_paths, FINAL_VISUAL_MASTER_PATH)
+        concatenate_videos(accelerated_paths, master_path)
     except VideoAssemblyError as e:
-        fail(f"Final concatenation failed: {e}")
+        raise AssemblyError(f"Final concatenation failed: {e}") from e
 
-    total_duration = _ffprobe_duration(FINAL_VISUAL_MASTER_PATH)
+    total_duration = _ffprobe_duration(master_path)
 
-    manifest = load_manifest()
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {"experiment": "alpine_video_2", "created_at": _now()}
     manifest["final_assembly"] = {
         "clips": per_clip_report,
-        "final_visual_master_path": str(FINAL_VISUAL_MASTER_PATH),
+        "final_visual_master_path": str(master_path),
         "final_duration_seconds": round(total_duration, 2),
         "target_range_seconds": [TARGET_MIN_SECONDS, TARGET_MAX_SECONDS],
         "completed_at": _now(),
     }
-    save_manifest(manifest)
+    manifest_path.write_text(json.dumps(manifest, indent=2))
+    return {"output_path": str(master_path), "final_duration_seconds": total_duration, "clips": per_clip_report}
+
+
+def main() -> None:
+    try:
+        result = assemble_final()
+    except AssemblyError as e:
+        fail(str(e))
+    total_duration = result["final_duration_seconds"]
+    per_clip_report = result["clips"]
 
     print("\n" + "=" * 70)
     print("FINAL ASSEMBLY DONE - no API calls were made.")

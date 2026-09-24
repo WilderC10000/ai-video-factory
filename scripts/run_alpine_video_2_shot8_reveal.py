@@ -10,7 +10,7 @@ exterior composition - a clean exterior hero reveal, nothing more ambitious.
 
 This is the terminal shot of the pipeline. No edit follows it.
 """
-from scripts.run_alpine_video_2_common import OUTPUT_DIR, run_gated_video_shot
+from scripts.run_alpine_video_2_common import OUTPUT_DIR, VideoShotSpec, run_gated_video_shot
 from scripts.run_alpine_video_2_edit6_exterior_reveal_viewpoint import EDIT6_OUTPUT_PATH
 
 MAX_SPEND_USD = 0.25
@@ -39,30 +39,33 @@ PROMPT = (
 )
 
 
+SPEC = VideoShotSpec(
+    shot_key="shot8",
+    title="SHOT 8 (FINAL REVEAL)",
+    upstream_path=EDIT6_OUTPUT_PATH,
+    upstream_label="Edit 6 (Exterior Reveal Viewpoint)",
+    needs_frame_extraction=False,
+    start_frame_path=EDIT6_OUTPUT_PATH,
+    prompt=PROMPT,
+    duration_seconds=DURATION_SECONDS,
+    max_spend_usd=MAX_SPEND_USD,
+    raw_output_path=SHOT8_RAW_PATH,
+    job_state_path=JOB_STATE_PATH,
+    review_checklist=[
+        "starts from the exact Edit 6 exterior composition - no jarring recomposition",
+        "simple steady pull-back only - no orbit, no push-in, no interior-to-exterior move",
+        "cabin reads fully finished - no construction activity, tools, or equipment visible",
+        "lake/mountains/shoreline read as the final hero backdrop, not background scenery",
+    ],
+    next_step_note=(
+        "This is the FINAL shot of the pipeline. Once approved, run the final assembly script: "
+        "scripts/run_alpine_video_2_final_assembly.py"
+    ),
+)
+
+
 def main() -> None:
-    run_gated_video_shot(
-        shot_key="shot8",
-        title="SHOT 8 (FINAL REVEAL)",
-        upstream_path=EDIT6_OUTPUT_PATH,
-        upstream_label="Edit 6 (Exterior Reveal Viewpoint)",
-        needs_frame_extraction=False,
-        start_frame_path=EDIT6_OUTPUT_PATH,
-        prompt=PROMPT,
-        duration_seconds=DURATION_SECONDS,
-        max_spend_usd=MAX_SPEND_USD,
-        raw_output_path=SHOT8_RAW_PATH,
-        job_state_path=JOB_STATE_PATH,
-        review_checklist=[
-            "starts from the exact Edit 6 exterior composition - no jarring recomposition",
-            "simple steady pull-back only - no orbit, no push-in, no interior-to-exterior move",
-            "cabin reads fully finished - no construction activity, tools, or equipment visible",
-            "lake/mountains/shoreline read as the final hero backdrop, not background scenery",
-        ],
-        next_step_note=(
-            "This is the FINAL shot of the pipeline. Once approved, run the final assembly script: "
-            "scripts/run_alpine_video_2_final_assembly.py"
-        ),
-    )
+    run_gated_video_shot(SPEC)
 
 
 if __name__ == "__main__":

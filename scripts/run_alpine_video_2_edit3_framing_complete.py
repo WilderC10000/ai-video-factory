@@ -5,7 +5,7 @@ Only runnable after Shot 4 (the hero shot) is generated AND approved.
 Closes the last ~10-20% of the rib run and nudges the camera toward a
 vantage suited to viewing the roof/sheathing.
 """
-from scripts.run_alpine_video_2_common import CABIN_SPEC, MAX_SPEND_USD_EDIT, OUTPUT_DIR, run_gated_edit
+from scripts.run_alpine_video_2_common import CABIN_SPEC, EditSpec, MAX_SPEND_USD_EDIT, OUTPUT_DIR, run_gated_edit
 from scripts.run_alpine_video_2_shot4_aframe_ribs import SHOT4_RAW_PATH
 
 SHOT4_LAST_FRAME_PATH = OUTPUT_DIR / "edit3_source_frame.jpg"
@@ -26,27 +26,30 @@ EDIT_PROMPT = (
 )
 
 
+SPEC = EditSpec(
+    edit_key="edit3_framing_complete",
+    title="JUMP CUT 3 (FRAMING COMPLETE)",
+    upstream_path=SHOT4_RAW_PATH,
+    upstream_label="Shot 4 (A-Frame Ribs)",
+    needs_frame_extraction=True,
+    start_frame_path=SHOT4_LAST_FRAME_PATH,
+    edit_prompt=EDIT_PROMPT,
+    output_image_path=EDIT3_OUTPUT_PATH,
+    max_spend_usd=MAX_SPEND_USD_EDIT,
+    review_checklist=[
+        "full rib structure complete along the entire cabin length, symmetrical",
+        "no roof surface, siding, glass, or door yet",
+        "camera repositioned toward the roof vantage; site/lighting preserved",
+    ],
+    next_step_note=(
+        "Do NOT run Shot 5 (Roof + Cladding) until you have reviewed and approved this edit. "
+        "That is scripts/run_alpine_video_2_shot5_roof_cladding.py."
+    ),
+)
+
+
 def main() -> None:
-    run_gated_edit(
-        edit_key="edit3_framing_complete",
-        title="JUMP CUT 3 (FRAMING COMPLETE)",
-        upstream_path=SHOT4_RAW_PATH,
-        upstream_label="Shot 4 (A-Frame Ribs)",
-        needs_frame_extraction=True,
-        start_frame_path=SHOT4_LAST_FRAME_PATH,
-        edit_prompt=EDIT_PROMPT,
-        output_image_path=EDIT3_OUTPUT_PATH,
-        max_spend_usd=MAX_SPEND_USD_EDIT,
-        review_checklist=[
-            "full rib structure complete along the entire cabin length, symmetrical",
-            "no roof surface, siding, glass, or door yet",
-            "camera repositioned toward the roof vantage; site/lighting preserved",
-        ],
-        next_step_note=(
-            "Do NOT run Shot 5 (Roof + Cladding) until you have reviewed and approved this edit. "
-            "That is scripts/run_alpine_video_2_shot5_roof_cladding.py."
-        ),
-    )
+    run_gated_edit(SPEC)
 
 
 if __name__ == "__main__":

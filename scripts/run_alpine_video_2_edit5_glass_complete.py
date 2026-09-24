@@ -6,7 +6,7 @@ Only runnable after Shot 6 is generated AND approved. Closes the last
 through the glass at the lake - a bigger compositional change than the
 usual ~15-20 degree nudge, since it crosses from exterior to interior.
 """
-from scripts.run_alpine_video_2_common import MAX_SPEND_USD_EDIT, OUTPUT_DIR, run_gated_edit
+from scripts.run_alpine_video_2_common import EditSpec, MAX_SPEND_USD_EDIT, OUTPUT_DIR, run_gated_edit
 from scripts.run_alpine_video_2_shot6_glass import SHOT6_RAW_PATH
 
 SHOT6_LAST_FRAME_PATH = OUTPUT_DIR / "edit5_source_frame.jpg"
@@ -27,29 +27,32 @@ EDIT_PROMPT = (
 )
 
 
+SPEC = EditSpec(
+    edit_key="edit5_glass_complete",
+    title="JUMP CUT 5 (GLASS COMPLETE + INTERIOR MOVE)",
+    upstream_path=SHOT6_RAW_PATH,
+    upstream_label="Shot 6 (Glass Facade)",
+    needs_frame_extraction=True,
+    start_frame_path=SHOT6_LAST_FRAME_PATH,
+    edit_prompt=EDIT_PROMPT,
+    output_image_path=EDIT5_OUTPUT_PATH,
+    max_spend_usd=MAX_SPEND_USD_EDIT,
+    review_checklist=[
+        "entire lake-facing facade now fully glazed - no empty openings",
+        "camera now shows a genuine interior vantage, looking out at the lake/mountains",
+        "interior is empty/unfurnished, structurally finished; no furniture/decor yet",
+        "this is a bigger compositional change than usual - check it doesn't drift into a "
+        "different structure",
+    ],
+    next_step_note=(
+        "Do NOT run Shot 7 (Interior Design) until you have reviewed and approved this edit. "
+        "That is scripts/run_alpine_video_2_shot7_interior.py."
+    ),
+)
+
+
 def main() -> None:
-    run_gated_edit(
-        edit_key="edit5_glass_complete",
-        title="JUMP CUT 5 (GLASS COMPLETE + INTERIOR MOVE)",
-        upstream_path=SHOT6_RAW_PATH,
-        upstream_label="Shot 6 (Glass Facade)",
-        needs_frame_extraction=True,
-        start_frame_path=SHOT6_LAST_FRAME_PATH,
-        edit_prompt=EDIT_PROMPT,
-        output_image_path=EDIT5_OUTPUT_PATH,
-        max_spend_usd=MAX_SPEND_USD_EDIT,
-        review_checklist=[
-            "entire lake-facing facade now fully glazed - no empty openings",
-            "camera now shows a genuine interior vantage, looking out at the lake/mountains",
-            "interior is empty/unfurnished, structurally finished; no furniture/decor yet",
-            "this is a bigger compositional change than usual - check it doesn't drift into a "
-            "different structure",
-        ],
-        next_step_note=(
-            "Do NOT run Shot 7 (Interior Design) until you have reviewed and approved this edit. "
-            "That is scripts/run_alpine_video_2_shot7_interior.py."
-        ),
-    )
+    run_gated_edit(SPEC)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ builder stays at the active frontier; completed ribs stand fixed behind
 him; no rib ever appears ahead of the active work zone. Highest retry
 priority in the whole pipeline.
 """
-from scripts.run_alpine_video_2_common import CABIN_SPEC, OUTPUT_DIR, run_gated_video_shot
+from scripts.run_alpine_video_2_common import CABIN_SPEC, OUTPUT_DIR, VideoShotSpec, run_gated_video_shot
 from scripts.run_alpine_video_2_edit2_floor_complete import EDIT2_OUTPUT_PATH
 
 MAX_SPEND_USD = 0.75
@@ -40,32 +40,35 @@ PROMPT = (
 )
 
 
+SPEC = VideoShotSpec(
+    shot_key="shot4",
+    title="SHOT 4 (A-FRAME RIBS - HERO MOMENT)",
+    upstream_path=EDIT2_OUTPUT_PATH,
+    upstream_label="Edit 2 (Floor Complete)",
+    needs_frame_extraction=False,
+    start_frame_path=EDIT2_OUTPUT_PATH,
+    prompt=PROMPT,
+    duration_seconds=DURATION_SECONDS,
+    max_spend_usd=MAX_SPEND_USD,
+    raw_output_path=SHOT4_RAW_PATH,
+    job_state_path=JOB_STATE_PATH,
+    review_checklist=[
+        "HIGHEST RETRY PRIORITY: multiple ribs erected sequentially, ~80-90% of the run",
+        "builder stays at the active frontier - no rib appears ahead of him",
+        "already-erected ribs remain fixed, plumb, evenly spaced - no geometry drift",
+        "no roof, glass, or siding appear; lake/mountains share the frame",
+    ],
+    next_step_note=(
+        "Do NOT run Edit 3 (Framing Complete) until you have reviewed and approved this clip "
+        "carefully - retry here if geometry fails, a rib leapfrogs the builder, or the "
+        "structure reads as asymmetrical/wrong. That is "
+        "scripts/run_alpine_video_2_edit3_framing_complete.py."
+    ),
+)
+
+
 def main() -> None:
-    run_gated_video_shot(
-        shot_key="shot4",
-        title="SHOT 4 (A-FRAME RIBS - HERO MOMENT)",
-        upstream_path=EDIT2_OUTPUT_PATH,
-        upstream_label="Edit 2 (Floor Complete)",
-        needs_frame_extraction=False,
-        start_frame_path=EDIT2_OUTPUT_PATH,
-        prompt=PROMPT,
-        duration_seconds=DURATION_SECONDS,
-        max_spend_usd=MAX_SPEND_USD,
-        raw_output_path=SHOT4_RAW_PATH,
-        job_state_path=JOB_STATE_PATH,
-        review_checklist=[
-            "HIGHEST RETRY PRIORITY: multiple ribs erected sequentially, ~80-90% of the run",
-            "builder stays at the active frontier - no rib appears ahead of him",
-            "already-erected ribs remain fixed, plumb, evenly spaced - no geometry drift",
-            "no roof, glass, or siding appear; lake/mountains share the frame",
-        ],
-        next_step_note=(
-            "Do NOT run Edit 3 (Framing Complete) until you have reviewed and approved this clip "
-            "carefully - retry here if geometry fails, a rib leapfrogs the builder, or the "
-            "structure reads as asymmetrical/wrong. That is "
-            "scripts/run_alpine_video_2_edit3_framing_complete.py."
-        ),
-    )
+    run_gated_video_shot(SPEC)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ AND approved. Required phase for any FORMA structure with a habitable
 interior - 2-3 focused, clearly readable furnishing actions, not an
 overloaded list.
 """
-from scripts.run_alpine_video_2_common import OUTPUT_DIR, run_gated_video_shot
+from scripts.run_alpine_video_2_common import OUTPUT_DIR, VideoShotSpec, run_gated_video_shot
 from scripts.run_alpine_video_2_edit5_glass_complete import EDIT5_OUTPUT_PATH
 
 MAX_SPEND_USD = 0.50
@@ -31,30 +31,33 @@ PROMPT = (
 )
 
 
+SPEC = VideoShotSpec(
+    shot_key="shot7",
+    title="SHOT 7 (INTERIOR DESIGN)",
+    upstream_path=EDIT5_OUTPUT_PATH,
+    upstream_label="Edit 5 (Glass Complete + Interior Move)",
+    needs_frame_extraction=False,
+    start_frame_path=EDIT5_OUTPUT_PATH,
+    prompt=PROMPT,
+    duration_seconds=DURATION_SECONDS,
+    max_spend_usd=MAX_SPEND_USD,
+    raw_output_path=SHOT7_RAW_PATH,
+    job_state_path=JOB_STATE_PATH,
+    review_checklist=[
+        "each furnishing item (bed/mattress, bench/table, rug) is carried in and placed, "
+        "not conjured in place",
+        "rug sweeps across most of the floor, not just a corner",
+        "interior reads warm/minimalist/premium; lake+mountains still visible through glass",
+    ],
+    next_step_note=(
+        "Do NOT run Edit 6 (Exterior Reveal Viewpoint) until you have reviewed and approved "
+        "this clip. That is scripts/run_alpine_video_2_edit6_exterior_reveal_viewpoint.py."
+    ),
+)
+
+
 def main() -> None:
-    run_gated_video_shot(
-        shot_key="shot7",
-        title="SHOT 7 (INTERIOR DESIGN)",
-        upstream_path=EDIT5_OUTPUT_PATH,
-        upstream_label="Edit 5 (Glass Complete + Interior Move)",
-        needs_frame_extraction=False,
-        start_frame_path=EDIT5_OUTPUT_PATH,
-        prompt=PROMPT,
-        duration_seconds=DURATION_SECONDS,
-        max_spend_usd=MAX_SPEND_USD,
-        raw_output_path=SHOT7_RAW_PATH,
-        job_state_path=JOB_STATE_PATH,
-        review_checklist=[
-            "each furnishing item (bed/mattress, bench/table, rug) is carried in and placed, "
-            "not conjured in place",
-            "rug sweeps across most of the floor, not just a corner",
-            "interior reads warm/minimalist/premium; lake+mountains still visible through glass",
-        ],
-        next_step_note=(
-            "Do NOT run Edit 6 (Exterior Reveal Viewpoint) until you have reviewed and approved "
-            "this clip. That is scripts/run_alpine_video_2_edit6_exterior_reveal_viewpoint.py."
-        ),
-    )
+    run_gated_video_shot(SPEC)
 
 
 if __name__ == "__main__":

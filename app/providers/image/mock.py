@@ -6,11 +6,14 @@ real-world numbers - no real money changes hands here.
 
 `extra_params["mock_behavior"] = "fail"` simulates a provider-side failure
 for testing, mirroring the mock video provider's controllability.
+
+`edit_image` mirrors FalImageProvider.edit_image for sandbox runs: it returns the
+first input image unchanged, at $0.00.
 """
 import math
 from pathlib import Path
 
-from app.providers.base import ImageGenerationRequest, ImageProvider, ImageProviderError, ImageResult
+from app.providers.base import ImageEditRequest, ImageGenerationRequest, ImageProvider, ImageProviderError, ImageResult
 
 _FIXTURE_IMAGE = Path(__file__).resolve().parent / "fixtures" / "mock_reference.jpg"
 
@@ -40,3 +43,15 @@ class MockImageProvider(ImageProvider):
             cost_usd=self.estimate_cost(request),
             meta={"mock": True},
         )
+
+    def estimate_edit_cost(self) -> float:
+        return 0.0
+
+    def edit_image(self, request: ImageEditRequest, destination_path: str) -> ImageResult:
+        if request.extra_params.get("mock_behavior") == "fail":
+            raise ImageProviderError("Mock provider: image edit failed (simulated).")
+        dest = Path(destination_path)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        source = Path(request.reference_image_paths[0]) if request.reference_image_paths else _FIXTURE_IMAGE
+        dest.write_bytes(source.read_bytes())
+        return ImageResult(provider_name=self.name, file_path=str(dest), cost_usd=0.0, meta={"mock": True})

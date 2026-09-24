@@ -11,3 +11,8 @@ data/fal_test/
 data/fal_continuity_test/
 .pytest_cache/
 *.egg-info/
+
+# FORMA Virtual Studio frontend
+studio-ui/node_modules/
+studio-ui/dist/
+data/studio_sandbox/

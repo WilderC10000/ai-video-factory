@@ -23,8 +23,13 @@ def init_db() -> None:
         (ROOT_DIR / "data").mkdir(parents=True, exist_ok=True)
     import app.models.project  # noqa: F401  (ensures models are registered on Base)
     import app.models.video_job  # noqa: F401
+    import app.studio.models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+
+    from app.studio.migrate import ensure_columns
+
+    ensure_columns(engine)
 
 
 def get_session() -> Generator[Session, None, None]:

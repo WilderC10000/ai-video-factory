@@ -5,11 +5,14 @@ from fastapi import FastAPI
 from app.config import settings
 from app.db import init_db
 from app.routers import projects
+from app.studio import router as studio
+from app.studio.jobs import get_runner
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    get_runner().recover_stale_jobs()
     yield
 
 
@@ -22,3 +25,4 @@ def health():
 
 
 app.include_router(projects.router)
+app.include_router(studio.router)

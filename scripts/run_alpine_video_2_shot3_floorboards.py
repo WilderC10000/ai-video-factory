@@ -9,7 +9,7 @@ Highly satisfying decking sweep: boards laid in rapid succession across
 ~85-90% of the floor, one clear frontier (INSTALLED FLOOR | BUILDER |
 EXPOSED JOISTS). This is the first real test of the 90% Process Rule.
 """
-from scripts.run_alpine_video_2_common import OUTPUT_DIR, run_gated_video_shot
+from scripts.run_alpine_video_2_common import OUTPUT_DIR, VideoShotSpec, run_gated_video_shot
 from scripts.run_alpine_video_2_edit1_base_floor_complete import EDIT1_OUTPUT_PATH
 
 MAX_SPEND_USD = 0.65
@@ -35,29 +35,32 @@ PROMPT = (
 )
 
 
+SPEC = VideoShotSpec(
+    shot_key="shot3",
+    title="SHOT 3 (FLOORBOARDS)",
+    upstream_path=EDIT1_OUTPUT_PATH,
+    upstream_label="Edit 1 (Base/Floor Complete)",
+    needs_frame_extraction=False,
+    start_frame_path=EDIT1_OUTPUT_PATH,
+    prompt=PROMPT,
+    duration_seconds=DURATION_SECONDS,
+    max_spend_usd=MAX_SPEND_USD,
+    raw_output_path=SHOT3_RAW_PATH,
+    job_state_path=JOB_STATE_PATH,
+    review_checklist=[
+        "floorboards sweep across ~85-90% of the floor - not just one or two boards",
+        "INSTALLED FLOOR | BUILDER | EXPOSED JOISTS frontier reads clearly, one direction",
+        "no walls, roof, or glass appear; lake/mountains remain visually important",
+    ],
+    next_step_note=(
+        "Do NOT run Edit 2 (Floor Complete) until you have reviewed and approved this clip. "
+        "That is scripts/run_alpine_video_2_edit2_floor_complete.py."
+    ),
+)
+
+
 def main() -> None:
-    run_gated_video_shot(
-        shot_key="shot3",
-        title="SHOT 3 (FLOORBOARDS)",
-        upstream_path=EDIT1_OUTPUT_PATH,
-        upstream_label="Edit 1 (Base/Floor Complete)",
-        needs_frame_extraction=False,
-        start_frame_path=EDIT1_OUTPUT_PATH,
-        prompt=PROMPT,
-        duration_seconds=DURATION_SECONDS,
-        max_spend_usd=MAX_SPEND_USD,
-        raw_output_path=SHOT3_RAW_PATH,
-        job_state_path=JOB_STATE_PATH,
-        review_checklist=[
-            "floorboards sweep across ~85-90% of the floor - not just one or two boards",
-            "INSTALLED FLOOR | BUILDER | EXPOSED JOISTS frontier reads clearly, one direction",
-            "no walls, roof, or glass appear; lake/mountains remain visually important",
-        ],
-        next_step_note=(
-            "Do NOT run Edit 2 (Floor Complete) until you have reviewed and approved this clip. "
-            "That is scripts/run_alpine_video_2_edit2_floor_complete.py."
-        ),
-    )
+    run_gated_video_shot(SPEC)
 
 
 if __name__ == "__main__":

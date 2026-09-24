@@ -3497,3 +3497,35 @@ provider-level rate limiting.
   composition checks against the flags above), a review dashboard, and
   eventually publishing - see the project plan for the full list. None of
   this is implemented yet.
+
+## FORMA Virtual Studio (control room)
+
+A 2D studio UI (`studio-ui/`, React + Vite) over the FastAPI backend (`app/studio/`).
+It mirrors the real production manifests read-only into `studio_*` tables, and can
+drive the remaining pipeline stages: **Approve & Continue**, **Approve only**,
+**Reject** (with note), **Retry** (confirmed).
+
+- Studio approvals, rejections and job history live only in the `studio_*` tables.
+  The manifests stay the authoritative record of generated outputs and costs.
+- Stages run through the same pipeline code as the CLI: each stage script's `SPEC`
+  (`execute_video_shot` / `execute_edit`) and `assemble_final`. The scripts still run
+  from the terminal exactly as before.
+- Safety: one active job per project (DB-enforced), idempotent launch requests,
+  a hard check of `spent + stage cap <= budget cap` before any paid launch (and
+  again inside the pipeline), explicit confirmation for every launch, no automatic retries.
+  A retry keeps the previous attempt as `<key>__attemptN` so its spend still counts.
+
+`STUDIO_EXECUTION_MODE` (in `.env`) controls launching:
+
+| mode | what launching does |
+|---|---|
+| `disabled` (default) | nothing - approvals/rejections are recorded, launches are refused |
+| `mock` | mock providers ($0.00) against a sandbox copy - use `python -m scripts.studio_sandbox` |
+| `live` | real fal.ai calls on `./data` (needs `FAL_API_KEY`), each behind a confirm panel |
+
+```
+python -m scripts.studio_sandbox --reset         # safe: sandbox copy + mock backend on :8000
+python -m uvicorn app.main:app --port 8000       # real data (mode from .env)
+cd studio-ui && npm run dev                      # UI on http://localhost:5173
+```
+

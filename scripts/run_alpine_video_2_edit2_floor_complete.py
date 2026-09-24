@@ -5,7 +5,7 @@ Only runnable after Shot 3 is generated AND approved. Closes the last
 ~10-15% of decking and nudges the camera toward a vantage that shows the
 cabin's long axis, setting up the A-frame rib hero shot.
 """
-from scripts.run_alpine_video_2_common import MAX_SPEND_USD_EDIT, OUTPUT_DIR, run_gated_edit
+from scripts.run_alpine_video_2_common import EditSpec, MAX_SPEND_USD_EDIT, OUTPUT_DIR, run_gated_edit
 from scripts.run_alpine_video_2_shot3_floorboards import SHOT3_RAW_PATH
 
 SHOT3_LAST_FRAME_PATH = OUTPUT_DIR / "edit2_source_frame.jpg"
@@ -25,27 +25,30 @@ EDIT_PROMPT = (
 )
 
 
+SPEC = EditSpec(
+    edit_key="edit2_floor_complete",
+    title="JUMP CUT 2 (FLOOR COMPLETE)",
+    upstream_path=SHOT3_RAW_PATH,
+    upstream_label="Shot 3 (Floorboards)",
+    needs_frame_extraction=True,
+    start_frame_path=SHOT3_LAST_FRAME_PATH,
+    edit_prompt=EDIT_PROMPT,
+    output_image_path=EDIT2_OUTPUT_PATH,
+    max_spend_usd=MAX_SPEND_USD_EDIT,
+    review_checklist=[
+        "entire floor now fully decked, no exposed joists",
+        "camera now shows the cabin's long axis, ready for the rib hero shot",
+        "no walls, roof, or glass appear; site/lighting preserved",
+    ],
+    next_step_note=(
+        "Do NOT run Shot 4 (A-Frame Ribs - the hero shot) until you have reviewed and "
+        "approved this edit. That is scripts/run_alpine_video_2_shot4_aframe_ribs.py."
+    ),
+)
+
+
 def main() -> None:
-    run_gated_edit(
-        edit_key="edit2_floor_complete",
-        title="JUMP CUT 2 (FLOOR COMPLETE)",
-        upstream_path=SHOT3_RAW_PATH,
-        upstream_label="Shot 3 (Floorboards)",
-        needs_frame_extraction=True,
-        start_frame_path=SHOT3_LAST_FRAME_PATH,
-        edit_prompt=EDIT_PROMPT,
-        output_image_path=EDIT2_OUTPUT_PATH,
-        max_spend_usd=MAX_SPEND_USD_EDIT,
-        review_checklist=[
-            "entire floor now fully decked, no exposed joists",
-            "camera now shows the cabin's long axis, ready for the rib hero shot",
-            "no walls, roof, or glass appear; site/lighting preserved",
-        ],
-        next_step_note=(
-            "Do NOT run Shot 4 (A-Frame Ribs - the hero shot) until you have reviewed and "
-            "approved this edit. That is scripts/run_alpine_video_2_shot4_aframe_ribs.py."
-        ),
-    )
+    run_gated_edit(SPEC)
 
 
 if __name__ == "__main__":

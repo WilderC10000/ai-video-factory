@@ -31,6 +31,14 @@ class Settings(BaseSettings):
     # separate from Shot.regeneration_count, which tracks whole new attempts.
     max_job_poll_retries: int = 3
 
+    # FORMA Virtual Studio execution. "disabled" (default): the studio records
+    # approvals/rejections but can never launch a pipeline stage. "mock": stages run
+    # with mock providers against a sandbox copy of the data (studio_data_dir must
+    # NOT be ./data - see scripts/studio_sandbox.py). "live": real, paid provider calls
+    # on the real ./data manifests, each one still gated by a confirm click in the UI.
+    studio_execution_mode: str = "disabled"
+    studio_data_dir: str = "./data"
+
     # Real provider keys - not used by anything active yet. The fal.ai adapters
     # (app/providers/video/fal.py, app/providers/image/fal.py) read this, but
     # they are not wired into the app as the active provider until explicitly
@@ -38,6 +46,10 @@ class Settings(BaseSettings):
     fal_api_key: str | None = None
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
+
+    @property
+    def studio_data_path(self) -> Path:
+        return (ROOT_DIR / self.studio_data_dir).resolve()
 
     @property
     def project_data_path(self) -> Path:

@@ -10,7 +10,7 @@ may only skip a task's final repetitive 10-30%, never the majority, and
 every major finish needs a visible source and installation before it
 reads as complete.
 """
-from scripts.run_alpine_video_2_common import OUTPUT_DIR, run_gated_video_shot
+from scripts.run_alpine_video_2_common import OUTPUT_DIR, VideoShotSpec, run_gated_video_shot
 from scripts.run_alpine_video_2_edit3_framing_complete import EDIT3_OUTPUT_PATH
 
 MAX_SPEND_USD = 0.60
@@ -38,31 +38,34 @@ PROMPT = (
 )
 
 
+SPEC = VideoShotSpec(
+    shot_key="shot5",
+    title="SHOT 5 (ROOF + EXTERIOR CLADDING)",
+    upstream_path=EDIT3_OUTPUT_PATH,
+    upstream_label="Edit 3 (Framing Complete)",
+    needs_frame_extraction=False,
+    start_frame_path=EDIT3_OUTPUT_PATH,
+    prompt=PROMPT,
+    duration_seconds=DURATION_SECONDS,
+    max_spend_usd=MAX_SPEND_USD,
+    raw_output_path=SHOT5_RAW_PATH,
+    job_state_path=JOB_STATE_PATH,
+    review_checklist=[
+        "roof sheathing reaches full 100% coverage partway through the clip, one clear direction",
+        "cladding panels are each visibly carried from their own staged stack and fastened on - "
+        "not simply appearing",
+        "~75-85% of the exterior cladding installed by the end - majority shown, not skipped",
+        "no glass or door in the framed openings yet; lake/mountains remain visible",
+    ],
+    next_step_note=(
+        "Do NOT run Edit 4 (Roof/Cladding Complete) until you have reviewed and approved this "
+        "clip. That is scripts/run_alpine_video_2_edit4_roof_complete.py."
+    ),
+)
+
+
 def main() -> None:
-    run_gated_video_shot(
-        shot_key="shot5",
-        title="SHOT 5 (ROOF + EXTERIOR CLADDING)",
-        upstream_path=EDIT3_OUTPUT_PATH,
-        upstream_label="Edit 3 (Framing Complete)",
-        needs_frame_extraction=False,
-        start_frame_path=EDIT3_OUTPUT_PATH,
-        prompt=PROMPT,
-        duration_seconds=DURATION_SECONDS,
-        max_spend_usd=MAX_SPEND_USD,
-        raw_output_path=SHOT5_RAW_PATH,
-        job_state_path=JOB_STATE_PATH,
-        review_checklist=[
-            "roof sheathing reaches full 100% coverage partway through the clip, one clear direction",
-            "cladding panels are each visibly carried from their own staged stack and fastened on - "
-            "not simply appearing",
-            "~75-85% of the exterior cladding installed by the end - majority shown, not skipped",
-            "no glass or door in the framed openings yet; lake/mountains remain visible",
-        ],
-        next_step_note=(
-            "Do NOT run Edit 4 (Roof/Cladding Complete) until you have reviewed and approved this "
-            "clip. That is scripts/run_alpine_video_2_edit4_roof_complete.py."
-        ),
-    )
+    run_gated_video_shot(SPEC)
 
 
 if __name__ == "__main__":

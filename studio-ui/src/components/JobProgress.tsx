@@ -44,7 +44,7 @@ export function JobProgress({ job, compact = false }: { job: Job; compact?: bool
   return (
     <div className={`job ${failedAt ? "job--failed" : job.active ? "job--active" : "job--done"}`}>
       <div className="job__head">
-        <b>{job.mode === "retry" ? "Retry" : "Generation"} · {job.phase_label}</b>
+        <b>{{ retry: "Retry", recover: "Recovery", continue: "Generation", generate: "Generation" }[job.mode] ?? "Job"} · {job.phase_label}</b>
         <span className={`mode-badge mode-badge--${job.execution_mode}`}>{job.execution_mode.toUpperCase()}</span>
         {start && <span className="job__time">{fmtElapsed(end - start)}</span>}
       </div>

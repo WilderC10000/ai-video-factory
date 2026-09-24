@@ -111,8 +111,8 @@ def record_decision(db: Session, slug: str, key: str, decision: str, note: str |
 
 def launch_plan(db: Session, slug: str, key: str, mode: str, *, resync: bool = True) -> dict:
     """Everything the confirm panel shows, plus whether the launch is allowed and why not."""
-    if mode not in ("continue", "retry", "generate"):
-        raise ControlError(400, "mode must be 'continue', 'retry' or 'generate'")
+    if mode not in ("continue", "retry", "generate", "recover"):
+        raise ControlError(400, "mode must be 'continue', 'retry', 'generate' or 'recover'")
     project = _project(db, slug)
     if resync:  # re-read the manifest so spend and stage state are current
         import_project(db, PROJECTS_BY_SLUG[slug])
@@ -142,6 +142,13 @@ def launch_plan(db: Session, slug: str, key: str, mode: str, *, resync: bool = T
         elif target.status == StageStatus.STARTED:
             problems.append(f"The manifest shows {target.label} started but never completed (a terminal run in flight "
                             "or interrupted). Check it before launching again.")
+    if target is not None and mode == "recover":
+        if action is not None and action.kind.value != "video":
+            problems.append("Only video stages have a provider job to recover.")
+        if target.status != StageStatus.STARTED:
+            problems.append(f"{target.label} is not waiting on a submitted provider job (status: {target.status.value}).")
+        if not target.provider_job_id:
+            problems.append(f"No saved provider job id for {target.label} - nothing to recover.")
     if target is not None and mode == "generate":
         if target.status != StageStatus.PENDING:
             problems.append(f"{target.label} has already run - use Retry to run it again.")
@@ -173,7 +180,7 @@ def launch_plan(db: Session, slug: str, key: str, mode: str, *, resync: bool = T
         problems += action.blockers(data_root() / slug / "manifest.json")
 
     budget = project.budget
-    paid = bool(action and action.paid)
+    paid = bool(action and action.paid) and mode != "recover"  # recovery only checks status and downloads
     estimate = (target.planned_cost_usd or 0.0) if (target and paid) else 0.0
     spent = budget.spent_usd if budget else 0.0
     cap = budget.cap_usd if budget else None
@@ -245,9 +252,8 @@ def launch(db: Session, runner: JobRunner, slug: str, key: str, *, mode: str, re
             db.rollback()
             raise ControlError(409, "Another job for this project was started at the same moment.") from None
         spend = f"up to ${plan['estimated_cost_usd']:.2f}" if plan["paid"] else "no spend"
-        _event(db, job, project, "started",
-               f"{'Retrying' if mode == 'retry' else 'Launched'} {target['label']} "
-               f"({plan['execution']['mode']}, {spend})")
+        verb = {"retry": "Retrying", "recover": "Recovering existing provider job for"}.get(mode, "Launched")
+        _event(db, job, project, "started", f"{verb} {target['label']} ({plan['execution']['mode']}, {spend})")
         db.commit()
     runner.submit(job.id)
     return job

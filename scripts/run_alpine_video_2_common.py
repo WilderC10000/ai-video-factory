@@ -349,6 +349,7 @@ def execute_video_shot(
 
     actual_cost = result.actual_cost_usd if result.actual_cost_usd is not None else submitted.estimated_cost_usd
     manifest = load_manifest(manifest_path)
+    manifest[spec.shot_key]["provider_job_id"] = submitted.provider_job_id
     manifest[spec.shot_key]["raw_video_path"] = str(spec.raw_output_path)
     manifest[spec.shot_key]["actual_cost_usd"] = actual_cost
     manifest[spec.shot_key]["completed_at"] = now()
@@ -359,6 +360,94 @@ def execute_video_shot(
         "estimated_cost_usd": video_cost,
         "provider_job_id": submitted.provider_job_id,
     }
+
+
+def recover_video_shot(
+    spec: VideoShotSpec,
+    *,
+    video_provider=None,
+    manifest_path: Path | None = None,
+    on_phase=None,
+    log=print,
+    wait: bool = True,
+    poll_interval_seconds: float = 10.0,
+    timeout_seconds: float = 2700.0,
+) -> dict:
+    """Finish an ALREADY-SUBMITTED shot without ever submitting again.
+
+    Uses the provider job id and status/response URLs saved in spec.job_state_path at
+    submission time, polls the provider's status (free GET requests), and - once the
+    existing job has completed - downloads the result into spec.raw_output_path and
+    completes the shot's existing manifest entry (provider job id and cost preserved).
+    There is deliberately no code path here that calls submit_video_job.
+
+    Returns {"status": "completed" | "queued" | "generating", ...}. Raises
+    PipelineStepError if there is nothing to recover or the provider reports failure."""
+    from app.providers.base import ProviderJobState, VideoProviderError
+
+    on_phase = on_phase or _noop
+    manifest = load_manifest(manifest_path)
+    entry = manifest.get(spec.shot_key)
+    if not isinstance(entry, dict):
+        raise PipelineStepError(f"{spec.shot_key} has no manifest entry - it was never submitted, nothing to recover.")
+    if entry.get("completed_at"):
+        return {"status": "completed", "output_path": entry.get("raw_video_path"),
+                "actual_cost_usd": entry.get("actual_cost_usd"), "provider_job_id": entry.get("provider_job_id"),
+                "note": "already complete - nothing to do"}
+    try:
+        state = json.loads(spec.job_state_path.read_text())
+    except (OSError, ValueError) as e:
+        raise PipelineStepError(f"No saved job state at {spec.job_state_path} ({e}) - cannot identify the provider job.") from e
+    job_id, meta = state.get("provider_job_id"), state.get("meta") or {}
+    if not job_id:
+        raise PipelineStepError(f"{spec.job_state_path} has no provider_job_id - cannot recover.")
+
+    video_provider = video_provider or default_video_provider(spec)
+    log(f"Recovering existing provider job {job_id} for {spec.shot_key} (status checks only; nothing is resubmitted).")
+    t0 = time.monotonic()
+    while True:
+        try:
+            result = video_provider.get_job_status(job_id, meta=meta)
+        except VideoProviderError as e:
+            raise PipelineStepError(f"Status check failed: {e}. Nothing was resubmitted; safe to try recovery again.") from e
+        if result.status != ProviderJobState.PROCESSING:
+            break
+        provider_status = (result.meta or {}).get("provider_status")
+        phase = "provider_queued" if provider_status == "IN_QUEUE" else "generating"
+        on_phase(phase, job_id)
+        elapsed = time.monotonic() - t0
+        log(f"      ...{provider_status or 'processing'} ({elapsed:.0f}s)")
+        if not wait:
+            return {"status": "queued" if phase == "provider_queued" else "generating", "provider_job_id": job_id,
+                    "provider_status": provider_status}
+        if elapsed > timeout_seconds:
+            raise PipelineStepError(f"Still {provider_status or 'processing'} after {elapsed:.0f}s. The provider job "
+                                    f"{job_id} is untouched - run recovery again later.")
+        time.sleep(poll_interval_seconds)
+
+    if result.status == ProviderJobState.FAILED:
+        raise PipelineStepError(f"Provider reported failure for existing job {job_id}: {result.error_message}")
+
+    on_phase("downloading", job_id)
+    spec.raw_output_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        video_provider.download_result(job_id, result.output_url, str(spec.raw_output_path))
+    except VideoProviderError as e:
+        raise PipelineStepError(f"Download failed: {e}. The job is complete at the provider; retry recovery.") from e
+
+    actual_cost = result.actual_cost_usd if result.actual_cost_usd is not None else entry.get("estimated_cost_usd")
+    manifest = load_manifest(manifest_path)
+    manifest[spec.shot_key].update({
+        "raw_video_path": str(spec.raw_output_path),
+        "actual_cost_usd": actual_cost,
+        "provider_job_id": job_id,
+        "recovered_at": now(),
+        "completed_at": now(),
+    })
+    save_manifest(manifest, manifest_path)
+    log(f"      Recovered -> {spec.raw_output_path} (${actual_cost:.4f}, provider job {job_id})")
+    return {"status": "completed", "output_path": str(spec.raw_output_path), "actual_cost_usd": actual_cost,
+            "provider_job_id": job_id}
 
 
 def execute_edit(

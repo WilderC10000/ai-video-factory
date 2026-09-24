@@ -24,6 +24,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from app.config import settings
 from scripts import run_train_car_video_2_plan as plan
 from scripts.run_alpine_video_2_common import (
     EditSpec,
@@ -33,6 +34,7 @@ from scripts.run_alpine_video_2_common import (
     execute_edit,
     execute_generate,
     execute_video_shot,
+    recover_video_shot,
     spent_so_far,
 )
 
@@ -144,7 +146,18 @@ def run_stage(stage_key: str, *, confirm_spend=None, log=print, on_phase=None, p
         return execute_generate(spec, image_provider=provider, **common)
     if isinstance(spec, EditSpec):
         return execute_edit(spec, image_provider=provider, **common)
-    return execute_video_shot(spec, video_provider=provider, timeout_seconds=900.0, **common)
+    return execute_video_shot(spec, video_provider=provider,
+                              timeout_seconds=float(settings.studio_live_wait_timeout_seconds), **common)
+
+
+def recover_stage(stage_key: str, *, wait: bool = False, log=print, provider=None,
+                  manifest_path: Path = MANIFEST_PATH) -> dict:
+    """Check / finish an already-submitted clip. Never submits a new generation."""
+    spec = SPECS.get(stage_key)
+    if not isinstance(spec, VideoShotSpec):
+        raise PipelineStepError(f"{stage_key} is not a video stage.")
+    return recover_video_shot(spec, video_provider=provider, manifest_path=manifest_path, log=log, wait=wait,
+                              timeout_seconds=float(settings.studio_live_wait_timeout_seconds))
 
 
 def _status() -> None:
@@ -171,9 +184,19 @@ def main() -> None:
     parser.add_argument("stage", nargs="?", help="stage key to run, e.g. cp01_still")
     parser.add_argument("--status", action="store_true")
     parser.add_argument("--pass-proof", metavar="NOTE")
+    parser.add_argument("--recover", metavar="CLIP", help="check/finish an already-submitted clip (never resubmits)")
+    parser.add_argument("--wait", action="store_true", help="with --recover: keep polling until it completes")
     parser.add_argument("--yes", action="store_true", help="skip the spend confirmation (not the review question)")
     args = parser.parse_args()
 
+    if args.recover:
+        try:
+            result = recover_stage(args.recover, wait=args.wait)
+        except PipelineStepError as e:
+            print(f"STOPPED: {e}")
+            sys.exit(1)
+        print(f"Recovery: {result}")
+        return
     if args.status or not (args.stage or args.pass_proof):
         _status()
         return

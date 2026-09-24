@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     # on the real ./data manifests, each one still gated by a confirm click in the UI.
     studio_execution_mode: str = "disabled"
     studio_data_dir: str = "./data"
+    # How long a live studio job waits on the provider (queue + generation) before
+    # giving up locally. Giving up never cancels the provider job; a timed-out job
+    # can be finished later with the studio's free Recover action.
+    studio_live_wait_timeout_seconds: int = 2700  # 45 min - fal queues have exceeded 15 min
 
     # Real provider keys - not used by anything active yet. The fal.ai adapters
     # (app/providers/video/fal.py, app/providers/image/fal.py) read this, but

@@ -14,7 +14,7 @@ interface Props {
   onChanged: () => void;
 }
 
-type Panel = null | "continue" | "retry" | "reject" | "generate";
+type Panel = null | "continue" | "retry" | "reject" | "generate" | "recover";
 
 function newRequestId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -147,7 +147,8 @@ function LaunchConfirm({
   return (
     <div className={`confirm ${live ? "confirm--live" : ""}`}>
       <div className="confirm__title">
-        {mode === "continue" ? "Approve & Continue" : mode === "retry" ? "Retry this stage" : "Generate this stage"}
+        {{ continue: "Approve & Continue", retry: "Retry this stage", generate: "Generate this stage",
+           recover: "Recover the existing provider job" }[mode]}
         {plan && (
           <span className={`mode-badge mode-badge--${plan.execution.mode}`}>
             {plan.execution.mode === "live" ? "LIVE · real money" : plan.execution.mode === "mock" ? "MOCK · $0.00" : "EXECUTION OFF"}
@@ -158,7 +159,7 @@ function LaunchConfirm({
       {plan && (
         <>
           <dl className="confirm__grid">
-            <dt>{mode === "continue" ? "Approves" : mode === "retry" ? "Re-runs" : "Generates"}</dt>
+            <dt>{{ continue: "Approves", retry: "Re-runs", generate: "Generates", recover: "Finishes" }[mode]}</dt>
             <dd>{mode === "continue" ? plan.reviewed_stage.label : plan.target_stage?.label}</dd>
             {mode === "continue" && (
               <>
@@ -215,7 +216,9 @@ function LaunchConfirm({
             ? "Launching…"
             : plan?.paid
               ? `Confirm · ${live ? "spend" : "mock"} up to ${usd(plan.estimated_cost_usd)}`
-              : "Confirm · run locally"}
+              : mode === "recover"
+                ? "Confirm · check & download (no new generation)"
+                : "Confirm · run locally"}
         </button>
       </div>
     </div>
@@ -274,6 +277,23 @@ export function ReviewPanel({ projectSlug, stage, stages, budget, execution, act
       </div>
 
       <MainMedia stage={stage} />
+
+      {stage.status === "started" && stage.kind === "video" && stage.provider_job_id && !jobHere && (
+        <div className="review__generate">
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={anyJob || busy}
+            onClick={() => setPanel(panel === "recover" ? null : "recover")}
+          >
+            Recover provider job (free)…
+          </button>
+          <span className="fineprint">
+            Job <code>{stage.provider_job_id}</code> was submitted but never finished here. Recovery only checks its status and
+            downloads the result - it never submits a new generation.
+          </span>
+        </div>
+      )}
 
       {stage.status === "pending" && (
         <div className="review__generate">
@@ -346,6 +366,19 @@ export function ReviewPanel({ projectSlug, stage, stages, budget, execution, act
           projectSlug={projectSlug}
           stage={stage}
           mode="generate"
+          onCancel={() => setPanel(null)}
+          onLaunched={() => {
+            setPanel(null);
+            onChanged();
+          }}
+          onApproveOnly={() => decide("approve")}
+        />
+      )}
+      {panel === "recover" && (
+        <LaunchConfirm
+          projectSlug={projectSlug}
+          stage={stage}
+          mode="recover"
           onCancel={() => setPanel(null)}
           onLaunched={() => {
             setPanel(null);

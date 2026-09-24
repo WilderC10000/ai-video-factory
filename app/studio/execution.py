@@ -118,8 +118,9 @@ def _mock_image_provider():
     return MockImageProvider(cost_per_megapixel=0.0)
 
 
-def run_action(action: StageAction, *, retry: bool, on_phase, log) -> dict:
-    """Execute the stage. Returns the pipeline function's result dict; raises on failure."""
+def run_action(action: StageAction, *, retry: bool, on_phase, log, recover: bool = False) -> dict:
+    """Execute the stage (or, with recover=True, finish its already-submitted provider job
+    without resubmitting). Returns the pipeline function's result dict; raises on failure."""
     problems = mode_problems()
     if problems:
         raise ExecutionRefused(problems[0])
@@ -145,6 +146,21 @@ def run_action(action: StageAction, *, retry: bool, on_phase, log) -> dict:
         raise ExecutionRefused(" ".join(blockers))
     spec = _remap_spec(action.spec(), root)
     output = getattr(spec, "raw_output_path", None) or spec.output_image_path
+    wait_limit = float(settings.studio_live_wait_timeout_seconds)
+
+    if recover:
+        if not isinstance(spec, pipeline.VideoShotSpec):
+            raise ExecutionRefused("Only video stages have provider jobs to recover.")
+        return pipeline.recover_video_shot(
+            spec,
+            video_provider=_mock_video_provider() if mode == "mock" else None,
+            manifest_path=manifest_path,
+            on_phase=on_phase,
+            log=log,
+            wait=True,
+            poll_interval_seconds=0.5 if mode == "mock" else 10.0,
+            timeout_seconds=wait_limit,
+        )
 
     def confirmed(*_args) -> bool:
         # The explicit confirmation is the click in the studio's confirm panel, made
@@ -175,7 +191,7 @@ def run_action(action: StageAction, *, retry: bool, on_phase, log) -> dict:
             on_phase=on_phase,
             log=log,
             poll_interval_seconds=0.5 if mode == "mock" else 3.0,
-            timeout_seconds=900.0,
+            timeout_seconds=wait_limit,
         )
     return pipeline.execute_edit(
         spec,

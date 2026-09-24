@@ -64,7 +64,7 @@ export type JobStatus =
 export interface Job {
   id: string;
   stage_key: string;
-  mode: "continue" | "retry";
+  mode: LaunchMode;
   action: string;
   execution_mode: "mock" | "live";
   is_paid: boolean;
@@ -92,7 +92,7 @@ export interface Execution {
   data_root: string;
 }
 
-export type LaunchMode = "continue" | "retry" | "generate";
+export type LaunchMode = "continue" | "retry" | "generate" | "recover";
 
 export interface LaunchPlan {
   mode: LaunchMode;

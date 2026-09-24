@@ -99,7 +99,8 @@ class JobRunner:
             try:
                 if action is None:
                     raise RuntimeError(f"{job.stage_key} has no studio action.")
-                result = run_action(action, retry=job.mode == "retry", on_phase=on_phase, log=log)
+                result = run_action(action, retry=job.mode == "retry", recover=job.mode == "recover",
+                                    on_phase=on_phase, log=log)
             except Exception as e:  # noqa: BLE001 - every failure is recorded, none is retried
                 db.rollback()
                 job = db.get(StudioJob, job_id)
@@ -118,7 +119,8 @@ class JobRunner:
             self._resync(db, project)
             job.status, job.completed_at, job.active_lock = JobStatus.SUCCEEDED, _utcnow(), None
             cost = f" (${job.actual_cost_usd:.2f})" if job.actual_cost_usd is not None else ""
-            _event(db, job, project, "succeeded", f"{action.stage.label} generated{cost} - ready for your review")
+            verb = f"recovered from provider job {job.provider_job_id}" if job.mode == "recover" else "generated"
+            _event(db, job, project, "succeeded", f"{action.stage.label} {verb}{cost} - ready for your review")
             db.commit()
         finally:
             db.close()

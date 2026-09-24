@@ -327,7 +327,7 @@ def test_missing_files_are_handled_gracefully(db_session, data_dir):
     (alpine / "edit3_source_frame.jpg").unlink()
     (alpine / "shot5_last_job.json").write_text("{not json")
 
-    results = import_all(db_session, data_dir)
+    results = import_all(db_session, data_dir, slugs=["alpine_video_2", "cliffside_video_1"])
     assert all(r.found and r.error is None for r in results)
     stages = _stages(db_session, "alpine_video_2")
     assert stages["shot4"].status == StageStatus.COMPLETE and stages["shot4"].latest_output_exists is False
@@ -342,7 +342,7 @@ def test_missing_or_malformed_manifest_is_skipped(db_session, data_dir):
     (data_dir / "alpine_video_2" / "manifest.json").unlink()
     (data_dir / "cliffside_video_1" / "manifest.json").write_text("{truncated")
 
-    results = import_all(db_session, data_dir)
+    results = import_all(db_session, data_dir, slugs=["alpine_video_2", "cliffside_video_1"])
     assert [r.found for r in results] == [False, False]
     assert "No manifest" in results[0].error and "not valid JSON" in results[1].error
     assert db_session.scalar(select(func.count()).select_from(StudioProject)) == 0

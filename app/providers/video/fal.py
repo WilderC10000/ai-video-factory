@@ -61,6 +61,9 @@ class FalVideoModelConfig:
     # docs before use (see the bake-off research) rather than assumed from
     # Wan's shape:
     image_param_name: str = "image_url"  # Kling uses "start_image_url" instead
+    # Last-frame conditioning field, or None if the model has none. A request with
+    # an end image is refused for models without one - never silently dropped.
+    end_image_param_name: str | None = None
     supports_resolution_param: bool = True  # Kling has no selectable resolution param
     extra_payload: dict = field(default_factory=dict)  # static fields always sent, e.g. duration, generate_audio
 
@@ -221,6 +224,10 @@ WAN_3_0_STANDARD = FalVideoModelConfig(
     price_per_second_by_resolution={"480p": 0.05, "720p": 0.10, "1080p": 0.20},
     default_resolution="480p",
     image_param_name="start_image_url",  # confirmed via live 422 - see note above
+    # First/last-frame: "end_image_url" (optional, requires start_image_url), per
+    # fal's published API schema for this endpoint (checked 2026-09-24; not yet
+    # exercised by a live call in this repo). Same per-second price.
+    end_image_param_name="end_image_url",
     extra_payload={
         "duration": 15,  # bare int, not a string - see note above
     },
@@ -303,6 +310,11 @@ class FalVideoProvider(VideoProvider):
     def submit_video_job(self, request: VideoGenerationRequest) -> SubmittedVideoJob:
         if not request.reference_image_path:
             raise VideoProviderError("Wan image-to-video requires a reference image; none was provided.")
+        if request.end_image_path and not self.model_config.end_image_param_name:
+            raise VideoProviderError(
+                f"{self.model_config.submit_path} has no end-frame input; refusing rather than "
+                "silently dropping the requested end image."
+            )
 
         image_url = self._upload_reference_image(request.reference_image_path)
         payload = {
@@ -310,6 +322,8 @@ class FalVideoProvider(VideoProvider):
             "prompt": request.prompt,
             "aspect_ratio": request.aspect_ratio,
         }
+        if request.end_image_path:
+            payload[self.model_config.end_image_param_name] = self._upload_reference_image(request.end_image_path)
         if self.model_config.supports_resolution_param:
             payload["resolution"] = self._resolution(request)
         # Static fields specific to this model config (e.g. Kling's fixed

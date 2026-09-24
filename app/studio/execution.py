@@ -140,7 +140,11 @@ def run_action(action: StageAction, *, retry: bool, on_phase, log) -> dict:
 
     from scripts import run_alpine_video_2_common as pipeline
 
+    blockers = action.blockers(manifest_path)
+    if blockers:
+        raise ExecutionRefused(" ".join(blockers))
     spec = _remap_spec(action.spec(), root)
+    output = getattr(spec, "raw_output_path", None) or spec.output_image_path
 
     def confirmed(*_args) -> bool:
         # The explicit confirmation is the click in the studio's confirm panel, made
@@ -148,13 +152,21 @@ def run_action(action: StageAction, *, retry: bool, on_phase, log) -> dict:
         # cap and budget checks pass, immediately before anything is spent - so a
         # refused retry never archives (hides) the current attempt.
         if retry:
-            output = spec.raw_output_path if action.kind == StageKind.VIDEO else spec.output_image_path
             archived = pipeline.archive_attempt(action.stage.key, output, manifest_path)
             if archived:
                 log(f"[studio] Previous attempt kept as manifest entry '{archived}' (its spend still counts).")
         return True
 
-    if action.kind == StageKind.VIDEO:
+    if isinstance(spec, pipeline.ImageGenerateSpec):
+        return pipeline.execute_generate(
+            spec,
+            image_provider=_mock_image_provider() if mode == "mock" else None,
+            manifest_path=manifest_path,
+            confirm_spend=confirmed,
+            on_phase=on_phase,
+            log=log,
+        )
+    if isinstance(spec, pipeline.VideoShotSpec):
         return pipeline.execute_video_shot(
             spec,
             video_provider=_mock_video_provider() if mode == "mock" else None,

@@ -55,6 +55,10 @@ def _naive(dt: datetime | None) -> datetime | None:
     return dt.astimezone(timezone.utc).replace(tzinfo=None) if dt and dt.tzinfo else dt
 
 
+def _is_file(path: str | None) -> bool:
+    return bool(path) and Path(path).is_file()
+
+
 def media_url(path: str | None, exists: bool | None) -> str | None:
     return f"/studio/media?path={quote(path)}" if path and exists else None
 
@@ -83,6 +87,9 @@ def _stage_out(s: StudioStage, project_slug: str, next_stage: StudioStage | None
         "completed_at": _iso(s.completed_at),
         "error_message": s.error_message, "provider_job_id": s.provider_job_id,
         "storyboard_checkpoint_path": s.storyboard_checkpoint_path,
+        "storyboard_checkpoint_url": media_url(s.storyboard_checkpoint_path, _is_file(s.storyboard_checkpoint_path)),
+        "target_frame_path": s.target_frame_path,
+        "target_frame_url": media_url(s.target_frame_path, _is_file(s.target_frame_path)),
         "previous_frame_path": s.previous_frame_path, "previous_frame_exists": s.previous_frame_exists,
         "previous_frame_url": media_url(s.previous_frame_path, s.previous_frame_exists),
         "latest_output_path": s.latest_output_path, "latest_output_exists": s.latest_output_exists,

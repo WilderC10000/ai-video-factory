@@ -49,6 +49,8 @@ def default_data_dir() -> Path:
 # Manifest fields that hold a stage's newest output / its conditioning frame, in priority order.
 _OUTPUT_FIELDS = ("raw_video_path", "output_path", "final_visual_master_path", "rough_assembly_path")
 _PREVIOUS_FRAME_FIELDS = ("start_frame_path", "source_frame_path")
+# Manifest entries that are pipeline bookkeeping, not stages.
+_META_KEYS = {"proof_gate"}
 
 
 @dataclass
@@ -201,8 +203,10 @@ def import_project(db: Session, pdef: ProjectDef, data_dir: Path | None = None) 
         stage.latest_output_exists = _exists(stage.latest_output_path)
         stage.previous_frame_path = _first(entry, _PREVIOUS_FRAME_FIELDS)
         stage.previous_frame_exists = _exists(stage.previous_frame_path)
-        # No storyboard or continuity/build-logic review exists in the pipeline yet:
-        # these stay null until real agents produce them.
+        stage.target_frame_path = _first(entry, ("end_frame_path",))
+        stage.storyboard_checkpoint_path = str(project_dir / sdef.storyboard_ref) if sdef.storyboard_ref else None
+        # No continuity/build-logic review exists in the pipeline yet: those stay null
+        # until real agents produce them.
         stage.error_message = None
         stage.requires_human_review = False
         stages.append(stage)
@@ -241,7 +245,7 @@ def import_project(db: Session, pdef: ProjectDef, data_dir: Path | None = None) 
                       message=f"Earlier attempt {attempt} of '{base_key}' kept as an archived record"
                               f"{f' (${cost:.2f}, still counted in spend)' if cost else ''}.")
             continue
-        if isinstance(value, dict) and key not in known:
+        if isinstance(value, dict) and key not in known and key not in _META_KEYS:
             rec.event(f"untracked:{key}", type="warning", severity=Severity.LOW, room_id="command_deck",
                       message=f"Manifest entry '{key}' is not in the studio's stage map - not shown as a stage.")
     for i, note in enumerate(pdef.notes):

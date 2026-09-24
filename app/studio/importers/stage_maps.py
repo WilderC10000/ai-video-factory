@@ -24,6 +24,7 @@ class StageDef:
     script: str | None
     planned_cost_usd: float | None
     job_state_file: str | None = None  # <x>_last_job.json written when a fal job is submitted
+    storyboard_ref: str | None = None  # storyboard reference image, relative to the project folder
 
 
 @dataclass(frozen=True)
@@ -112,5 +113,34 @@ CLIFFSIDE_VIDEO_1 = ProjectDef(
     ],
 )
 
-PROJECTS: list[ProjectDef] = [ALPINE_VIDEO_2, CLIFFSIDE_VIDEO_1]
+def _train_car() -> ProjectDef:
+    """Built from the 20-checkpoint plan, in its incremental execution order."""
+    from scripts import run_train_car_video_2_plan as plan
+
+    stages = {s.key: s for s in plan.build_stage_plan()}
+    kinds = {"image_generate": StageKind.IMAGE_GENERATE, "image_edit": StageKind.IMAGE_EDIT, "video": StageKind.VIDEO}
+    defs = []
+    for key in plan.execution_order(list(stages.values())):
+        st = stages[key]
+        if st.kind == "video":
+            room = "render_bay"
+        elif key.endswith("_bridge") or st.kind == "image_generate":
+            room = "continuity_office"  # camera changes / establishing reference
+        else:
+            room = "build_logic_workshop"  # checkpoint construction states
+        defs.append(StageDef(
+            key, st.label, kinds[st.kind], room, "scripts/run_train_car_video_2_stage.py", st.estimated_cost_usd,
+            f"clips/{key}_last_job.json" if st.kind == "video" else None,
+            storyboard_ref=f"storyboard/cp{st.checkpoint:02d}.jpg",
+        ))
+    return ProjectDef(
+        slug=plan.SLUG, name=plan.PROJECT_NAME, cap_usd=None, cap_source=None, stages=defs,
+        notes=[f"Proof gate: nothing after {plan.PROOF_STAGE} runs until the first end-frame test is marked passed.",
+               "Doctrine: SKIP REPETITION, NOT EXPLANATION (docs/forma/creative/FORMA_CREATIVE_BRAIN.md)."],
+    )
+
+
+TRAIN_CAR_VIDEO_2 = _train_car()
+
+PROJECTS: list[ProjectDef] = [ALPINE_VIDEO_2, CLIFFSIDE_VIDEO_1, TRAIN_CAR_VIDEO_2]
 PROJECTS_BY_SLUG: dict[str, ProjectDef] = {p.slug: p for p in PROJECTS}

@@ -101,6 +101,9 @@ class VideoGenerationRequest:
     reference_image_path: str | None = None
     duration_seconds: float = 5.0
     aspect_ratio: str = "9:16"
+    # Optional LAST frame (first/last-frame conditioning). Only providers whose
+    # model supports it accept it; others must refuse rather than ignore it.
+    end_image_path: str | None = None
     # Provider-specific knobs (e.g. motion strength, seed, model variant) that
     # don't belong in the generic interface. Providers should document what
     # keys they read from here.

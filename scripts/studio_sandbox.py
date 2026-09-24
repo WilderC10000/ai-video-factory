@@ -22,7 +22,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REAL_DATA = REPO_ROOT / "data"
 SANDBOX = REAL_DATA / "studio_sandbox"
-PROJECTS = ["alpine_video_2", "cliffside_video_1"]
+PROJECTS = ["alpine_video_2", "cliffside_video_1", "train_car_video_2"]
 
 
 def _rewrite_paths(value, real_prefix: str, sandbox_prefix: str):

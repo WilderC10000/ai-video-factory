@@ -101,6 +101,11 @@ def check_budget(estimated_cost: float, manifest_path: Path | None = None) -> st
     per-stage MAX_SPEND_USD cap. Returns a one-line summary when it's allowed."""
     manifest = load_manifest(manifest_path)
     cap = manifest.get("budget_cap_usd", BUDGET_CAP_USD)
+    if cap is None:
+        raise PipelineStepError(
+            "This project's manifest has no budget_cap_usd set. Set one explicitly before any paid call. "
+            "Nothing was generated."
+        )
     spent = spent_so_far(manifest)
     remaining = round(cap - spent, 4)
     if estimated_cost > remaining:
@@ -166,6 +171,25 @@ class VideoShotSpec:
     job_state_path: Path
     review_checklist: list[str]
     next_step_note: str
+    # First/last-frame conditioning: the approved still the clip must end on (None = start frame only).
+    end_frame_path: Path | None = None
+    # Turn off fal's LLM prompt rewriting so precise continuity wording reaches the model unaltered.
+    disable_prompt_expansion: bool = False
+
+
+@dataclasses.dataclass(frozen=True)
+class ImageGenerateSpec:
+    """One Nano Banana Pro text-to-image still (e.g. an establishing checkpoint)."""
+
+    key: str
+    title: str
+    prompt: str
+    output_image_path: Path
+    max_spend_usd: float
+    review_checklist: list[str]
+    next_step_note: str
+    aspect_ratio: str = "9:16"
+    resolution: str = "1K"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -236,14 +260,24 @@ def execute_video_shot(
 
     on_phase = on_phase or _noop
     _prepare_start_frame(spec, log)
+    if spec.end_frame_path is not None and not Path(spec.end_frame_path).is_file():
+        raise PipelineStepError(f"End frame {spec.end_frame_path} not found - its checkpoint still must exist first.")
+    # Output folders exist before anything is spent: a failure to write the job state or the
+    # download after submission would otherwise strand an already-billed job.
+    spec.job_state_path.parent.mkdir(parents=True, exist_ok=True)
+    spec.raw_output_path.parent.mkdir(parents=True, exist_ok=True)
 
     video_provider = video_provider or default_video_provider(spec)
+    extra_params = {"resolution": RESOLUTION}
+    if spec.disable_prompt_expansion:
+        extra_params["enable_prompt_expansion"] = False
     video_request = VideoGenerationRequest(
         prompt=spec.prompt,
         reference_image_path=str(spec.start_frame_path),
+        end_image_path=str(spec.end_frame_path) if spec.end_frame_path is not None else None,
         aspect_ratio=ASPECT_RATIO,
         duration_seconds=spec.duration_seconds,
-        extra_params={"resolution": RESOLUTION},
+        extra_params=extra_params,
     )
     video_cost = video_provider.estimate_cost(video_request)
     if video_cost > spec.max_spend_usd:
@@ -263,6 +297,7 @@ def execute_video_shot(
         "duration_seconds": spec.duration_seconds,
         "video_prompt": spec.prompt,
         "start_frame_path": str(spec.start_frame_path),
+        "end_frame_path": str(spec.end_frame_path) if spec.end_frame_path is not None else None,
         "max_spend_usd": spec.max_spend_usd,
         "estimated_cost_usd": video_cost,
         "raw_video_path": None,
@@ -341,6 +376,7 @@ def execute_edit(
     on_phase = on_phase or _noop
     _prepare_start_frame(spec, log)
 
+    spec.output_image_path.parent.mkdir(parents=True, exist_ok=True)  # before any spend
     image_provider = image_provider or default_image_provider()
     edit_request = ImageEditRequest(prompt=spec.edit_prompt, reference_image_paths=[str(spec.start_frame_path)])
     cost = image_provider.estimate_edit_cost()
@@ -376,6 +412,66 @@ def execute_edit(
     manifest[spec.edit_key]["output_path"] = str(spec.output_image_path)
     manifest[spec.edit_key]["actual_cost_usd"] = result.cost_usd
     manifest[spec.edit_key]["completed_at"] = now()
+    save_manifest(manifest, manifest_path)
+    return {"output_path": str(spec.output_image_path), "actual_cost_usd": result.cost_usd, "estimated_cost_usd": cost}
+
+
+def default_generate_provider():
+    from app.providers.image.fal import NANO_BANANA_PRO, FalImageProvider
+
+    return FalImageProvider(NANO_BANANA_PRO)
+
+
+def execute_generate(
+    spec: ImageGenerateSpec,
+    *,
+    image_provider=None,
+    manifest_path: Path | None = None,
+    confirm_spend=None,
+    on_phase=None,
+    log=print,
+) -> dict:
+    """Generate one still from text with no interactive prompts (see execute_video_shot)."""
+    from app.providers.base import ImageGenerationRequest, ImageProviderError
+
+    on_phase = on_phase or _noop
+    image_provider = image_provider or default_generate_provider()
+    request = ImageGenerationRequest(
+        prompt=spec.prompt, extra_params={"aspect_ratio": spec.aspect_ratio, "resolution": spec.resolution}
+    )
+    cost = image_provider.estimate_cost(request)
+    if cost > spec.max_spend_usd:
+        raise PipelineStepError(f"Estimated cost ${cost:.4f} exceeds the ${spec.max_spend_usd:.2f} cap. Nothing was generated.")
+    log(check_budget(cost, manifest_path))
+    if confirm_spend is not None and not confirm_spend(image_provider, request, cost):
+        raise PipelineStepError("Cancelled. Nothing was generated.")
+
+    model_name = getattr(getattr(image_provider, "model_config", None), "model_id", type(image_provider).__name__)
+    manifest = load_manifest(manifest_path)
+    manifest[spec.key] = {
+        "image_model": model_name,
+        "image_prompt": spec.prompt,
+        "max_spend_usd": spec.max_spend_usd,
+        "estimated_cost_usd": cost,
+        "output_path": None,
+        "actual_cost_usd": None,
+        "completed_at": None,
+    }
+    save_manifest(manifest, manifest_path)
+
+    on_phase("generating", None)
+    log(f"\nGenerating {spec.title} -> {spec.output_image_path.name} ...")
+    spec.output_image_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        result = image_provider.generate_image(request, str(spec.output_image_path))
+    except ImageProviderError as e:
+        raise PipelineStepError(f"Image generation failed: {e}") from e
+    log(f"      Done -> {spec.output_image_path} (${result.cost_usd:.4f})")
+
+    manifest = load_manifest(manifest_path)
+    manifest[spec.key]["output_path"] = str(spec.output_image_path)
+    manifest[spec.key]["actual_cost_usd"] = result.cost_usd
+    manifest[spec.key]["completed_at"] = now()
     save_manifest(manifest, manifest_path)
     return {"output_path": str(spec.output_image_path), "actual_cost_usd": result.cost_usd, "estimated_cost_usd": cost}
 

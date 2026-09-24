@@ -22,6 +22,9 @@ export interface Stage {
   error_message: string | null;
   provider_job_id: string | null;
   storyboard_checkpoint_path: string | null;
+  storyboard_checkpoint_url: string | null;
+  target_frame_path: string | null;
+  target_frame_url: string | null;
   previous_frame_path: string | null;
   previous_frame_exists: boolean | null;
   previous_frame_url: string | null;
@@ -89,8 +92,10 @@ export interface Execution {
   data_root: string;
 }
 
+export type LaunchMode = "continue" | "retry" | "generate";
+
 export interface LaunchPlan {
-  mode: "continue" | "retry";
+  mode: LaunchMode;
   reviewed_stage: { key: string; label: string; status: string; approval_state: string | null };
   target_stage: { key: string; label: string; room_id: string; script_path: string | null } | null;
   action: string | null;

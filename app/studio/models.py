@@ -130,6 +130,8 @@ class StudioStage(Base):
     storyboard_checkpoint_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     previous_frame_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     previous_frame_exists: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    # For first/last-frame clips: the approved still the clip is pinned to end on.
+    target_frame_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     latest_output_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     latest_output_exists: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     approval_state: Mapped[ApprovalStatus | None] = mapped_column(_enum(ApprovalStatus), nullable=True)

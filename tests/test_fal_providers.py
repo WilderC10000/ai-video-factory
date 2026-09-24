@@ -640,3 +640,53 @@ def test_image_param_name_unaffected_by_wan_3_0_fix(config, expected_image_param
     have touched any other model's config - each of these was independently
     verified against its own docs/schema and must keep its own value."""
     assert config.image_param_name == expected_image_param_name
+
+
+def _upload_handler_factory(expected_path: str, check_body):
+    uploads = iter(["https://fake-cdn.example/start.jpg", "https://fake-cdn.example/end.jpg"])
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/storage/upload/initiate":
+            return httpx.Response(200, json={"upload_url": "https://fake-upload.example/put", "file_url": next(uploads)})
+        if str(request.url) == "https://fake-upload.example/put":
+            return httpx.Response(200)
+        if request.url.path == expected_path and request.method == "POST":
+            check_body(json.loads(request.content))
+            return httpx.Response(200, json={"request_id": "flf-1"})
+        raise AssertionError(f"Unexpected request: {request.method} {request.url}")
+
+    return handler
+
+
+def test_wan3_submit_sends_end_image_url_for_first_last_frame(tmp_path):
+    seen = {}
+
+    def check(body):
+        seen.update(body)
+
+    client = httpx.Client(transport=httpx.MockTransport(
+        _upload_handler_factory("/alibaba/wan-3.0/image-to-video", check)))
+    provider = FalVideoProvider(WAN_3_0_STANDARD, api_key="fake-key", client=client)
+    start, end = tmp_path / "start.jpg", tmp_path / "end.jpg"
+    start.write_bytes(b"start")
+    end.write_bytes(b"end")
+
+    submitted = provider.submit_video_job(VideoGenerationRequest(
+        prompt="p", reference_image_path=str(start), end_image_path=str(end), duration_seconds=6.0,
+        extra_params={"resolution": "480p", "enable_prompt_expansion": False},
+    ))
+    assert seen["start_image_url"] == "https://fake-cdn.example/start.jpg"
+    assert seen["end_image_url"] == "https://fake-cdn.example/end.jpg"
+    assert seen["enable_prompt_expansion"] is False
+    assert submitted.estimated_cost_usd == pytest.approx(0.30)  # 6 s x $0.05 at 480p, end frame is free
+
+
+def test_end_image_is_refused_not_dropped_for_models_without_end_frames(tmp_path):
+    client = httpx.Client(transport=httpx.MockTransport(_refuse_any_request))
+    provider = FalVideoProvider(WAN_TURBO, api_key="fake-key", client=client)
+    start, end = tmp_path / "start.jpg", tmp_path / "end.jpg"
+    start.write_bytes(b"start")
+    end.write_bytes(b"end")
+    with pytest.raises(Exception, match="no end-frame input"):
+        provider.submit_video_job(VideoGenerationRequest(
+            prompt="p", reference_image_path=str(start), end_image_path=str(end)))

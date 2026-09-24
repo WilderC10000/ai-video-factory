@@ -8,6 +8,7 @@ from sqlalchemy import Engine, inspect, text
 
 _ADDED_COLUMNS: dict[str, dict[str, str]] = {
     "studio_approvals": {"output_completed_at": "DATETIME"},
+    "studio_stages": {"target_frame_path": "VARCHAR(512)"},
 }
 
 

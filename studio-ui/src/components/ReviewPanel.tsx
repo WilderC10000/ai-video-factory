@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ApiError, api } from "../api";
 import { isVideo, usd } from "../format";
-import type { Budget, Execution, Job, LaunchPlan, Stage } from "../types";
+import type { Budget, Execution, Job, LaunchMode, LaunchPlan, Stage } from "../types";
 import { JobProgress } from "./JobProgress";
 
 interface Props {
@@ -14,7 +14,7 @@ interface Props {
   onChanged: () => void;
 }
 
-type Panel = null | "continue" | "retry" | "reject";
+type Panel = null | "continue" | "retry" | "reject" | "generate";
 
 function newRequestId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -84,8 +84,9 @@ function Compare({ stage }: { stage: Stage }) {
         <span className="fineprint">Checked by eye for now; the Continuity Agent will compare these later.</span>
       </div>
       <div className="compare__row">
-        {cell("Storyboard checkpoint", null, stage.storyboard_checkpoint_path ? "Recorded, not viewable yet" : "No storyboard yet")}
+        {cell("Storyboard checkpoint", stage.storyboard_checkpoint_url, stage.storyboard_checkpoint_path ? "File missing" : "No storyboard yet")}
         {cell("Previous actual frame", stage.previous_frame_url, stage.previous_frame_path ? "File missing" : "None recorded")}
+        {stage.target_frame_path && cell("Target end frame (pinned)", stage.target_frame_url, "File missing")}
         {cell("Latest output", stage.latest_output_url, "Not generated", isVideo(stage))}
       </div>
     </div>
@@ -102,7 +103,7 @@ function LaunchConfirm({
 }: {
   projectSlug: string;
   stage: Stage;
-  mode: "continue" | "retry";
+  mode: LaunchMode;
   onCancel: () => void;
   onLaunched: () => void;
   onApproveOnly: () => void;
@@ -146,7 +147,7 @@ function LaunchConfirm({
   return (
     <div className={`confirm ${live ? "confirm--live" : ""}`}>
       <div className="confirm__title">
-        {mode === "continue" ? "Approve & Continue" : "Retry this stage"}
+        {mode === "continue" ? "Approve & Continue" : mode === "retry" ? "Retry this stage" : "Generate this stage"}
         {plan && (
           <span className={`mode-badge mode-badge--${plan.execution.mode}`}>
             {plan.execution.mode === "live" ? "LIVE · real money" : plan.execution.mode === "mock" ? "MOCK · $0.00" : "EXECUTION OFF"}
@@ -157,7 +158,7 @@ function LaunchConfirm({
       {plan && (
         <>
           <dl className="confirm__grid">
-            <dt>{mode === "continue" ? "Approves" : "Re-runs"}</dt>
+            <dt>{mode === "continue" ? "Approves" : mode === "retry" ? "Re-runs" : "Generates"}</dt>
             <dd>{mode === "continue" ? plan.reviewed_stage.label : plan.target_stage?.label}</dd>
             {mode === "continue" && (
               <>
@@ -274,6 +275,21 @@ export function ReviewPanel({ projectSlug, stage, stages, budget, execution, act
 
       <MainMedia stage={stage} />
 
+      {stage.status === "pending" && (
+        <div className="review__generate">
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={!stage.launchable || anyJob || busy}
+            title={!stage.launchable ? "This stage can only be run from its script in the terminal" : undefined}
+            onClick={() => setPanel(panel === "generate" ? null : "generate")}
+          >
+            Generate this stage…
+          </button>
+          <span className="fineprint">Runs only this one stage, after a cost check and your confirmation.</span>
+        </div>
+      )}
+
       <div className="review__controls">
         <button
           type="button"
@@ -317,6 +333,19 @@ export function ReviewPanel({ projectSlug, stage, stages, budget, execution, act
           projectSlug={projectSlug}
           stage={stage}
           mode="continue"
+          onCancel={() => setPanel(null)}
+          onLaunched={() => {
+            setPanel(null);
+            onChanged();
+          }}
+          onApproveOnly={() => decide("approve")}
+        />
+      )}
+      {panel === "generate" && (
+        <LaunchConfirm
+          projectSlug={projectSlug}
+          stage={stage}
+          mode="generate"
           onCancel={() => setPanel(null)}
           onLaunched={() => {
             setPanel(null);

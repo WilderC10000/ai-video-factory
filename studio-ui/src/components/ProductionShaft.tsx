@@ -22,7 +22,7 @@ export function ProductionShaft({ stages, currentKey, workingKey, selectedStage,
   const fill = stages.length ? (done / stages.length) * 100 : 0;
 
   return (
-    <div className="shaft" aria-label="Production flow">
+    <div className={`shaft ${stages.length > 24 ? "shaft--dense" : ""}`} aria-label="Production flow">
       <div className="shaft__title">Production flow</div>
       <div className="shaft__track">
         <span className="shaft__rail" />

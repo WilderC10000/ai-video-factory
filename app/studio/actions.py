@@ -1,9 +1,11 @@
 """Which studio stages can be executed from the UI, and how.
 
 A stage is launchable when its pipeline script exposes a service-form entry
-point: Video #2 shot/edit scripts define `SPEC` (run through
-execute_video_shot / execute_edit) and the final assembly script defines
-`assemble_final`. Scripts without one (e.g. the site reference, Shots 1-2, all
+point: Alpine shot/edit scripts define `SPEC`, multi-stage scripts (the train
+car) define `SPECS` keyed by stage (run through execute_generate / execute_edit /
+execute_video_shot), and final assembly scripts define `assemble_final`. A
+script may also define `launch_blockers(stage_key, manifest_path)` - its own
+gates (run order, proof gate), which the studio shows and enforces. Scripts without one (e.g. the site reference, Shots 1-2, all
 of Cliffside) stay CLI-only - the studio says so instead of guessing.
 
 The scripts are imported, never shelled out to, so the exact same code the
@@ -32,7 +34,15 @@ class StageAction:
         return importlib.import_module(self.module_name)
 
     def spec(self):
-        return getattr(self.module(), "SPEC", None)
+        module = self.module()
+        specs = getattr(module, "SPECS", None)
+        if isinstance(specs, dict):
+            return specs.get(self.stage.key)
+        return getattr(module, "SPEC", None)
+
+    def blockers(self, manifest_path) -> list[str]:
+        check = getattr(self.module(), "launch_blockers", None)
+        return list(check(self.stage.key, manifest_path)) if callable(check) else []
 
 
 def _module_name(script_path: str) -> str:
@@ -52,7 +62,9 @@ def get_action(project_slug: str, stage_key: str) -> StageAction | None:
         return None
     if stage.kind == StageKind.ASSEMBLY:
         return StageAction(project_slug, stage, name, paid=False) if hasattr(module, "assemble_final") else None
-    if stage.kind in (StageKind.VIDEO, StageKind.IMAGE_EDIT) and getattr(module, "SPEC", None) is not None:
+    specs = getattr(module, "SPECS", None)
+    has_spec = stage.key in specs if isinstance(specs, dict) else getattr(module, "SPEC", None) is not None
+    if stage.kind in (StageKind.VIDEO, StageKind.IMAGE_EDIT, StageKind.IMAGE_GENERATE) and has_spec:
         return StageAction(project_slug, stage, name, paid=True)
     return None
 

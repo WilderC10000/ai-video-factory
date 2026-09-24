@@ -111,8 +111,8 @@ def record_decision(db: Session, slug: str, key: str, decision: str, note: str |
 
 def launch_plan(db: Session, slug: str, key: str, mode: str, *, resync: bool = True) -> dict:
     """Everything the confirm panel shows, plus whether the launch is allowed and why not."""
-    if mode not in ("continue", "retry"):
-        raise ControlError(400, "mode must be 'continue' or 'retry'")
+    if mode not in ("continue", "retry", "generate"):
+        raise ControlError(400, "mode must be 'continue', 'retry' or 'generate'")
     project = _project(db, slug)
     if resync:  # re-read the manifest so spend and stage state are current
         import_project(db, PROJECTS_BY_SLUG[slug])
@@ -120,6 +120,7 @@ def launch_plan(db: Session, slug: str, key: str, mode: str, *, resync: bool = T
         db.refresh(project)
     stage = _stage(project, key)
     target = _next_stage(project, stage) if mode == "continue" else stage
+    previous = next((s for s in reversed(project.stages) if s.order < stage.order), None)
     problems: list[str] = list(mode_problems())
     warnings: list[str] = []
 
@@ -141,6 +142,12 @@ def launch_plan(db: Session, slug: str, key: str, mode: str, *, resync: bool = T
         elif target.status == StageStatus.STARTED:
             problems.append(f"The manifest shows {target.label} started but never completed (a terminal run in flight "
                             "or interrupted). Check it before launching again.")
+    if target is not None and mode == "generate":
+        if target.status != StageStatus.PENDING:
+            problems.append(f"{target.label} has already run - use Retry to run it again.")
+        if previous is not None and (previous.status != StageStatus.COMPLETE
+                                     or previous.approval_state != ApprovalStatus.APPROVED):
+            problems.append(f"Approve {previous.label} first (it runs before {target.label}).")
     if target is not None and mode == "retry":
         last = latest_job(db, project.id, target.key)
         failed_here = last is not None and last.status == JobStatus.FAILED
@@ -159,6 +166,11 @@ def launch_plan(db: Session, slug: str, key: str, mode: str, *, resync: bool = T
         if target.status == StageStatus.COMPLETE:
             warnings.append("The current output and its manifest entry are kept as an archived attempt, "
                             "and its spend stays counted.")
+
+    if action is not None:
+        from app.studio.execution import data_root
+
+        problems += action.blockers(data_root() / slug / "manifest.json")
 
     budget = project.budget
     paid = bool(action and action.paid)

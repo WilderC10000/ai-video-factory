@@ -1,4 +1,4 @@
-import type { Job, LaunchPlan, Snapshot } from "./types";
+import type { Job, LaunchMode, LaunchPlan, Snapshot } from "./types";
 
 export class ApiError extends Error {
   status: number;
@@ -43,11 +43,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ decision, note }),
     }),
-  launchPreview: (slug: string, key: string, mode: "continue" | "retry") =>
+  launchPreview: (slug: string, key: string, mode: LaunchMode) =>
     request<LaunchPlan>(`${stagePath(slug, key)}/launch-preview?mode=${mode}`),
   launch: (
     slug: string,
     key: string,
-    body: { mode: "continue" | "retry"; request_id: string; confirmed: true; approve_first?: boolean; note?: string },
+    body: { mode: LaunchMode; request_id: string; confirmed: true; approve_first?: boolean; note?: string },
   ) => request<Job>(`${stagePath(slug, key)}/launch`, { method: "POST", body: JSON.stringify(body) }),
 };

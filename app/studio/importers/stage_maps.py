@@ -128,14 +128,20 @@ def _train_car() -> ProjectDef:
             room = "continuity_office"  # camera changes / establishing reference
         else:
             room = "build_logic_workshop"  # checkpoint construction states
+        manual_still = st.kind != "video" and plan.STILLS_SOURCE == "manual"
         defs.append(StageDef(
-            key, st.label, kinds[st.kind], room, "scripts/run_train_car_video_2_stage.py", st.estimated_cost_usd,
+            key, st.label, kinds[st.kind], room, "scripts/run_train_car_video_2_stage.py",
+            0.0 if manual_still else st.estimated_cost_usd,
             f"clips/{key}_last_job.json" if st.kind == "video" else None,
             storyboard_ref=f"storyboard/cp{st.checkpoint:02d}.jpg",
         ))
     return ProjectDef(
         slug=plan.SLUG, name=plan.PROJECT_NAME, cap_usd=None, cap_source=None, stages=defs,
         notes=[f"Proof gate: nothing after {plan.PROOF_STAGE} runs until the first end-frame test is marked passed.",
+               *(["Stills are made manually (ChatGPT): place them in stills/ and approve with "
+                  "`python -m scripts.run_train_car_video_2_stage --approve-still <key> \"<note>\"` - "
+                  "the studio never generates them; only video spends money."]
+                 if plan.STILLS_SOURCE == "manual" else []),
                "Doctrine: SKIP REPETITION, NOT EXPLANATION (docs/forma/creative/FORMA_CREATIVE_BRAIN.md)."],
     )
 

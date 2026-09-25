@@ -10,7 +10,11 @@
     "estimated_cost_usd": 0.15,
     "output_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\train_car_video_2\\stills\\cp01_still.jpg",
     "actual_cost_usd": 0.15,
-    "completed_at": "2026-09-24T22:53:37.161579+00:00"
+    "completed_at": "2026-09-24T22:53:37.161579+00:00",
+    "approved_sha256": "99dbedd19982f51a24e4cb86a5896663fc542d32ba061281b8e8f3bec1b6a33f",
+    "approved_at": "2026-09-25T00:42:06.379201+00:00",
+    "approved_via": "manual",
+    "approval_note": "Carried over: approved in the Virtual Studio 2026-09-24 22:53:58 UTC (generated with fal nano-banana-pro before the switch to manual ChatGPT stills)."
   },
   "cp02_bridge": {
     "image_model": "fal-ai/nano-banana-pro/edit",
@@ -20,7 +24,11 @@
     "estimated_cost_usd": 0.15,
     "output_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\train_car_video_2\\stills\\cp02_bridge.jpg",
     "actual_cost_usd": 0.15,
-    "completed_at": "2026-09-24T22:54:18.511830+00:00"
+    "completed_at": "2026-09-24T22:54:18.511830+00:00",
+    "approved_sha256": "e4fad66c7e43ddde6e66a1e56b335ffdf46cdad0abb138ac1d5acc88c6d0046e",
+    "approved_at": "2026-09-25T00:42:06.381202+00:00",
+    "approved_via": "manual",
+    "approval_note": "Carried over: approved in the Virtual Studio 2026-09-24 22:54:32 UTC (generated with fal nano-banana-pro before the switch to manual ChatGPT stills)."
   },
   "cp02_still": {
     "image_model": "fal-ai/nano-banana-pro/edit",
@@ -30,7 +38,11 @@
     "estimated_cost_usd": 0.15,
     "output_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\train_car_video_2\\stills\\cp02_still.jpg",
     "actual_cost_usd": 0.15,
-    "completed_at": "2026-09-24T22:54:52.426662+00:00"
+    "completed_at": "2026-09-24T22:54:52.426662+00:00",
+    "approved_sha256": "56c1d11507c2f19d11ef9a8faef20264e857cbed7b918f84800e5cabc08bf95a",
+    "approved_at": "2026-09-25T00:42:06.383213+00:00",
+    "approved_via": "manual",
+    "approval_note": "Carried over: approved in the Virtual Studio 2026-09-24 22:55:52 UTC (generated with fal nano-banana-pro before the switch to manual ChatGPT stills)."
   },
   "cp03_still": {
     "image_model": "fal-ai/nano-banana-pro/edit",
@@ -40,7 +52,11 @@
     "estimated_cost_usd": 0.15,
     "output_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\train_car_video_2\\stills\\cp03_still.jpg",
     "actual_cost_usd": 0.15,
-    "completed_at": "2026-09-24T22:56:12.363654+00:00"
+    "completed_at": "2026-09-24T22:56:12.363654+00:00",
+    "approved_sha256": "ec5b34ca2596a4f39fbcc7aa778cbbb5637abb2a9c11c0c853b1404c5839f159",
+    "approved_at": "2026-09-25T00:42:06.387228+00:00",
+    "approved_via": "manual",
+    "approval_note": "Carried over: approved in the Virtual Studio 2026-09-24 22:56:25 UTC (generated with fal nano-banana-pro before the switch to manual ChatGPT stills)."
   },
   "clip03": {
     "video_model": "alibaba/wan-3.0/image-to-video",

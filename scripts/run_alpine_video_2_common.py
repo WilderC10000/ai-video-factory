@@ -18,6 +18,7 @@ each stage (used by the FORMA Virtual Studio job runner); run_gated_video_shot()
 spend prompts on top, so every stage script still runs from the terminal.
 """
 import dataclasses
+import hashlib
 import json
 import sys
 import time
@@ -298,6 +299,10 @@ def execute_video_shot(
         "video_prompt": spec.prompt,
         "start_frame_path": str(spec.start_frame_path),
         "end_frame_path": str(spec.end_frame_path) if spec.end_frame_path is not None else None,
+        # Exact frames used, so a clip can be recognised as stale if a still is later replaced.
+        "start_frame_sha256": hashlib.sha256(Path(spec.start_frame_path).read_bytes()).hexdigest(),
+        "end_frame_sha256": (hashlib.sha256(Path(spec.end_frame_path).read_bytes()).hexdigest()
+                             if spec.end_frame_path is not None else None),
         "max_spend_usd": spec.max_spend_usd,
         "estimated_cost_usd": video_cost,
         "raw_video_path": None,

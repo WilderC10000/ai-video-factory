@@ -308,6 +308,13 @@ def import_project(db: Session, pdef: ProjectDef, data_dir: Path | None = None) 
                 result.approvals_updated += 1
                 rec.event(f"{stage.key}:approval_inferred", type="decision", stage=stage,
                           room_id="screening_room", message=f"Approved via pipeline gate: {title}")
+        entry = manifest.get(stage.key)
+        if (isinstance(entry, dict) and entry.get("approved_via") == "manual"
+                and approval.status == ApprovalStatus.PENDING):
+            # A still made and approved outside the pipeline (e.g. ChatGPT + --approve-still).
+            approval.status, approval.decided_via, approval.decided_at = ApprovalStatus.APPROVED, "manual", _utcnow()
+            approval.note = entry.get("approval_note")
+            result.approvals_updated += 1
         stage.approval_state = approval.status
         stage.requires_human_review = approval.status in (ApprovalStatus.PENDING, ApprovalStatus.REJECTED)
 

@@ -27,7 +27,8 @@
     "aspect_ratio": "9:16",
     "audio": "off",
     "negative_prompt": null,
-    "review_checklist": "plan.CLIP_REVIEW_CHECKLIST + the six mechanism findings from the Wan failure"
+    "review_checklist": "plan.CLIP_REVIEW_CHECKLIST + the six mechanism findings from the Wan failure",
+    "frames_rule": "Start/end frames are whatever cp02_still / cp03_still are APPROVED as in the stills folder at prepare/submit time (sha256-checked; stills are made manually in ChatGPT). start_frame/end_frame below are the Wan baseline's stills; prepared.json records same_stills_as_wan_baseline."
   },
   "model": {
     "endpoint_id": "kling-video/o3/first-last-frame",

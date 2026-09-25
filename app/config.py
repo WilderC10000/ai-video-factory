@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     # they are not wired into the app as the active provider until explicitly
     # approved and switched on.
     fal_api_key: str | None = None
+    # Higgsfield API (app/providers/video/higgsfield.py): HF_KEY="<key id>:<key secret>" from the API
+    # console, or the two halves separately as HF_API_KEY_ID / HF_API_KEY_SECRET.
+    hf_key: str | None = None
+    hf_api_key_id: str | None = None
+    hf_api_key_secret: str | None = None
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
 

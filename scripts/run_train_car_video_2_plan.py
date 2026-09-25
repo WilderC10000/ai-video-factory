@@ -59,6 +59,12 @@ BUDGET_CAP_USD = 15.00       # decided 2026-09-24: ~$9.75 baseline + ~$5.25 for 
 # conditioning). Nothing ordered after it may run until the proof is explicitly marked passed.
 PROOF_STAGE = "clip03"
 
+# Decided 2026-09-24: CP stills (including camera bridges) are made and approved manually in
+# ChatGPT and dropped into data/train_car_video_2/stills/<stage key>.<jpg|png|webp>. The stills
+# folder is the source of truth; the pipeline never generates stills for this project and only
+# spends money on video. "api" restores the original paid Nano Banana still stages.
+STILLS_SOURCE = "manual"
+
 # Storyboard slide per checkpoint (slides 7-26 are CP01-CP20 in the deck). CP12-CP14 are remapped
 # because the build order was corrected: glass (deck slide 20) -> cladding begins (slide 18) ->
 # cladding near complete (slide 19).

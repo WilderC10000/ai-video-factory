@@ -44,7 +44,13 @@ def _manifest(tmp: Path, **extra) -> Path:
     return path
 
 
-def test_blockers_enforce_cap_order_and_proof_gate(tmp_path):
+@pytest.fixture()
+def api_stills(monkeypatch):
+    """The original paid-still flow (plan.STILLS_SOURCE = "api")."""
+    monkeypatch.setattr(plan, "STILLS_SOURCE", "api")
+
+
+def test_blockers_enforce_cap_order_and_proof_gate(tmp_path, api_stills):
     no_cap = tmp_path / "nocap.json"
     no_cap.write_text(json.dumps({"experiment": SLUG, "budget_cap_usd": None}))
     assert any("budget cap" in b for b in stage_mod.launch_blockers("cp01_still", no_cap))
@@ -63,7 +69,7 @@ def test_blockers_enforce_cap_order_and_proof_gate(tmp_path):
     assert stage_mod.launch_blockers("clip01", m) == []
 
 
-def test_failed_proof_keeps_gate_closed_and_blocks_the_video_model(tmp_path):
+def test_failed_proof_keeps_gate_closed_and_blocks_the_video_model(tmp_path, api_stills):
     done = {"completed_at": "2026-09-24T00:00:00+00:00", "actual_cost_usd": 0.0}
     clip = done | {"video_model": stage_mod.VIDEO_MODEL, "provider_job_id": "job-1"}
     m = _manifest(tmp_path, **{k: done for k in ["cp01_still", "cp02_bridge", "cp02_still", "cp03_still"]}, clip03=clip)
@@ -84,7 +90,7 @@ def test_pass_proof_refused_before_the_proof_clip_exists(tmp_path):
 
 
 @pytest.fixture()
-def train_sandbox(tmp_path, monkeypatch):
+def train_sandbox(tmp_path, monkeypatch, api_stills):
     project = tmp_path / SLUG
     project.mkdir()
     _manifest(project)
@@ -133,3 +139,98 @@ def test_first_proof_runs_through_the_studio_and_stops_at_the_gate(db_session, t
     with pytest.raises(control.ControlError):
         launch("clip03", "continue")
     assert db_session.scalar(select(StudioJob).where(StudioJob.stage_key == "clip01")) is None
+
+
+# --- manual stills (ChatGPT): the stills folder is the source of truth ---------------------------
+
+JPG = Path("app/providers/image/fixtures/mock_reference.jpg")
+
+
+@pytest.fixture()
+def manual(tmp_path, monkeypatch):
+    monkeypatch.setattr(plan, "STILLS_SOURCE", "manual")
+    project = tmp_path / "proj"
+    (project / "stills").mkdir(parents=True)
+    return _manifest(project), project / "stills"
+
+
+def _state(m, stills, key):
+    return stage_mod.still_state(key, json.loads(m.read_text()), stills)["state"]
+
+
+def test_manual_mode_never_generates_stills(manual):
+    m, _ = manual
+    for key in ("cp01_still", "cp02_bridge", "cp04_still"):
+        blockers = stage_mod.launch_blockers(key, m)
+        assert len(blockers) == 1 and "made manually in ChatGPT" in blockers[0]
+    with pytest.raises(Exception, match="made manually in ChatGPT"):
+        stage_mod.run_stage("cp01_still", manifest_path=m)
+
+
+def test_manual_still_place_approve_replace_cycle(manual):
+    m, stills = manual
+    assert _state(m, stills, "cp03_still") == "missing"
+    with pytest.raises(Exception, match="no still yet"):
+        stage_mod.approve_still("cp03_still", "ok", manifest_path=m)
+
+    (stills / "cp03_still.png").write_bytes(b"chatgpt v1")  # a ChatGPT export: jpg, png or webp
+    assert _state(m, stills, "cp03_still") == "placed"
+    with pytest.raises(Exception, match="Say what you checked"):
+        stage_mod.approve_still("cp03_still", " ", manifest_path=m)
+    first = stage_mod.approve_still("cp03_still", "clearing strip 80% done", manifest_path=m)
+    assert _state(m, stills, "cp03_still") == "approved"
+    assert first["actual_cost_usd"] == 0.0 and first["source"] == "manual"
+    assert stage_mod.approved_still("cp03_still", m)[0] == stills / "cp03_still.png"
+
+    (stills / "cp03_still.png").write_bytes(b"chatgpt v2")  # iterate in ChatGPT and overwrite
+    assert _state(m, stills, "cp03_still") == "changed"
+    with pytest.raises(Exception, match="not the file that was approved"):
+        stage_mod.approved_still("cp03_still", m)
+    stage_mod.approve_still("cp03_still", "v2 better shovel pose", manifest_path=m)
+    manifest = json.loads(m.read_text())
+    assert _state(m, stills, "cp03_still") == "approved"
+    assert manifest["cp03_still__attempt1"]["approval_note"] == "clearing strip 80% done"
+
+    (stills / "cp03_still.jpg").write_bytes(b"a second file for the same key")
+    assert _state(m, stills, "cp03_still") == "ambiguous"
+
+
+def test_generated_still_replaced_manually_keeps_its_spend(manual):
+    from scripts.run_alpine_video_2_common import spent_so_far
+
+    m, stills = manual
+    (stills / "cp02_still.jpg").write_bytes(b"api still")
+    m.write_text(json.dumps(json.loads(m.read_text()) | {"cp02_still": {
+        "output_path": str(stills / "cp02_still.jpg"), "actual_cost_usd": 0.15,
+        "completed_at": "2026-09-24T00:00:00+00:00"}}))
+    kept = stage_mod.approve_still("cp02_still", "approved in studio", manifest_path=m)
+    assert kept["actual_cost_usd"] == 0.15  # same file: approval recorded in place
+
+    (stills / "cp02_still.jpg").unlink()
+    (stills / "cp02_still.png").write_bytes(b"chatgpt still")
+    stage_mod.approve_still("cp02_still", "chatgpt redo", manifest_path=m)
+    manifest = json.loads(m.read_text())
+    assert manifest["cp02_still__attempt1"]["actual_cost_usd"] == 0.15
+    assert manifest["cp02_still"]["actual_cost_usd"] == 0.0 and spent_so_far(manifest) == 0.15
+
+
+def test_manual_clip_needs_its_exact_approved_stills(manual):
+    m, stills = manual
+    blockers = stage_mod.launch_blockers("clip03", m)
+    assert any("Needs an approved cp02_still" in b for b in blockers)
+    assert any("Needs an approved cp03_still" in b for b in blockers)
+    for key in ("cp02_still", "cp03_still"):
+        shutil.copy(JPG, stills / f"{key}.jpg")
+        stage_mod.approve_still(key, "ok", manifest_path=m)
+    assert stage_mod.launch_blockers("clip03", m) == []  # cp01 / the bridge are not clip03's frames
+    (stills / "cp03_still.jpg").write_bytes(b"swapped after approval")
+    assert any("not the file that was approved" in b for b in stage_mod.launch_blockers("clip03", m))
+
+
+def test_live_specs_point_at_the_approved_still_file(manual, monkeypatch):
+    m, stills = manual
+    monkeypatch.setattr(stage_mod, "MANIFEST_PATH", m)
+    (stills / "cp03_still.png").write_bytes(b"png from chatgpt")
+    stage_mod.approve_still("cp03_still", "ok", manifest_path=m)
+    assert stage_mod.SPECS["clip03"].end_frame_path == stills / "cp03_still.png"
+    assert stage_mod.SPECS.get("clip03").end_frame_path == stills / "cp03_still.png"

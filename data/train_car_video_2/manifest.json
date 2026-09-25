@@ -76,5 +76,33 @@
     "cancelled_at": "2026-09-24T23:57:06.886857+00:00",
     "archived_at": "2026-09-24T23:57:06.886857+00:00",
     "note": "Duplicate of the original clip03 job, created by a studio Retry while the original was still queued. Cancelled at fal while queued; fal returns 'Request was cancelled' and no inference ran - not billed."
+  },
+  "proof_attempts": [
+    {
+      "stage": "clip03",
+      "verdict": "failed",
+      "failure_class": "motion_mechanism",
+      "continuity": "pass",
+      "model": "alibaba/wan-3.0/image-to-video",
+      "provider_job_id": "01a0d5a2-723b-7091-adb9-7afb0316d086",
+      "raw_video_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\train_car_video_2\\clips\\clip03_raw.mp4",
+      "note": "Failed Wan 3.0 motion/mechanism test - NOT a continuity failure. Continuity improved significantly: railcar, location and camera stayed stable and the clip converges toward CP03, but the model morphs toward the end checkpoint instead of performing the labor.",
+      "findings": [
+        "shovel interaction with the ground is physically implausible",
+        "no believable scoop/lift/carry/dump cycle",
+        "debris disappears/reorganizes without clear causal transfer",
+        "wheelbarrow appears mid-shot without entering from a plausible source",
+        "visible progress is not consistently caused by the builder's visible actions",
+        "the model morphs toward the end checkpoint rather than performing the labor"
+      ],
+      "decided_at": "2026-09-25T00:15:15.313228+00:00"
+    }
+  ],
+  "proof_gate": {
+    "stage": "clip03",
+    "passed": false,
+    "last_verdict": "failed",
+    "note": "Failed Wan 3.0 motion/mechanism test - NOT a continuity failure. Continuity improved significantly: railcar, location and camera stayed stable and the clip converges toward CP03, but the model morphs toward the end checkpoint instead of performing the labor.",
+    "decided_at": "2026-09-25T00:15:15.313228+00:00"
   }
 }

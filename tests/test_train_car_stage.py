@@ -63,6 +63,21 @@ def test_blockers_enforce_cap_order_and_proof_gate(tmp_path):
     assert stage_mod.launch_blockers("clip01", m) == []
 
 
+def test_failed_proof_keeps_gate_closed_and_blocks_the_video_model(tmp_path):
+    done = {"completed_at": "2026-09-24T00:00:00+00:00", "actual_cost_usd": 0.0}
+    clip = done | {"video_model": stage_mod.VIDEO_MODEL, "provider_job_id": "job-1"}
+    m = _manifest(tmp_path, **{k: done for k in ["cp01_still", "cp02_bridge", "cp02_still", "cp03_still"]}, clip03=clip)
+    attempt = stage_mod.fail_proof("morphs toward the end still", failure_class="motion_mechanism",
+                                   findings=["no scoop/carry/dump cycle"], continuity="pass", manifest_path=m)
+    assert attempt["model"] == stage_mod.VIDEO_MODEL and attempt["provider_job_id"] == "job-1"
+    assert json.loads(m.read_text())["proof_gate"]["passed"] is False
+    assert any("failed the clip03 proof" in b for b in stage_mod.launch_blockers("clip01", m))
+    assert any("failed the clip03 proof" in b for b in stage_mod.launch_blockers("clip03", m))
+    assert not any("failed the clip03 proof" in b for b in stage_mod.launch_blockers("cp04_bridge", m))
+    with pytest.raises(Exception, match="already reviewed and failed"):
+        stage_mod.pass_proof("looks fine now", m)
+
+
 def test_pass_proof_refused_before_the_proof_clip_exists(tmp_path):
     with pytest.raises(Exception, match="hasn't been generated"):
         stage_mod.pass_proof("looks fine", _manifest(tmp_path))

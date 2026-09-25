@@ -120,7 +120,42 @@ def launch_blockers(stage_key: str, manifest_path: Path = MANIFEST_PATH) -> list
             f"PROOF GATE: {plan.PROOF_STAGE} (first end-frame test, CP02 -> CP03) has not been marked passed. Review "
             "it, then run `python -m scripts.run_train_car_video_2_stage --pass-proof \"<what you saw>\"` - or stop."
         )
+    # Every clip in this runner is generated with the pipeline's video model; once that model has
+    # failed the proof, no clip (including a retry of the proof clip) may be generated with it.
+    failed = _failed_video_models(manifest)
+    if stage.kind == "video" and VIDEO_MODEL in failed:
+        problems.append(f"{VIDEO_MODEL} failed the {plan.PROOF_STAGE} proof ({failed[VIDEO_MODEL]}) - "
+                        "train-car clips may not be generated with it.")
     return problems
+
+
+# The model execute_video_shot uses for every clip (run_alpine_video_2_common.WAN_3_0_STANDARD).
+VIDEO_MODEL = "alibaba/wan-3.0/image-to-video"
+
+
+def _failed_video_models(manifest: dict) -> dict[str, str]:
+    return {a["model"]: a.get("failure_class", "failed") for a in manifest.get("proof_attempts", [])
+            if a.get("verdict") == "failed" and a.get("model")}
+
+
+def fail_proof(note: str, *, failure_class: str, findings: list[str], continuity: str,
+               manifest_path: Path = MANIFEST_PATH) -> dict:
+    """Record that the proof clip was reviewed and failed. Keeps the gate closed and blocks the model."""
+    manifest = _manifest(manifest_path)
+    entry = manifest.get(plan.PROOF_STAGE)
+    if not _completed(entry):
+        raise PipelineStepError(f"{plan.PROOF_STAGE} hasn't been generated yet - nothing to fail.")
+    if not note.strip():
+        raise PipelineStepError("Say what failed (a short note) when failing the proof gate.")
+    attempt = {"stage": plan.PROOF_STAGE, "verdict": "failed", "failure_class": failure_class,
+               "continuity": continuity, "model": entry.get("video_model"),
+               "provider_job_id": entry.get("provider_job_id"), "raw_video_path": entry.get("raw_video_path"),
+               "note": note.strip(), "findings": findings, "decided_at": datetime.now(timezone.utc).isoformat()}
+    manifest.setdefault("proof_attempts", []).append(attempt)
+    manifest["proof_gate"] = {"stage": plan.PROOF_STAGE, "passed": False, "last_verdict": "failed",
+                              "note": note.strip(), "decided_at": attempt["decided_at"]}
+    manifest_path.write_text(json.dumps(manifest, indent=2))
+    return attempt
 
 
 def pass_proof(note: str, manifest_path: Path = MANIFEST_PATH) -> dict:
@@ -129,6 +164,10 @@ def pass_proof(note: str, manifest_path: Path = MANIFEST_PATH) -> dict:
         raise PipelineStepError(f"{plan.PROOF_STAGE} hasn't been generated yet - nothing to pass.")
     if not note.strip():
         raise PipelineStepError("Say what you checked (a short note) when passing the proof gate.")
+    if any(a.get("verdict") == "failed" and a.get("provider_job_id") == manifest[plan.PROOF_STAGE].get("provider_job_id")
+           for a in manifest.get("proof_attempts", [])):
+        raise PipelineStepError(f"The current {plan.PROOF_STAGE} clip was already reviewed and failed - "
+                                "a new proof clip is needed before the gate can pass.")
     manifest["proof_gate"] = {"stage": plan.PROOF_STAGE, "passed": True, "note": note.strip(),
                               "decided_at": datetime.now(timezone.utc).isoformat()}
     manifest_path.write_text(json.dumps(manifest, indent=2))
@@ -166,7 +205,10 @@ def _status() -> None:
     spent = spent_so_far(manifest) if manifest else 0.0
     print(f"{plan.PROJECT_NAME}\nBudget: ${spent:.2f} spent of ${cap:.2f}" if cap is not None else "Budget: NOT SET")
     gate = manifest.get("proof_gate") or {}
-    print(f"Proof gate ({plan.PROOF_STAGE}): {'PASSED - ' + gate.get('note', '') if gate.get('passed') else 'not passed'}\n")
+    print(f"Proof gate ({plan.PROOF_STAGE}): {'PASSED - ' + gate.get('note', '') if gate.get('passed') else 'not passed'}")
+    for model, why in _failed_video_models(manifest).items():
+        print(f"  Blocked video model: {model} (failed proof: {why})")
+    print()
     next_shown = False
     for key in ORDER:
         entry = manifest.get(key)

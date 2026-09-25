@@ -1,0 +1,74 @@
+{
+  "test": "clip03 provider comparison - Higgsfield vs Wan 3.0 (same CP02 -> CP03 proof)",
+  "status": "PREPARED - NOT SUBMITTED. No paid call until approved.",
+  "baseline": {
+    "model": "alibaba/wan-3.0/image-to-video",
+    "provider_job_id": "01a0d5a2-723b-7091-adb9-7afb0316d086",
+    "raw_video_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\train_car_video_2\\clips\\clip03_raw.mp4",
+    "resolution": "480p",
+    "duration_seconds": 6.0,
+    "cost_usd": 0.3,
+    "verdict": "failed - motion_mechanism (continuity passed)"
+  },
+  "held_constant": {
+    "start_frame": {
+      "path": "C:\\Users\\wcoun\\ai-video-factory\\data\\train_car_video_2\\stills\\cp02_still.jpg",
+      "sha256": "56c1d11507c2f19d11ef9a8faef20264e857cbed7b918f84800e5cabc08bf95a",
+      "size": "768x1376"
+    },
+    "end_frame": {
+      "path": "C:\\Users\\wcoun\\ai-video-factory\\data\\train_car_video_2\\stills\\cp03_still.jpg",
+      "sha256": "ec5b34ca2596a4f39fbcc7aa778cbbb5637abb2a9c11c0c853b1404c5839f159",
+      "size": "768x1376"
+    },
+    "prompt": "Vertical 9:16, realistic documentary construction footage. Camera: exterior three-quarter view of the facade from about 7 m at chest height, left end of the car nearest camera, the whole facade span and the ground in front of it in frame; held completely still - locked, no movement, no zoom, no angle change. The clip starts exactly on the first image and must end exactly on the last image. Everything in between is the builder performing ONE task - Exterior clearing begins: builder shovels brush and debris into a wheelbarrow and dumps it on a growing pile, working left to right. Show 70 to 90 percent of this task being done on-screen, continuously, the construction frontier advancing steadily until the scene matches the last image: weeds, brush and debris cleared from ~80% of the strip in front of the facade; a debris pile beside a wheelbarrow at the left. Tools: shovel, wheelbarrow, gloves. Nothing else changes. Keep the same railcar (one vintage steel passenger railcar, about 60 feet long and 10 feet wide, with a gently arched roof, riveted steel skin rusted red-brown, a row of small original rectangular windows along its long side, and a recessed end door, sitting on its original wheel trucks on the track - the same car, same proportions and same position in every shot), the same location (a misty pine-forest valley with tall dark evergreens close around the site, snow-capped mountains rising behind the tree line, a short weed-covered stretch of old single railway track, and soft overcast daylight with light mist) and the same builder (one builder: a bearded man in a black beanie, dark charcoal hoodie, tan canvas work pants, leather tool belt and work gloves - always the same person, working, never posing). SKIP REPETITION, NOT EXPLANATION: the builder visibly performs the work, step after step, for the whole clip - every piece of progress is caused by his visible hands and tools, never appearing on its own. Materials come from a visible stack or pile and are carried, placed and fastened on-screen. The construction frontier stays readable in every frame: completed work | the active work area | untouched area, and it moves steadily in one direction. No magical spawning, no sudden completion, no one-action-finishes-everything.",
+    "prompt_chars": 2266,
+    "duration_seconds": 6,
+    "aspect_ratio": "9:16",
+    "audio": "off",
+    "negative_prompt": null,
+    "review_checklist": "plan.CLIP_REVIEW_CHECKLIST + the six mechanism findings from the Wan failure"
+  },
+  "model": {
+    "endpoint_id": "kling-video/o3/first-last-frame",
+    "endpoint": "POST https://api.higgsfield.ai/kling-video/o3/first-last-frame",
+    "why": "model designed explicitly for first/last-frame conditioning - the experiment tests causal motion between the exact approved CP02 and CP03 states",
+    "payload": {
+      "prompt": "Vertical 9:16, realistic documentary construction footage. Camera: exterior three-quarter view of the facade from about 7 m at chest height, left end of the car nearest camera, the whole facade span and the ground in front of it in frame; held completely still - locked, no movement, no zoom, no angle change. The clip starts exactly on the first image and must end exactly on the last image. Everything in between is the builder performing ONE task - Exterior clearing begins: builder shovels brush and debris into a wheelbarrow and dumps it on a growing pile, working left to right. Show 70 to 90 percent of this task being done on-screen, continuously, the construction frontier advancing steadily until the scene matches the last image: weeds, brush and debris cleared from ~80% of the strip in front of the facade; a debris pile beside a wheelbarrow at the left. Tools: shovel, wheelbarrow, gloves. Nothing else changes. Keep the same railcar (one vintage steel passenger railcar, about 60 feet long and 10 feet wide, with a gently arched roof, riveted steel skin rusted red-brown, a row of small original rectangular windows along its long side, and a recessed end door, sitting on its original wheel trucks on the track - the same car, same proportions and same position in every shot), the same location (a misty pine-forest valley with tall dark evergreens close around the site, snow-capped mountains rising behind the tree line, a short weed-covered stretch of old single railway track, and soft overcast daylight with light mist) and the same builder (one builder: a bearded man in a black beanie, dark charcoal hoodie, tan canvas work pants, leather tool belt and work gloves - always the same person, working, never posing). SKIP REPETITION, NOT EXPLANATION: the builder visibly performs the work, step after step, for the whole clip - every piece of progress is caused by his visible hands and tools, never appearing on its own. Materials come from a visible stack or pile and are carried, placed and fastened on-screen. The construction frontier stays readable in every frame: completed work | the active work area | untouched area, and it moves steadily in one direction. No magical spawning, no sudden completion, no one-action-finishes-everything.",
+      "first_frame_url": "<public_url of uploaded cp02_still.jpg>",
+      "last_frame_url": "<public_url of uploaded cp03_still.jpg>",
+      "mode": "pro",
+      "aspect_ratio": "9:16",
+      "duration": 6,
+      "sound": "off",
+      "multi_shots": false
+    }
+  },
+  "alternatives": [
+    {
+      "endpoint": "kling-video/v3.0/pro/image-to-video",
+      "fields": "image_url, last_image_url, duration, sound off (previous first choice)"
+    },
+    {
+      "endpoint": "bytedance/seedance-2.5/image-to-video",
+      "fields": "image_url, end_image_url, resolution 480p|720p, duration 4-30"
+    }
+  ],
+  "reference_upload": "POST /files/generate-upload-url {content_type: image/jpeg} -> PUT file to upload_url with upload_headers -> use public_url (free; URL valid 1 h)",
+  "cost": {
+    "expected_usd": "unknown until the free estimate - no published O3 API rate found",
+    "authoritative": "free POST /estimate/kling-video/o3/first-last-frame with the exact payload; hard stop if > $1.00; mode pro unless the estimate shows a strong reason for std",
+    "budget_before": "0.90 of 15.00"
+  },
+  "known_differences_from_baseline": [
+    "output resolution set by mode (pro; no explicit resolution field) vs Wan 480p - compare mechanism, not sharpness",
+    "no prompt-expansion flag documented (Wan ran with prompt expansion disabled)",
+    "prompt is 2,266 chars, under the 2,500-char top-level limit - sent unmodified"
+  ],
+  "safety": [
+    "one job only; job id written to manifest immediately on submit",
+    "no auto-retry; recover-only on timeout",
+    "failed/nsfw requests are not charged; queued requests can be cancelled for a refund"
+  ],
+  "decided": "2026-09-24: switched first Higgsfield proof from Kling 3.0 Pro i2v to Kling O3 first/last-frame (user decision)"
+}

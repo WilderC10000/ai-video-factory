@@ -168,8 +168,11 @@ def launch_plan(db: Session, slug: str, key: str, mode: str, *, resync: bool = T
             problems.append(f"Later stages ({', '.join(s.label for s in downstream)}) are already built on this "
                             "output - retrying it would break the chain.")
         if target.status == StageStatus.STARTED and target.provider_job_id:
-            warnings.append(f"The failed attempt had provider job {target.provider_job_id}; it may already be "
-                            f"billed. Consider `python -m scripts.recover_fal_video_job {target.provider_job_id}` first.")
+            # A submitted job that never finished here may still be queued, running or complete at the
+            # provider. Retrying would pay for a duplicate - recover (free) is the only way forward.
+            problems.append(f"Provider job {target.provider_job_id} for {target.label} was submitted and never "
+                            "finished here - it may still be running or already complete at the provider. Use "
+                            "Recover provider job (free) instead; Retry is blocked so this stage can't be paid twice.")
         if target.status == StageStatus.COMPLETE:
             warnings.append("The current output and its manifest entry are kept as an archived attempt, "
                             "and its spend stays counted.")

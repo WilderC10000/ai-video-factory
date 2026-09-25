@@ -330,3 +330,21 @@ def test_http_decision_preview_and_launch(client, db_session, sandbox):
     get_runner().wait(r.json()["id"])
     job = client.get(f"/studio/jobs/{r.json()['id']}").json()
     assert job["status"] == "succeeded" and job["phase_label"] == "Complete"
+
+
+# --- no duplicate paid attempts while an earlier provider job may still exist --------------------
+
+def test_retry_is_blocked_while_an_earlier_provider_job_is_unfinished(db_session, sandbox):
+    alpine = sandbox / SLUG
+    manifest = _manifest(sandbox)
+    manifest["shot6"] = {"estimated_cost_usd": 0.55, "raw_video_path": None, "actual_cost_usd": None,
+                         "completed_at": None, "provider_job_id": "job-still-queued"}
+    _write_manifest(sandbox, manifest)
+    (alpine / "shot6_last_job.json").write_text(json.dumps({"provider_job_id": "job-still-queued", "meta": {}}))
+    import_all(db_session, sandbox)
+
+    retry = control.launch_plan(db_session, SLUG, "shot6", "retry")
+    assert not retry["allowed"]
+    assert any("Retry is blocked" in p and "job-still-queued" in p for p in retry["problems"])
+    recover = control.launch_plan(db_session, SLUG, "shot6", "recover")
+    assert recover["allowed"] and not recover["paid"] and recover["estimated_cost_usd"] == 0.0

@@ -94,3 +94,34 @@ def test_provider_failure_and_missing_state_are_reported_not_resubmitted(started
 
 def test_live_wait_timeout_is_45_minutes():
     assert settings.studio_live_wait_timeout_seconds == 45 * 60
+
+
+def test_provider_job_id_is_recorded_at_submission_not_only_on_completion(started_clip):
+    spec, manifest, _ = started_clip
+    spec.job_state_path.unlink()
+
+    class DiesAfterSubmit:
+        def estimate_cost(self, _request):
+            return 0.30
+
+        def submit_video_job(self, _request):
+            from app.providers.base import SubmittedVideoJob
+
+            return SubmittedVideoJob(provider_name="fake", provider_job_id="job-xyz", estimated_cost_usd=0.30, meta={})
+
+        def get_job_status(self, *_args, **_kwargs):
+            from app.providers.base import VideoProviderError
+
+            raise VideoProviderError("connection lost")
+
+    for still in (spec.start_frame_path, spec.end_frame_path):
+        still.parent.mkdir(parents=True, exist_ok=True)
+    start = dataclasses.replace(spec, start_frame_path=spec.job_state_path.parent / "s.jpg",
+                                upstream_path=spec.job_state_path.parent / "s.jpg",
+                                end_frame_path=spec.job_state_path.parent / "e.jpg")
+    start.start_frame_path.write_bytes(b"s")
+    start.end_frame_path.write_bytes(b"e")
+    with pytest.raises(pipeline.PipelineStepError, match="Status check failed"):
+        pipeline.execute_video_shot(start, video_provider=DiesAfterSubmit(), manifest_path=manifest,
+                                    log=lambda *_: None)
+    assert json.loads(manifest.read_text())["clip03"]["provider_job_id"] == "job-xyz"

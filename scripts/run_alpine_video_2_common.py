@@ -314,6 +314,11 @@ def execute_video_shot(
     except VideoProviderError as e:
         raise PipelineStepError(f"Video submission failed: {e}") from e
     log(f"      Submitted. Provider job id: {submitted.provider_job_id}")
+    # Record the job id immediately, not only on completion, so it can never be lost if this
+    # process stops, times out or is superseded before the job finishes.
+    manifest = load_manifest(manifest_path)
+    manifest[spec.shot_key]["provider_job_id"] = submitted.provider_job_id
+    save_manifest(manifest, manifest_path)
     on_phase("provider_queued", submitted.provider_job_id)
 
     spec.job_state_path.write_text(json.dumps({"provider_job_id": submitted.provider_job_id, "meta": submitted.meta}, indent=2))

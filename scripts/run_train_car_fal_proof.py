@@ -90,7 +90,7 @@ def build_request(setup: dict, frames: dict) -> VideoGenerationRequest:
 
 def raw_output_path(setup: dict) -> Path:
     slug = setup["model"]["endpoint_id"].replace("/", "_").replace(".", "-")
-    return CLIPS_DIR / f"{setup['stage']}_fal_{slug}_raw.mp4"
+    return CLIPS_DIR / f"{setup['attempt_key']}_fal_{slug}_raw.mp4"  # one file per attempt (beats share a stage)
 
 
 def prepare(provider: FalVideoProvider, setup: dict, manifest_path: Path = MANIFEST_PATH) -> dict:
@@ -212,7 +212,8 @@ def submit(provider: FalVideoProvider, approve_usd: float, *, setup: dict, setup
         "end_frame_path": prepared["end_frame"], "end_frame_sha256": prepared["end_frame_sha256"],
         "submitted_at": _now(), "provider_status": None, "status_checked_at": None,
         "planned_output_path": str(raw_output_path(setup)), "raw_video_path": None, "actual_cost_usd": None,
-        "completed_at": None, "note": setup.get("purpose")}
+        "completed_at": None, "note": setup.get("purpose"),
+        **({"beat": setup["beat"]} if setup.get("beat") else {})}
     manifest_path.write_text(json.dumps(manifest, indent=2))
     (setup_dir / "job.json").write_text(json.dumps({"provider_job_id": submitted.provider_job_id,
                                                     "meta": submitted.meta}, indent=2))

@@ -119,7 +119,9 @@ def _attempt_out(key: str, entry: dict, is_primary: bool, verdicts: dict[str, di
     output_exists = _is_file(output)
     return {
         "key": key, "is_primary": is_primary,
-        "label": "Primary result" if is_primary else f"Attempt {n}",
+        "label": "Primary result" if is_primary else f"Attempt {n}" + (
+            f" · beat {entry['beat']['n']}/{entry['beat']['of']}" if isinstance(entry.get("beat"), dict) else ""),
+        "beat": entry.get("beat"),
         "attempt_number": int(n) if n.isdigit() else None,
         # Live lifecycle, derived only from what is persisted in the manifest (survives restarts):
         # submitted | queued | generating | downloading | complete | failed | cancelled | not_started

@@ -1,0 +1,32 @@
+{
+  "purpose": "Clip 03 beat 3/3 (Kling v3 Standard, first/last frame): one local physical task between cp03b_still and cp03_still. The three beats are hard-cut together in the edit, which may trim or speed-ramp each one.",
+  "project": "train_car_video_2",
+  "stage": "clip03",
+  "attempt_key": "clip03__attempt8",
+  "beat": {
+    "n": 3,
+    "of": 3,
+    "group": "clip03_kling3_beats"
+  },
+  "shot_class": "repetitive_labor",
+  "stills": {
+    "start": "cp03b_still",
+    "end": "cp03_still",
+    "source": "manual ChatGPT, approved in the stills folder"
+  },
+  "model": {
+    "endpoint_id": "fal-ai/kling-video/v3/standard/image-to-video",
+    "duration": 3,
+    "aspect_ratio": "9:16",
+    "prompt": "Vertical 9:16 realistic documentary footage, one continuous 3-second shot. Locked high camera looking down the length of the rusted red-brown railcar - no camera movement, no zoom, no pan. It starts exactly on the first image and ends exactly on the last image. Same railcar, open end door, tracks, pine forest, mist and overcast light throughout; the same bearded builder in a black beanie, dark charcoal hoodie, tan canvas work pants and work gloves. One local task: he clears the last stretch of the window side toward the far end - scoop, lift, dump into the wheelbarrow - then wheels the loaded barrow back along the cleared strip toward the camera and takes a last shovelful from the ground beside the track in the foreground, where the loaded barrow stands. Every patch of bare earth appears only where his shovel has just dug; each scoop is lifted and dumped into the wheelbarrow, and brush lands on the heap only when he tips it there. Nothing morphs, no debris vanishes or appears on its own, no new objects.",
+    "extra_params": {
+      "negative_prompt": "morphing, debris vanishing or appearing on its own, objects popping in or out, teleporting tools or wheelbarrow, camera movement, zoom, pan, dissolve, crossfade, different person, different railcar, on-screen text, blur, distort, low quality"
+    }
+  },
+  "cost": {
+    "expected_usd": 0.252,
+    "basis": "Kling v3 Standard $0.084/s with audio off x 3 s (fal model page, 2026-09-28)",
+    "max_approved_usd": null,
+    "approved": null
+  }
+}

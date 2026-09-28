@@ -68,6 +68,15 @@ planned and routed so a model can actually deliver it. Established 2026-09-28.
     - static completion / time jump → image edit instead of video.
     A model is promoted to a harder class only after it passes a proof shot of that class.
 
+    **Clip count per phase adapts to complexity** — never one fixed count for every stage:
+    - simple phase → 1 clip;
+    - medium phase → 2 clips;
+    - complex / repetitive phase → up to 3 clips;
+    - static elapsed-time completion → still edit only.
+    Multi-clip phases add manual ChatGPT beat stills between the checkpoint stills so each clip is one
+    believable local task, and the clips are joined by hard cuts in the edit (which may trim or speed-ramp
+    them). Established 2026-09-28 with the Clip 03 three-clip Kling proof.
+
 ## Provider policy (from Project #3)
 
 - Checkpoint stills: made and approved manually in ChatGPT; the stills folder is the source of truth.

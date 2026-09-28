@@ -239,3 +239,44 @@ def test_no_wait_submit_records_the_job_and_leaves_it_to_the_studio(sandbox):
     assert not any(url == "https://q.test/status" for _, url in fake.calls)  # no polling by the runner
     from app.studio.attempt_status import attempt_phase
     assert attempt_phase(json.loads(manifest.read_text())["clip03__attempt4"], False) == "submitted"
+
+
+
+# --- Clip 03 as three first/last-frame beat clips (CP02 -> A -> B -> CP03) ---------------------------
+
+BEAT_DIRS = [proof.DATA / "provider_tests" / f"fal_kling_v3_standard_clip03_beat{n}" for n in (1, 2, 3)]
+
+
+def test_the_three_beat_setups_chain_cp02_a_b_cp03_as_single_prompt_first_last_clips():
+    setups = [json.loads((d / "setup.json").read_text()) for d in BEAT_DIRS]
+    assert [(s["stills"]["start"], s["stills"]["end"]) for s in setups] == [
+        ("cp02_still", "cp03a_still"), ("cp03a_still", "cp03b_still"), ("cp03b_still", "cp03_still")]
+    assert [s["attempt_key"] for s in setups] == ["clip03__attempt6", "clip03__attempt7", "clip03__attempt8"]
+    assert [s["beat"]["n"] for s in setups] == [1, 2, 3] and all(s["beat"]["of"] == 3 for s in setups)
+    for s in setups:
+        model = s["model"]
+        assert model["endpoint_id"] == "fal-ai/kling-video/v3/standard/image-to-video" and model["duration"] == 3
+        assert "multi_prompt" not in model["extra_params"] and len(model["prompt"]) <= 2500
+        assert "no camera movement" in model["prompt"] and "Nothing morphs" in model["prompt"]
+        assert "scoop, lift, dump" in model["prompt"]
+        assert s["cost"]["expected_usd"] == 0.252 and s["shot_class"] == "repetitive_labor"
+    assert len({proof.raw_output_path(s) for s in setups}) == 3  # one output file per beat
+
+
+def test_beat_stills_are_part_of_the_manual_stills_workflow(tmp_path, monkeypatch):
+    from scripts import run_train_car_video_2_plan as plan
+    from scripts import run_train_car_video_2_stage as stage_mod
+
+    assert set(plan.BEAT_STILLS) == {"cp03a_still", "cp03b_still"}
+    assert plan.BEAT_STILLS["cp03a_still"].edit_base == "cp02_still"
+    assert plan.BEAT_STILLS["cp03b_still"].edit_base == "cp03a_still"
+    stills = tmp_path / "stills"
+    stills.mkdir()
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"budget_cap_usd": 15.0}))
+    with pytest.raises(Exception, match="no still yet"):
+        stage_mod.approve_still("cp03a_still", "checked", manifest_path=manifest)
+    (stills / "cp03a_still.jpg").write_bytes(b"A")
+    entry = stage_mod.approve_still("cp03a_still", "matches CP02; clearing to window 3", manifest_path=manifest)
+    assert entry["approved_via"] == "manual" and entry["actual_cost_usd"] == 0.0
+    assert stage_mod.approved_still("cp03a_still", manifest)[0].name == "cp03a_still.jpg"

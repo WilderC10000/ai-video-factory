@@ -42,6 +42,14 @@ SHOT_CLASSES: dict[str, str] = {
     "time_jump": "static completion / time jump -> image edit instead of video",
 }
 
+# Production lesson 11, clip count: how many clips a phase gets, by its complexity (0 = still edit only).
+PHASE_CLIP_COUNTS: dict[str, int] = {
+    "simple phase": 1,
+    "medium phase": 2,
+    "complex / repetitive phase": 3,  # "up to 3"
+    "static elapsed-time completion": 0,
+}
+
 # Appended to the prompt of every repetitive physical-work clip (rule 11), after its shot list.
 BEATS_DOCTRINE = (
     "Within each shot: one continuous take; every bit of progress is caused by the builder's visible hands and "

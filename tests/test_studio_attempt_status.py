@@ -103,7 +103,7 @@ def test_check_persists_the_provider_status_and_heartbeat(manifest):
 def test_completed_job_is_downloaded_and_becomes_playable(manifest):
     fake = FakeFal(["COMPLETED"])
     entry = st.check_attempt(manifest, KEY, provider=_provider(fake))
-    out = manifest.parent / "clips" / "clip03_fal_fal-ai_kling-video_v3_standard_image-to-video_raw.mp4"
+    out = manifest.parent / "clips" / "clip03__attempt4_fal_fal-ai_kling-video_v3_standard_image-to-video_raw.mp4"
     assert entry["raw_video_path"] == str(out) and out.read_bytes() == b"mp4"
     assert entry["completed_at"] and entry["actual_cost_usd"] == 0.504 and entry["provider_status"] == "COMPLETED"
     card = stage_attempts(_read(manifest) | {"clip03": {"provider_job_id": "w"}}, "clip03")[1]

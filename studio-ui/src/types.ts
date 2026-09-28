@@ -30,6 +30,8 @@ export interface Attempt {
   /** Live lifecycle, derived from what the runner/studio persisted in the manifest. */
   phase: AttemptPhase;
   attempt_number: number | null;
+  /** Set when this attempt is one beat of a multi-clip checkpoint (label already reads "· beat n/of"). */
+  beat: { n: number; of: number; group: string } | null;
   provider_status: string | null;
   status_checked_at: string | null;
   local_file_exists: boolean;

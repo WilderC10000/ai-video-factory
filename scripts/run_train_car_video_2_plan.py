@@ -395,6 +395,88 @@ STILL_REVIEW_CHECKLIST = [
 ]
 
 
+@dataclass(frozen=True)
+class BeatStill:
+    """An intermediate checkpoint still inside one checkpoint's clip, made manually in ChatGPT.
+
+    Checkpoints with several beat clips (adaptive clip count, production lesson 11) get these
+    between their start and end stills; each beat clip runs first/last frame between two of them."""
+    key: str
+    label: str
+    checkpoint: int
+    edit_base: str  # the approved still ChatGPT edits
+    reference: str | None  # an approved still attached only as a look reference
+    progress: str
+    brief: str
+    checklist: tuple[str, ...]
+
+
+_BEAT_LOCK = (
+    "Keep every pixel of the scene identical: the same high camera position looking down the length of the "
+    "railcar, the same framing and lens, the same overcast light, mist, mountains, trees and tracks, and the "
+    "same rusted red-brown railcar in exactly the same place, with the same row of small windows and the same "
+    "open end door facing the camera. Change ONLY the ground work, the builder's position, his tools and the "
+    "debris.")
+_BEAT_CHECK = (
+    "railcar, windows, end door, tracks, trees and camera identical to CP02 (flick between them)",
+    "clearing only grows CP02 -> A -> B -> CP03 and nothing grows back",
+    "debris pile in the same lower-left spot, only getting bigger",
+    "same wheelbarrow, its load only increasing",
+    "same builder: beard, black beanie, charcoal hoodie, tan pants, gloves",
+)
+
+# Clip 03 (exterior clearing): three beat clips CP02 -> A -> B -> CP03. CP03 (approved) is ~80% of the
+# intended clearing, so A ~20-25% and B ~45-55% keep each 3 s clip to a believable amount of work.
+BEAT_STILLS: dict[str, BeatStill] = {s.key: s for s in (
+    BeatStill(
+        "cp03a_still", "CP03 beat still A - clearing ~20-25%", 3, "cp02_still", None, "~20-25% of the clearing",
+        "Edit this exact photo. " + _BEAT_LOCK + "\n\n"
+        "Show the clearing job just started - about one fifth to one quarter done:\n"
+        "- CLEARED: only the ground at the car's near-left corner and a short strip along the car's left (window) "
+        "side, back to about the THIRD window counting from the door end. Weeds, brush and dead grass removed down "
+        "to freshly shoveled bare brown earth with a few scattered small stones, with a clear, slightly ragged edge "
+        "where the work stops.\n"
+        "- UNTOUCHED: everything beyond the third window is still overgrown exactly as in the original, and so is "
+        "the grassy foreground left of the track.\n"
+        "- DEBRIS: a small new heap of pulled brush, dead grass and dirt at the lower-left edge of the frame, "
+        "against the low bushes left of the clearing - knee-high at most.\n"
+        "- BUILDER: the same man - dark beard, black beanie, dark charcoal hoodie, tan canvas work pants, brown "
+        "boots, work gloves - standing at the edge of the cleared patch near the third window, facing the "
+        "overgrown ground ahead, both hands on the shovel, blade in the weeds starting the next scoop. Beside him, "
+        "an old metal wheelbarrow with a small load of brush and dirt in the bottom.\n"
+        "- TOOLS: the yellow measuring pole and the clipboard are no longer in his hands or anywhere in view (put "
+        "away inside the open end door).\n"
+        "Realistic documentary photograph, not an illustration. Add nothing else: no new objects, people, "
+        "vehicles, tools or signs. The railcar, landscape and camera must not change in any way.",
+        _BEAT_CHECK),
+    BeatStill(
+        "cp03b_still", "CP03 beat still B - clearing ~45-55%", 3, "cp03a_still", "cp03_still",
+        "~45-55% of the clearing",
+        "Edit the FIRST attached photo. The second attached photo is only a reference for what the finished "
+        "cleared ground, the debris pile and the loaded wheelbarrow look like - do not copy its builder position "
+        "or its amount of clearing. " + _BEAT_LOCK.replace("Keep every pixel of the scene identical:",
+                                                           "Keep every pixel of the scene identical to the first "
+                                                           "photo:") + "\n\n"
+        "Show the clearing job about half done:\n"
+        "- CLEARED: everything that was already cleared, plus the strip along the car's left (window) side "
+        "continued back to about the SIXTH window counting from the door end - just past the middle of the car. "
+        "The same freshly shoveled bare brown earth with scattered small stones, and a clear edge where the work "
+        "stops. Nothing cleared earlier grows back.\n"
+        "- UNTOUCHED: the strip beyond the sixth window, toward the far end of the car, still overgrown with weeds, "
+        "brush and dead grass, and the grassy foreground left of the track still as it was.\n"
+        "- DEBRIS: the heap at the lower-left edge is noticeably bigger than before (roughly waist-high, more "
+        "brush, dead grass and dirt), in the same spot and heading toward the size and look of the pile in the "
+        "reference. No loose debris lying on the cleared ground.\n"
+        "- BUILDER: the same man in the same clothes, now standing at the cleared edge near the sixth window, "
+        "facing the overgrown far section, shovel blade pushed into the first weeds of that section. The same "
+        "wheelbarrow beside him, about half full of brush and dirt.\n"
+        "- TOOLS: the measuring pole and clipboard still out of view.\n"
+        "Realistic documentary photograph, not an illustration. Add nothing else. The railcar, landscape and "
+        "camera must not change, and the builder, his clothing and the wheelbarrow must be the same ones.",
+        _BEAT_CHECK),
+)}
+
+
 def still_prompt(stage: Stage) -> str:
     from app.forma.doctrine import STILL_DOCTRINE
 

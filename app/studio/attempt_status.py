@@ -62,9 +62,8 @@ def heartbeat_fresh(entry: dict, now: datetime | None = None) -> bool:
 
 
 def raw_output_path(manifest_path: Path, key: str, model: str) -> Path:
-    """Where a fal attempt's clip is downloaded: <project>/clips/<stage>_fal_<model slug>_raw.mp4."""
-    stage = key.partition("__")[0]
-    return Path(manifest_path).parent / "clips" / f"{stage}_fal_{model.replace('/', '_').replace('.', '-')}_raw.mp4"
+    """Where a fal attempt's clip is downloaded: <project>/clips/<attempt key>_fal_<model slug>_raw.mp4."""
+    return Path(manifest_path).parent / "clips" / f"{key}_fal_{model.replace('/', '_').replace('.', '-')}_raw.mp4"
 
 
 def orphan_job_entries(manifest_path: Path, manifest: dict) -> dict[str, dict]:

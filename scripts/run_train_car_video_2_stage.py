@@ -132,8 +132,8 @@ def approve_still(key: str, note: str, *, manifest_path: Path = MANIFEST_PATH, s
     A previously recorded still that is a different file is archived as <key>__attemptN (its cost,
     if it was generated, stays counted). Returns the entry plus any completed clips now stale."""
     stage = STAGES.get(key)
-    if stage is None or stage.kind == "video":
-        raise PipelineStepError(f"{key!r} is not a still stage of the train-car plan.")
+    if key not in plan.BEAT_STILLS and (stage is None or stage.kind == "video"):
+        raise PipelineStepError(f"{key!r} is not a still stage (or beat still) of the train-car plan.")
     if not note.strip():
         raise PipelineStepError("Say what you checked (a short note) when approving a still.")
     manifest = _manifest(manifest_path)
@@ -384,9 +384,22 @@ def _stills_report() -> None:
         st = still_state(key, manifest)
         users = ", ".join(k for k, s in STAGES.items() if s.kind == "video" and key in (s.source, s.end_frame))
         print(f"  {st['state']:<9} {key:<12} used by {users or '-':<14} {_describe_still(key, st)}")
+    for key, beat in plan.BEAT_STILLS.items():
+        st = still_state(key, manifest)
+        print(f"  {st['state']:<9} {key:<12} beat still (CP{beat.checkpoint:02d}) {_describe_still(key, st)}")
+
+
+def _beat_still_brief(beat) -> None:
+    print(f"{beat.label} ({beat.progress})\n"
+          f"Save as: {still_path(beat.key)} (or .png / .webp - one file per key)\n"
+          f"In ChatGPT, edit: {beat.edit_base} (must be approved)"
+          + (f"; attach {beat.reference} as a reference only" if beat.reference else "") + "\n\n"
+          f"{beat.brief}\n\nReview checklist:\n" + "\n".join(f"  - {c}" for c in beat.checklist))
 
 
 def _still_brief(key: str) -> None:
+    if key in plan.BEAT_STILLS:
+        return _beat_still_brief(plan.BEAT_STILLS[key])
     stage = STAGES.get(key)
     if stage is None or stage.kind == "video":
         raise PipelineStepError(f"{key!r} is not a still stage.")

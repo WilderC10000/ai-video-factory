@@ -17,6 +17,8 @@ Failed/nsfw requests are not charged. Nothing in this module submits unless
 submit_video_job() is called; upload_image() and estimate_payload() never spend.
 """
 import hashlib
+import math
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -44,9 +46,17 @@ class HiggsfieldVideoModelConfig:
     last_frame_param: str | None
     duration_min: int
     duration_max: int
-    aspect_ratios: tuple[str, ...] = ()        # empty = the endpoint has no aspect_ratio field
+    # Empty = the endpoint has no aspect_ratio field: framing follows the first frame, so the first
+    # frame's own shape is checked against the requested aspect ratio instead.
+    aspect_ratios: tuple[str, ...] = ()
     prompt_max_chars: int | None = None
     static_payload: dict = field(default_factory=dict)  # always sent, e.g. mode, sound, multi_shots
+    request_overrides: tuple[str, ...] = ()  # documented fields a request may set via extra_params
+    # Token-priced models: /estimate answers with a pricing description instead of a number. The price
+    # is then computed from the published per-1,000-token rate (which must still appear verbatim in
+    # that description) and a conservative output size per resolution tier.
+    token_rate_per_1k_usd: dict[str, float] = field(default_factory=dict)
+    token_output_px_upper: dict[str, tuple[int, int]] = field(default_factory=dict)
 
 
 # docs.higgsfield.ai/docs/models/kling-o3/first-last-frame (schema checked 2026-09-24):
@@ -62,13 +72,69 @@ KLING_O3_FIRST_LAST_FRAME = HiggsfieldVideoModelConfig(
     aspect_ratios=("16:9", "9:16", "1:1"),
     prompt_max_chars=2500,
     static_payload={"mode": "pro", "sound": "off", "multi_shots": False},
+    request_overrides=("mode", "sound"),
 )
+
+# docs.higgsfield.ai/docs/models/seedance-2-5/image-to-video (schema checked 2026-09-27):
+# image_url required, end_image_url optional (last frame), duration 4-30 int, resolution 480p|720p
+# (default 720p), bitrate_mode standard|high (default high), generate_audio bool (default TRUE),
+# additionalProperties false - there is NO aspect_ratio field: "output framing follows image_url".
+SEEDANCE_2_5_IMAGE_TO_VIDEO = HiggsfieldVideoModelConfig(
+    endpoint_id="bytedance/seedance-2.5/image-to-video",
+    first_frame_param="image_url",
+    last_frame_param="end_image_url",
+    duration_min=4,
+    duration_max=30,
+    static_payload={"resolution": "480p", "generate_audio": False},
+    request_overrides=("resolution", "bitrate_mode", "generate_audio"),
+    # From the /estimate pricing description (2026-09-27): "Each 1,000 video tokens costs $0.0214 at
+    # 480p or 720p"; tokens = ceil(h x w x seconds x 24 / 1024). The exact 9:16 output size isn't
+    # documented (480p is ~480x854), so the upper bound uses the long side rounded up to 16 px.
+    token_rate_per_1k_usd={"480p": 0.0214, "720p": 0.0214},
+    token_output_px_upper={"480p": (480, 864), "720p": (720, 1280)},
+)
+
+MODELS = {c.endpoint_id: c for c in (KLING_O3_FIRST_LAST_FRAME, SEEDANCE_2_5_IMAGE_TO_VIDEO)}
+
+
+def image_size(path: str | Path) -> tuple[int, int]:
+    """(width, height) of a JPEG or PNG from its header - no imaging library needed."""
+    data = Path(path).read_bytes()
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
+    if data[:2] == b"\xff\xd8":
+        i = 2
+        while i + 9 < len(data):
+            if data[i] != 0xFF:
+                i += 1
+                continue
+            marker, seg_len = data[i + 1], int.from_bytes(data[i + 2:i + 4], "big")
+            if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+                return int.from_bytes(data[i + 7:i + 9], "big"), int.from_bytes(data[i + 5:i + 7], "big")
+            i += 2 + seg_len
+    raise VideoProviderError(f"Can't read the image size of {Path(path).name} (JPEG or PNG expected).")
+
+
+def _ratio_matches(width: int, height: int, aspect_ratio: str, tolerance: float = 0.02) -> bool:
+    w, h = (float(x) for x in aspect_ratio.split(":"))
+    return abs((width / height) / (w / h) - 1) <= tolerance
 
 
 def _split_key(combined: str | None) -> tuple[str | None, str | None]:
     """HF_KEY holds "<key id>:<key secret>"; anything else is treated as not configured."""
     key_id, sep, secret = (combined or "").strip().strip("'\"").partition(":")
     return (key_id, secret) if sep and key_id and secret and ":" not in secret else (None, None)
+
+
+def _token_rates(description: str) -> dict[str, float]:
+    """Per-1,000-token rates by tier from the pricing description, e.g. "Each 1,000 video tokens costs
+    $0.0214 at 480p or 720p and $0.0234 at 1080p" -> {"480p": 0.0214, "720p": 0.0214, "1080p": 0.0234}."""
+    sentence = re.search(r"1,000 video tokens costs([^.]*(?:\.\d[^.]*)*)", description)
+    rates: dict[str, float] = {}
+    for price, tiers in re.findall(r"\$(\d+\.\d+) at ((?:\d+p)(?:(?:,\s*|\s+or\s+)\d+p)*)",
+                                   sentence.group(1) if sentence else ""):
+        rates.update({tier: float(price) for tier in re.findall(r"\d+p", tiers)})
+    return rates
 
 
 def _content_type(path: Path) -> str:
@@ -140,6 +206,11 @@ class HiggsfieldVideoProvider(VideoProvider):
                                      f"{cfg.duration_min}-{cfg.duration_max}; got {duration}.")
         if cfg.aspect_ratios and request.aspect_ratio not in cfg.aspect_ratios:
             raise VideoProviderError(f"{cfg.endpoint_id} aspect ratio must be one of {cfg.aspect_ratios}.")
+        if not cfg.aspect_ratios and request.aspect_ratio:
+            width, height = image_size(request.reference_image_path)
+            if not _ratio_matches(width, height, request.aspect_ratio):
+                raise VideoProviderError(f"{cfg.endpoint_id} has no aspect_ratio field - framing follows the first "
+                                         f"frame, which is {width}x{height}, not {request.aspect_ratio}.")
         if cfg.prompt_max_chars and len(request.prompt) > cfg.prompt_max_chars:
             raise VideoProviderError(f"Prompt is {len(request.prompt)} chars; {cfg.endpoint_id} truncates past "
                                      f"{cfg.prompt_max_chars} - refusing to send a truncated prompt.")
@@ -151,9 +222,11 @@ class HiggsfieldVideoProvider(VideoProvider):
             payload["aspect_ratio"] = request.aspect_ratio
         payload["duration"] = int(duration)
         payload.update(cfg.static_payload)
-        for key in ("mode", "sound"):  # documented per-request overrides only
-            if key in request.extra_params:
-                payload[key] = request.extra_params[key]
+        unknown = set(request.extra_params) - set(cfg.request_overrides)
+        if unknown:
+            raise VideoProviderError(f"{cfg.endpoint_id} does not accept {sorted(unknown)} - refusing rather than "
+                                     "dropping them.")
+        payload.update(request.extra_params)
         return payload
 
     def estimate_payload(self, payload: dict) -> dict:
@@ -164,10 +237,32 @@ class HiggsfieldVideoProvider(VideoProvider):
         if resp.status_code >= 400:
             raise VideoProviderError(f"Higgsfield estimate failed: {resp.status_code} {resp.text}")
         data = resp.json()
-        try:
-            return {"usd": float(data["usd"]), "credits": float(data["credits"]), "raw": data}
-        except (KeyError, TypeError, ValueError) as e:
-            raise VideoProviderError(f"Higgsfield estimate response not understood: {data}") from e
+        if "usd" in data:
+            try:
+                return {"usd": float(data["usd"]), "credits": float(data["credits"]), "raw": data,
+                        "basis": "Higgsfield /estimate (exact)"}
+            except (KeyError, TypeError, ValueError) as e:
+                raise VideoProviderError(f"Higgsfield estimate response not understood: {data}") from e
+        if data.get("type") == "description":
+            return self._token_price(payload, data)
+        raise VideoProviderError(f"Higgsfield estimate response not understood: {data}")
+
+    def _token_price(self, payload: dict, data: dict) -> dict:
+        """Upper-bound price from the token formula when /estimate only describes the pricing."""
+        cfg, text = self.model_config, data.get("pricing_description") or ""
+        tier = payload.get("resolution")
+        rate, size = cfg.token_rate_per_1k_usd.get(tier), cfg.token_output_px_upper.get(tier)
+        if rate is None or size is None:
+            raise VideoProviderError(f"{cfg.endpoint_id} returned no price and has no token rate on file for "
+                                     f"{tier!r}: {text}")
+        if _token_rates(text).get(tier) != rate:
+            raise VideoProviderError(f"{cfg.endpoint_id} pricing changed - ${rate:.4f}/1k tokens at {tier} is no "
+                                     f"longer in Higgsfield's description; re-check before spending: {text}")
+        width, height = size
+        tokens = math.ceil(width * height * payload["duration"] * 24 / 1024)
+        return {"usd": round(tokens * rate / 1000, 4), "credits": None, "raw": data, "tokens": tokens,
+                "basis": f"token formula upper bound: ceil({width}x{height}x{payload['duration']}s x 24/1024) = "
+                         f"{tokens} tokens x ${rate}/1k"}
 
     def estimate_cost(self, request: VideoGenerationRequest) -> float:
         payload = self.build_payload(request)

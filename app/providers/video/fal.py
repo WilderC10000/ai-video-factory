@@ -86,6 +86,9 @@ class FalVideoModelConfig:
     # Per-shot prompt limit, enforced by the model at run time but NOT in fal's OpenAPI schema
     # (Kling v3: "Prompt must not exceed 512 characters" - learned from clip03__attempt4's 422).
     max_shot_prompt_chars: int | None = None
+    # Kling v3 rejects an end frame together with multi_prompt ("End Image Url is not supported with
+    # Multi Prompt" - clip03__attempt5's 422). Also absent from the schema, so it is enforced here.
+    multi_prompt_excludes_end_image: bool = False
     # extra_params keys passed through as-is (the original Wan whitelist unless a config says otherwise).
     passthrough_params: tuple[str, ...] = ("enable_prompt_expansion", "seed", "acceleration")
 
@@ -278,6 +281,7 @@ _KLING_V3 = dict(
     audio_off_param="generate_audio",  # default true; audio on is +50%
     supports_multi_prompt=True,  # list of {prompt, duration "1".."15"}; replaces "prompt"
     max_shot_prompt_chars=512,  # run-time limit, absent from the schema (422 on clip03__attempt4)
+    multi_prompt_excludes_end_image=True,  # run-time rule, absent from the schema (422 on clip03__attempt5)
     passthrough_params=("shot_type", "negative_prompt", "cfg_scale"),
 )
 # $0.084/s audio off. Tier 2 CANDIDATE (unproven) for repetitive labor with internal cuts.
@@ -456,6 +460,11 @@ class FalVideoProvider(VideoProvider):
                 raise VideoProviderError(f"{cfg.submit_path} has no multi_prompt (multi-shot) input.")
             if not shots or any(not (shot.get("prompt") or "").strip() for shot in shots):
                 raise VideoProviderError("multi_prompt needs at least one shot, each with a prompt.")
+            if cfg.multi_prompt_excludes_end_image and request.end_image_path:
+                raise VideoProviderError(
+                    f"{cfg.submit_path} does not accept an end frame together with multi_prompt - use one prompt "
+                    "with the end frame, or multi_prompt without it."
+                )
             limit = cfg.max_shot_prompt_chars
             too_long = [i for i, shot in enumerate(shots, 1) if limit and len(shot["prompt"]) > limit]
             if too_long:

@@ -43,8 +43,8 @@
   "cost": {
     "expected_usd": 0.504,
     "basis": "Kling v3 Standard $0.084/s with audio off x 6 s (fal model page, 2026-09-28)",
-    "max_approved_usd": null,
-    "approved": null
+    "max_approved_usd": 0.51,
+    "approved": "2026-09-28 by the user: up to $0.51 for Kling v3 Standard clip03 attempt 5; exactly one job, no retries, no other paid calls"
   },
   "supersedes": {
     "attempt_key": "clip03__attempt4",

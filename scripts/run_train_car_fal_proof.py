@@ -184,8 +184,9 @@ def final_check(setup: dict, setup_dir: Path, manifest_path: Path = MANIFEST_PAT
 
 def submit(provider: FalVideoProvider, approve_usd: float, *, setup: dict, setup_dir: Path,
            manifest_path: Path = MANIFEST_PATH, log=print, wait_seconds: float = 2700.0,
-           poll_seconds: float = 15.0) -> dict:
-    """PAID: exactly one job, the reviewed prepared.json payload verbatim. Job id recorded first."""
+           poll_seconds: float = 15.0, wait: bool = True) -> dict:
+    """PAID: exactly one job, the reviewed prepared.json payload verbatim. Job id recorded first.
+    wait=False returns right after recording it; the studio then follows the job (free status checks)."""
     checks = final_check(setup, setup_dir, manifest_path, provider)
     failed = [f"{name}: {detail}" for name, (ok, detail) in checks.items() if not ok]
     if failed:
@@ -216,6 +217,8 @@ def submit(provider: FalVideoProvider, approve_usd: float, *, setup: dict, setup
     (setup_dir / "job.json").write_text(json.dumps({"provider_job_id": submitted.provider_job_id,
                                                     "meta": submitted.meta}, indent=2))
     log(f"Submitted. fal request id: {submitted.provider_job_id}")
+    if not wait:  # the studio (or a later --recover) follows the job from the manifest record
+        return manifest[setup["attempt_key"]]
     return recover(provider, setup=setup, manifest_path=manifest_path, log=log, wait_seconds=wait_seconds,
                    poll_seconds=poll_seconds)
 
@@ -253,6 +256,8 @@ def main() -> None:
     group.add_argument("--recover", action="store_true")
     parser.add_argument("--approve-usd", type=float, help="with --submit: the most you approved spending")
     parser.add_argument("--setup", type=Path, default=DEFAULT_SETUP_DIR)
+    parser.add_argument("--no-wait", action="store_true",
+                        help="with --submit: record the job and exit; the studio follows it from there")
     args = parser.parse_args()
     try:
         setup = load_setup(args.setup)
@@ -269,7 +274,9 @@ def main() -> None:
         elif args.submit:
             if args.approve_usd is None:
                 raise ProofError("--submit needs --approve-usd <amount you approved>.")
-            print(submit(provider, args.approve_usd, setup=setup, setup_dir=args.setup))
+            entry = submit(provider, args.approve_usd, setup=setup, setup_dir=args.setup, wait=not args.no_wait)
+            print(json.dumps({k: entry.get(k) for k in ("provider_job_id", "provider_status", "estimated_cost_usd",
+                                                         "submitted_at", "completed_at", "raw_video_path")}, indent=2))
         else:
             print(recover(provider, setup=setup))
     except (ProofError, VideoProviderError) as e:

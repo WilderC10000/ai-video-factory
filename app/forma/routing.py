@@ -61,7 +61,10 @@ SHOT_ROUTES: dict[str, tuple[Route, ...]] = {
     ),
     "repetitive_labor": (
         Route(KLING_3_STANDARD.submit_path, CANDIDATE_UNPROVEN,
-              "Native multi_prompt shots map onto rule-11 jump cuts; $0.084/s. clip03 proof not yet run."),
+              "$0.084/s. No video generated yet: clip03 attempts 4 and 5 were rejected before generation "
+              "(shot prompts over 512 characters; then 'End Image Url is not supported with Multi Prompt'). "
+              "multi_prompt cuts cannot land on an approved end still - a proof needs one prompt + end frame, "
+              "or multi_prompt with no end frame."),
         Route(SEEDANCE_2_0.submit_path, CANDIDATE_UNPROVEN, "Fallback; ~$0.82 per 6 s at 480p. Untested."),
         Route(SEEDANCE_2_5.submit_path, CANDIDATE_UNPROVEN,
               "Real labor motion but stayed on one patch in the single-take clip03 (verdict: revise); "

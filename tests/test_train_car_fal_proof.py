@@ -65,10 +65,11 @@ def sandbox(tmp_path, monkeypatch):
     setup_dir.mkdir()
     setup = json.loads((REAL_SETUP_DIR / "setup.json").read_text())
     setup["cost"] = setup["cost"] | {"max_approved_usd": None, "approved": None}  # each test approves explicitly
-    # Shots within Kling's 512-character limit (the recorded attempt-4 shots are over it - see below).
-    shots = [{"prompt": shot["prompt"][:500], "duration": shot["duration"]}
-             for shot in setup["model"]["extra_params"]["multi_prompt"]]
-    setup["model"] = setup["model"] | {"extra_params": setup["model"]["extra_params"] | {"multi_prompt": shots}}
+    # A request Kling v3 accepts: ONE prompt with the end frame. (Recorded attempts 4 and 5 used multi_prompt +
+    # end frame, which Kling rejects - see the tests below.)
+    extra = {k: v for k, v in setup["model"]["extra_params"].items() if k != "multi_prompt"}
+    setup["model"] = setup["model"] | {"prompt": "Clearing the strip in front of the facade, hard cuts between beats.",
+                                       "extra_params": extra}
     monkeypatch.setattr(plan, "STILLS_SOURCE", "manual")
     monkeypatch.setattr(proof, "CLIPS_DIR", tmp_path / "clips")
     return manifest, setup_dir, setup
@@ -97,13 +98,13 @@ def test_real_setup_is_a_three_beat_hard_cut_kling_proof_with_audio_off():
     assert proof.route_for(setup).status == "candidate_unproven"
 
 
-def test_the_recorded_attempt_4_setup_is_now_refused_locally_for_its_shot_length():
-    """clip03__attempt4 failed at fal with a 422: each Kling v3 multi_prompt shot is limited to 512
-    characters (not in the schema). The same setup is now refused before any upload or submission."""
-    setup = json.loads((REAL_SETUP_DIR / "setup.json").read_text())
-    assert all(len(s["prompt"]) > 512 for s in setup["model"]["extra_params"]["multi_prompt"])
+@pytest.mark.parametrize("setup_dir", ["fal_kling_v3_standard_clip03", "fal_kling_v3_standard_clip03_v2"])
+def test_the_recorded_kling_setups_are_now_refused_locally(setup_dir):
+    """Both failed at fal with a 422 the schema doesn't show: attempt 4 - shot prompts over 512 characters;
+    attempt 5 - "End Image Url is not supported with Multi Prompt". Both are now refused before any upload."""
+    setup = json.loads((proof.DATA / "provider_tests" / setup_dir / "setup.json").read_text())
     fake = FakeFal()
-    with pytest.raises(proof.VideoProviderError, match="512-character"):
+    with pytest.raises(proof.VideoProviderError, match="end frame together with multi_prompt"):
         proof.prepare(_provider(fake, setup), setup)
     assert fake.calls == []
 
@@ -115,7 +116,7 @@ def test_prepare_uploads_stills_and_builds_the_exact_payload_without_generating(
     assert fake.submits() == 0 and fake.uploads == 2
     payload = prepared["payload"]
     assert payload["start_image_url"] == "https://files.test/1.jpg" and payload["end_image_url"] == "https://files.test/2.jpg"
-    assert "prompt" not in payload and len(payload["multi_prompt"]) == 3
+    assert payload["prompt"] == setup["model"]["prompt"] and "multi_prompt" not in payload
     assert payload["duration"] == "6" and payload["generate_audio"] is False and "aspect_ratio" not in payload
     assert prepared["estimate_usd"] == 0.504 and prepared["route_status"] == "candidate_unproven"
     assert "fake-key" not in json.dumps(prepared)
@@ -225,3 +226,16 @@ def test_the_character_count_check_fails_on_any_shot_over_512():
     setup["model"]["extra_params"]["multi_prompt"][1]["prompt"] += "x" * 200
     ok, detail = proof.shot_length_check(setup, proof.provider_for(setup, api_key="k"))
     assert not ok and "limit 512" in detail
+
+
+def test_no_wait_submit_records_the_job_and_leaves_it_to_the_studio(sandbox):
+    manifest, setup_dir, setup = sandbox
+    fake = FakeFal()
+    _prepare(fake, manifest, setup_dir, setup)
+    approved = _approved(setup)
+    entry = proof.submit(_provider(fake, approved), 0.51, setup=approved, setup_dir=setup_dir, manifest_path=manifest,
+                         log=lambda *_: None, wait=False)
+    assert fake.submits() == 1 and entry["provider_job_id"] == "r-1" and entry["completed_at"] is None
+    assert not any(url == "https://q.test/status" for _, url in fake.calls)  # no polling by the runner
+    from app.studio.attempt_status import attempt_phase
+    assert attempt_phase(json.loads(manifest.read_text())["clip03__attempt4"], False) == "submitted"

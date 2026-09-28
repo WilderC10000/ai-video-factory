@@ -78,22 +78,30 @@ def test_seedance_2_5_matches_the_higgsfield_charge_and_refuses_unpriced_1080p(t
         provider.estimate_cost(_req(tmp_path, extra_params={"resolution": "1080p"}))
 
 
-def test_kling_multi_prompt_replaces_prompt_and_keeps_the_end_frame(tmp_path):
+def test_kling_multi_prompt_replaces_prompt(tmp_path):
     payload = _provider(KLING_3_STANDARD).build_payload(
-        _req(tmp_path, extra_params={"multi_prompt": SHOTS, "shot_type": "customize"}),
-        "https://f/a.jpg", "https://f/b.jpg")
+        _req(tmp_path, end_image_path=None, extra_params={"multi_prompt": SHOTS, "shot_type": "customize"}),
+        "https://f/a.jpg", None)
     assert payload == {
         "start_image_url": "https://f/a.jpg",
         "multi_prompt": [{"prompt": "shot one", "duration": "2"}, {"prompt": "shot two", "duration": "2"},
                          {"prompt": "shot three", "duration": "2"}],
-        "end_image_url": "https://f/b.jpg", "duration": "6", "shot_type": "customize", "generate_audio": False}
+        "duration": "6", "shot_type": "customize", "generate_audio": False}
+
+
+@pytest.mark.parametrize("config", (KLING_3_STANDARD, KLING_3_PRO), ids=lambda c: c.submit_path)
+def test_kling_refuses_an_end_frame_with_multi_prompt_before_any_upload(config, tmp_path):
+    """fal 422 on clip03__attempt5: "End Image Url is not supported with Multi Prompt"."""
+    with pytest.raises(VideoProviderError, match="end frame together with multi_prompt"):
+        _provider(config).submit_video_job(_req(tmp_path, extra_params={"multi_prompt": SHOTS}))
 
 
 @pytest.mark.parametrize("config,kw,match", [
-    (KLING_3_STANDARD, {"extra_params": {"multi_prompt": SHOTS[:2]}}, "add up to 4 s"),
+    (KLING_3_STANDARD, {"end_image_path": None, "extra_params": {"multi_prompt": SHOTS[:2]}}, "add up to 4 s"),
     (KLING_3_STANDARD, {"extra_params": {"multi_prompt": [{"prompt": " ", "duration": 6}]}}, "each with a prompt"),
     (SEEDANCE_2_5, {"extra_params": {"multi_prompt": SHOTS}}, "no multi_prompt"),
-    (KLING_3_STANDARD, {"extra_params": {"multi_prompt": [{"prompt": "x" * 513, "duration": 6}]}}, "512-character"),
+    (KLING_3_STANDARD, {"end_image_path": None,
+                        "extra_params": {"multi_prompt": [{"prompt": "x" * 513, "duration": 6}]}}, "512-character"),
     (KLING_3_STANDARD, {"duration_seconds": 16.0}, "takes durations"),
     (VEO_3_1_FAST_FIRST_LAST, {"duration_seconds": 5.0}, "takes durations"),
     (VEO_3_1_FAST_FIRST_LAST, {"end_image_path": None}, "both a first and a last frame"),
@@ -138,7 +146,7 @@ def test_full_submit_uploads_both_frames_then_posts_the_built_payload(tmp_path):
             return httpx.Response(200, json={"request_id": "r1", "status_url": "s", "response_url": "r"})
         return httpx.Response(404)
 
-    job = _provider(KLING_3_STANDARD, handler).submit_video_job(_req(tmp_path, extra_params={"multi_prompt": SHOTS}))
+    job = _provider(KLING_3_STANDARD, handler).submit_video_job(_req(tmp_path, extra_params={"prompt_note": "x"}))
     body = [p for kind, p in posted if kind == "submit"]
     assert len(body) == 1 and body[0]["start_image_url"] == "https://f/1.jpg" and body[0]["end_image_url"] == "https://f/2.jpg"
     assert job.provider_job_id == "r1" and job.estimated_cost_usd == 0.504

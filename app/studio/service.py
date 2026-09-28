@@ -13,7 +13,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.studio.actions import get_action, stage_intent
+from app.forma.production import rules
+from app.forma.production import submit as production_submit
+from app.forma.production.spec import SpecError, load_spec
+from app.studio import manual_stills
 from app.studio.attempt_status import attempt_phase, orphan_job_entries
+from app.studio.importers.stage_maps import PROJECTS_BY_SLUG
 from app.studio.execution import execution_info
 from app.studio.media_probe import AudioProbe, ffprobe_available, probe_audio
 from app.studio.models import (
@@ -150,6 +155,16 @@ def _attempt_out(key: str, entry: dict, is_primary: bool, verdicts: dict[str, di
     }
 
 
+def _spec_views(manifest_path: Path) -> tuple[dict, list[dict]]:
+    """Per-clip plans and doctrine problems of a spec-driven project (local reads, no provider calls)."""
+    try:
+        spec = load_spec(manifest_path.parent / "project.json")
+    except SpecError as e:
+        return {}, [{"level": "error", "where": "project.json", "rule": "spec", "message": str(e)}]
+    problems = [{"level": p.level, "where": p.where, "rule": p.rule, "message": p.message} for p in rules.check(spec)]
+    return {c.key: production_submit.plan(spec, manifest_path, c.key) for c in spec.clips()}, problems
+
+
 def stage_attempts(manifest: dict, key: str) -> list[dict]:
     """The stage's primary result plus every archived / comparison attempt (<key>__attemptN).
     Empty when the stage has only its primary result, so ordinary stages are unchanged."""
@@ -164,9 +179,11 @@ def stage_attempts(manifest: dict, key: str) -> list[dict]:
 
 
 def _stage_out(s: StudioStage, project_slug: str, next_stage: StudioStage | None, last_job: StudioJob | None,
-               manifest: dict | None = None) -> dict:
+               manifest: dict | None = None, manual_still: dict | None = None, clip_plan: dict | None = None) -> dict:
     return {
         "attempts": stage_attempts(manifest or {}, s.key),
+        "manual_still": manual_still,  # manual (ChatGPT) still: file, hash, state, dependents - local reads only
+        "clip_plan": clip_plan,  # spec-driven clip: state machine, route, estimate, spend approval
         "key": s.key, "label": s.label, "order": s.order, "kind": s.kind.value, "room_id": s.room_id,
         "status": s.status.value, "script_path": s.script_path, "model": s.model,
         "duration_seconds": s.duration_seconds, "planned_cost_usd": s.planned_cost_usd,
@@ -450,6 +467,14 @@ def build_snapshot(db: Session, slug: str | None = None) -> dict:
     manifest = _read_manifest(project.source_path)  # provider attempts are read live, not imported
     if project.source_path:  # a submitted job recorded only in job.json still shows (never invisible)
         manifest = manifest | orphan_job_entries(Path(project.source_path), manifest)
+    pdef = PROJECTS_BY_SLUG.get(project.slug)
+    still_infos, clip_plans, spec_problems = {}, {}, []
+    if project.source_path and project.source.value == "manifest":
+        manifest_path = Path(project.source_path)
+        still_infos = manual_stills.infos(project.slug, manifest_path, manifest,
+                                          media_url=lambda p: media_url(p, True))
+        if pdef and pdef.spec_driven:
+            clip_plans, spec_problems = _spec_views(manifest_path)
     stage_keys = {s.id: s.key for s in stages}
     approvals = db.scalars(select(StudioApproval).where(StudioApproval.project_id == project.id)).all()
     events = db.scalars(select(StudioEvent).where(StudioEvent.project_id == project.id)).all()
@@ -485,6 +510,8 @@ def build_snapshot(db: Session, slug: str | None = None) -> dict:
         "execution": execution,
         "project": {
             "slug": project.slug, "name": project.name, "source": project.source.value,
+            "frozen": bool(pdef and pdef.frozen), "spec_driven": bool(pdef and pdef.spec_driven),
+            "spec_problems": spec_problems,
             "is_demo": project.source.value != "manifest",
             "production_stage": production_stage, "current_stage_key": project.current_stage_key,
             "frontier_stage_key": st.frontier.key if st.frontier else None,
@@ -500,7 +527,8 @@ def build_snapshot(db: Session, slug: str | None = None) -> dict:
             "next_stage_block": st.budget_block,
         },
         "stages": [_stage_out(s, project.slug, next((n for n in stages if n.order > s.order), None),
-                              st.last_job.get(s.key), manifest) for s in stages],
+                              st.last_job.get(s.key), manifest, still_infos.get(s.key), clip_plans.get(s.key))
+                   for s in stages],
         "rooms": rooms,
         "approvals": [_approval_out(a, stage_keys) for a in approvals],
         "events": [_event_out(e, stage_keys) for e in events[:60]],

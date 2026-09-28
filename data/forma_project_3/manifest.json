@@ -1,0 +1,5 @@
+{
+  "project": "forma_project_3",
+  "created_at": "2026-09-28T22:51:31.522794+00:00",
+  "note": "State only. The plan lives in project.json; the cap in project.json budget.cap_usd."
+}

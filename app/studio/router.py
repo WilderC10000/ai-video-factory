@@ -7,7 +7,7 @@ STUDIO_EXECUTION_MODE) behind explicit confirmation and budget checks.
 import json
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -23,10 +23,16 @@ from app.studio.attempt_status import (
     is_unfinished,
 )
 from app.studio.execution import execution_info
-from app.studio.importers.manifest_importer import default_data_dir, import_all
+from app.forma.production import budget as production_budget
+from app.forma.production import stills as still_store
+from app.forma.production import submit as production_submit
+from app.forma.production.spec import SpecError, load_spec
+from app.studio import manual_stills
+from app.studio.importers.manifest_importer import default_data_dir, import_all, import_project
+from app.studio.importers.stage_maps import PROJECTS_BY_SLUG, refresh_spec_projects
 from app.studio.jobs import JobRunner, get_runner
 from app.studio.models import StudioJob, StudioProject
-from app.studio.service import build_snapshot, job_out
+from app.studio.service import build_snapshot, job_out, media_url
 
 router = APIRouter(prefix="/studio", tags=["studio"])
 
@@ -105,6 +111,129 @@ def launch(slug: str, key: str, body: LaunchIn, db: Session = Depends(get_sessio
     except control.ControlError as e:
         return _error(e)
     return job_out(job)
+
+
+def _manifest_path(db: Session, slug: str) -> Path:
+    project = db.scalars(select(StudioProject).where(StudioProject.slug == slug)).first()
+    if project is None or not project.source_path:
+        raise HTTPException(status_code=404, detail=f"Studio project {slug} has no manifest")
+    return Path(project.source_path)
+
+
+def _resync(db: Session, slug: str) -> None:
+    refresh_spec_projects()
+    if slug in PROJECTS_BY_SLUG:
+        import_project(db, PROJECTS_BY_SLUG[slug])
+        db.commit()
+
+
+# --- manual stills (local only: no provider calls, nothing generated) --------------------------------
+
+class NoteIn(BaseModel):
+    note: str
+
+
+@router.get("/projects/{slug}/stills")
+def list_stills(slug: str, db: Session = Depends(get_session)):
+    manifest_path = _manifest_path(db, slug)
+    return list(manual_stills.infos(slug, manifest_path, media_url=lambda p: media_url(p, True)).values())
+
+
+@router.post("/projects/{slug}/stills/{key}/upload")
+async def upload_still(slug: str, key: str, request: Request, filename: str = Query(...), replace: bool = False,
+                       db: Session = Depends(get_session)):
+    """Save the request body (the image bytes) as <key>.<ext> in the project's stills folder. Never approves."""
+    manifest_path = _manifest_path(db, slug)
+    if key not in manual_stills.catalog(slug, manifest_path):
+        raise HTTPException(status_code=404, detail=f"{key} is not a manual still of {slug}")
+    try:
+        result = still_store.upload(manifest_path, key, filename, await request.body(), replace=replace)
+    except still_store.StillError as e:
+        raise HTTPException(status_code=e.status, detail=str(e))
+    _resync(db, slug)
+    return result
+
+
+@router.post("/projects/{slug}/stills/{key}/approve")
+def approve_still(slug: str, key: str, body: NoteIn, db: Session = Depends(get_session)):
+    """A person looked at the still: record its exact hash as approved (local, free)."""
+    manifest_path = _manifest_path(db, slug)
+    if key not in manual_stills.catalog(slug, manifest_path):
+        raise HTTPException(status_code=404, detail=f"{key} is not a manual still of {slug}")
+    try:
+        result = still_store.approve(manifest_path, key, body.note)
+    except still_store.StillError as e:
+        raise HTTPException(status_code=e.status, detail=str(e))
+    _resync(db, slug)
+    return result
+
+
+# --- spec-driven clips (Project #3 on) -------------------------------------------------------------
+
+class BudgetIn(BaseModel):
+    max_usd: float
+    note: str
+
+
+class SubmitIn(BaseModel):
+    confirmed: bool = False
+
+
+class ReviewIn(BaseModel):
+    verdict: str  # accept | reject
+    note: str = ""
+
+
+def _spec(db: Session, slug: str):
+    manifest_path = _manifest_path(db, slug)
+    pdef = PROJECTS_BY_SLUG.get(slug)
+    if pdef is None or not pdef.spec_driven:
+        raise HTTPException(status_code=400, detail=f"{slug} is not a spec-driven project")
+    try:
+        return load_spec(manifest_path.parent / "project.json"), manifest_path
+    except SpecError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+
+@router.get("/projects/{slug}/clips/{key}")
+def clip_plan(slug: str, key: str, db: Session = Depends(get_session)):
+    spec, manifest_path = _spec(db, slug)
+    return production_submit.plan(spec, manifest_path, key)
+
+
+@router.post("/projects/{slug}/clips/{key}/budget")
+def approve_clip_budget(slug: str, key: str, body: BudgetIn, db: Session = Depends(get_session)):
+    """A person approves spending up to max_usd on ONE submission of this clip (no spend happens here)."""
+    spec, manifest_path = _spec(db, slug)
+    try:
+        return production_budget.approve(manifest_path, spec, key, body.max_usd, body.note)
+    except production_budget.BudgetError as e:
+        raise HTTPException(status_code=e.status, detail=str(e))
+
+
+@router.post("/projects/{slug}/clips/{key}/submit", status_code=202)
+def submit_clip(slug: str, key: str, body: SubmitIn, db: Session = Depends(get_session)):
+    """PAID (live mode only): one fal job for this clip, within its approval. Never retried automatically."""
+    spec, manifest_path = _spec(db, slug)
+    if not body.confirmed:
+        return JSONResponse(status_code=400, content={"detail": "Confirm the paid submission.", "problems": []})
+    try:
+        entry = production_submit.submit(spec, manifest_path, key, execution_mode=execution_info()["mode"])
+    except production_submit.SubmitError as e:
+        return JSONResponse(status_code=e.status, content={"detail": str(e), "problems": e.problems})
+    _resync(db, slug)
+    return entry
+
+
+@router.post("/projects/{slug}/clips/{key}/attempts/{attempt}/review")
+def review_clip(slug: str, key: str, attempt: str, body: ReviewIn, db: Session = Depends(get_session)):
+    spec, manifest_path = _spec(db, slug)
+    try:
+        result = production_submit.review(spec, manifest_path, key, attempt, body.verdict, body.note)
+    except production_submit.SubmitError as e:
+        raise HTTPException(status_code=e.status, detail=str(e))
+    _resync(db, slug)
+    return result
 
 
 @router.post("/projects/{slug}/attempts/{key}/check")

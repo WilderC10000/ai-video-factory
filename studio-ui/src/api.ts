@@ -48,7 +48,45 @@ export const api = {
     request<{ key: string; checked: boolean; phase: string }>(`/studio/projects/${slug}/attempts/${key}/check`, {
       method: "POST",
     }),
-  launchPreview:(slug: string, key: string, mode: LaunchMode) =>
+  /** LOCAL: saves the image as <key>.<ext> in the project's stills folder. Never approves, never generates. */
+  uploadStill: async (slug: string, key: string, file: File, replace: boolean) => {
+    const res = await fetch(
+      `/studio/projects/${slug}/stills/${key}/upload?filename=${encodeURIComponent(file.name)}&replace=${replace}`,
+      { method: "POST", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } },
+    );
+    if (!res.ok) {
+      let detail = `upload -> ${res.status}`;
+      try {
+        detail = (await res.json()).detail ?? detail;
+      } catch {
+        /* non-JSON error body */
+      }
+      throw new ApiError(detail, res.status);
+    }
+    return res.json() as Promise<{ state: string; sha256: string }>;
+  },
+  approveStill: (slug: string, key: string, note: string) =>
+    request<{ state: string }>(`/studio/projects/${slug}/stills/${key}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    }),
+  approveClipBudget: (slug: string, key: string, max_usd: number, note: string) =>
+    request<unknown>(`/studio/projects/${slug}/clips/${key}/budget`, {
+      method: "POST",
+      body: JSON.stringify({ max_usd, note }),
+    }),
+  /** PAID (live mode only): one job for this clip within its approval. */
+  submitClip: (slug: string, key: string) =>
+    request<{ attempt: string }>(`/studio/projects/${slug}/clips/${key}/submit`, {
+      method: "POST",
+      body: JSON.stringify({ confirmed: true }),
+    }),
+  reviewAttempt: (slug: string, key: string, attempt: string, verdict: "accept" | "reject", note: string) =>
+    request<unknown>(`/studio/projects/${slug}/clips/${key}/attempts/${attempt}/review`, {
+      method: "POST",
+      body: JSON.stringify({ verdict, note }),
+    }),
+  launchPreview: (slug: string, key: string, mode: LaunchMode) =>
     request<LaunchPlan>(`${stagePath(slug, key)}/launch-preview?mode=${mode}`),
   launch: (
     slug: string,

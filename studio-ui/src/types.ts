@@ -91,6 +91,63 @@ export interface Stage {
   intent: StageIntent | null;
   next_stage_key: string | null;
   last_job: Job | null;
+  /** Manual (ChatGPT) still: its file, hash, state and dependent clips. Null for other stages. */
+  manual_still: ManualStill | null;
+  /** Spec-driven (Project #3) clip: its state machine, route, estimate and spend approval. */
+  clip_plan: ClipPlan | null;
+}
+
+export type StillState = "missing" | "placed" | "approved" | "changed" | "ambiguous";
+
+export interface ManualStill {
+  key: string;
+  label: string;
+  state: StillState;
+  expected_filename: string;
+  expected_dir: string;
+  path: string | null;
+  url: string | null;
+  sha256: string | null;
+  approved_sha256: string | null;
+  approved_at: string | null;
+  approval_note: string | null;
+  width: number | null;
+  height: number | null;
+  file_type: string | null;
+  size_bytes: number | null;
+  brief: string | null;
+  upload: { original_filename: string; uploaded_at: string; replaced?: { previous_state: string } } | null;
+  used_by: { clip: string; generated: boolean; stale: boolean }[];
+}
+
+export type ClipState =
+  | "blocked" | "ready" | "budget_approved" | "submitted" | "queued" | "generating" | "downloading"
+  | "review" | "accepted" | "stale";
+
+export interface ClipPlan {
+  clip: string;
+  shot: string;
+  shot_title: string;
+  n: number;
+  of: number;
+  shot_class: string;
+  complexity: string;
+  proof: boolean;
+  start_still: string;
+  end_still: string;
+  duration_seconds: number;
+  task: string;
+  location: string;
+  prompt: string;
+  route: { model: string | null; status: string; evidence: string };
+  estimate_usd: number | null;
+  state: ClipState;
+  attempt: string | null;
+  reasons: string[];
+  budget_approval: { max_usd: number; note: string; approved_at: string; consumed_by: string | null } | null;
+  budget: { cap_usd: number; per_clip_max_usd: number; spent_usd: number; reserved_usd: number; remaining_usd: number };
+  money_problems: string[];
+  spec_errors: string[];
 }
 
 export interface StageIntent {
@@ -230,6 +287,9 @@ export interface ProjectInfo {
   last_imported_at: string | null;
   stages_complete: number;
   stages_total: number;
+  frozen: boolean;
+  spec_driven: boolean;
+  spec_problems: { level: string; where: string; rule: string; message: string }[];
 }
 
 export interface AudioProbe {

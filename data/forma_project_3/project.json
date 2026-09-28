@@ -1,0 +1,19 @@
+{
+  "slug": "forma_project_3",
+  "name": "FORMA Project #3 - concept TBD",
+  "status": "template",
+  "concept": null,
+  "budget": {
+    "cap_usd": 0.0,
+    "per_clip_max_usd": 1.3
+  },
+  "bibles": {
+    "location": "",
+    "structure": "",
+    "builder": "",
+    "materials": ""
+  },
+  "cameras": {},
+  "checkpoints": [],
+  "shots": []
+}

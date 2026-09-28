@@ -64,6 +64,9 @@ PROOF_STAGE = "clip03"
 # folder is the source of truth; the pipeline never generates stills for this project and only
 # spends money on video. "api" restores the original paid Nano Banana still stages.
 STILLS_SOURCE = "manual"
+# Frozen 2026-09-28 as R&D history (Project #2). Nothing new is generated or submitted from this project;
+# recovery of existing jobs, still approval and all history stay available. Production is in Project #3.
+FROZEN = "Train car (Project #2) is frozen as R&D history since 2026-09-28 - production continues in Project #3."
 
 # Storyboard slide per checkpoint (slides 7-26 are CP01-CP20 in the deck). CP12-CP14 are remapped
 # because the build order was corrected: glass (deck slide 20) -> cladding begins (slide 18) ->

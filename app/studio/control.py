@@ -26,6 +26,7 @@ from app.studio.models import (
     ApprovalStatus,
     JobStatus,
     Severity,
+    StageKind,
     StageStatus,
     StudioApproval,
     StudioEvent,
@@ -62,7 +63,10 @@ def _stage(project: StudioProject, key: str) -> StudioStage:
 
 
 def _next_stage(project: StudioProject, stage: StudioStage) -> StudioStage | None:
-    return next((s for s in project.stages if s.order > stage.order), None)
+    """The next launchable stage. Manual stills without a script (uploaded and approved in the studio) are
+    never launched, so Continue steps over them."""
+    return next((s for s in project.stages if s.order > stage.order
+                 and not (s.script_path is None and s.kind != StageKind.VIDEO)), None)
 
 
 def active_job(db: Session, project_id: str) -> StudioJob | None:
@@ -122,6 +126,13 @@ def launch_plan(db: Session, slug: str, key: str, mode: str, *, resync: bool = T
     target = _next_stage(project, stage) if mode == "continue" else stage
     previous = next((s for s in reversed(project.stages) if s.order < stage.order), None)
     problems: list[str] = list(mode_problems())
+    pdef = PROJECTS_BY_SLUG.get(slug)
+    if pdef is not None and pdef.frozen and mode != "recover":
+        problems.append(f"{project.name} is frozen as R&D history - nothing new is launched from it "
+                        "(free recovery of an existing job is still allowed).")
+    if pdef is not None and pdef.spec_driven:
+        problems.append("Spec-driven projects are submitted from the clip panel (spend approval + submit), "
+                        "not from stage launches.")
     warnings: list[str] = []
 
     running = active_job(db, project.id)

@@ -7,6 +7,15 @@ import pytest
 
 from scripts import run_train_car_fal_proof as proof
 
+
+@pytest.fixture(autouse=True)
+def _unfrozen(monkeypatch):
+    """These tests exercise the train-car machinery kept as R&D history; the project itself is frozen
+    (see test_the_frozen_train_car_refuses_new_work)."""
+    from scripts import run_train_car_video_2_plan as plan
+    monkeypatch.setattr(plan, "FROZEN", None)
+
+
 REAL_SETUP_DIR = proof.DEFAULT_SETUP_DIR
 SUBMIT_URL = "https://queue.fal.run/fal-ai/kling-video/v3/standard/image-to-video"
 

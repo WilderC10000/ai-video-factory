@@ -3,6 +3,8 @@ import { ApiError, api } from "../api";
 import { isVideo, usd } from "../format";
 import type { Budget, Execution, Job, LaunchMode, LaunchPlan, Stage } from "../types";
 import { Attempts } from "./Attempts";
+import { ClipPanel } from "./ClipPanel";
+import { ManualStillPanel } from "./ManualStillPanel";
 import { JobProgress } from "./JobProgress";
 
 interface Props {
@@ -13,6 +15,8 @@ interface Props {
   execution: Execution;
   activeJob: Job | null;
   onChanged: () => void;
+  /** R&D project: shown, never launched or submitted. */
+  frozen?: boolean;
 }
 
 type Panel = null | "continue" | "retry" | "reject" | "generate" | "recover";
@@ -226,7 +230,7 @@ function LaunchConfirm({
   );
 }
 
-export function ReviewPanel({ projectSlug, stage, stages, budget, execution, activeJob, onChanged }: Props) {
+export function ReviewPanel({ projectSlug, stage, stages, budget, execution, activeJob, onChanged, frozen = false }: Props) {
   const [panel, setPanel] = useState<Panel>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -269,6 +273,37 @@ export function ReviewPanel({ projectSlug, stage, stages, budget, execution, act
     ) : approved ? (
       <span className="state-chip state-chip--approved">Approved</span>
     ) : null;
+
+  if (stage.manual_still) {
+    // Manual (ChatGPT) still: upload / review / approve here. Nothing is generated.
+    return (
+      <section className="review">
+        <div className="review__title">
+          <h3>{stage.label}</h3>
+        </div>
+        <ManualStillPanel projectSlug={projectSlug} still={stage.manual_still} onChanged={onChanged} />
+      </section>
+    );
+  }
+  if (stage.clip_plan) {
+    // Spec-driven clip (Project #3): spend approval, paid submit, lifecycle and review.
+    return (
+      <section className="review">
+        <div className="review__title">
+          <h3>{stage.label}</h3>
+        </div>
+        <ClipPanel
+          projectSlug={projectSlug}
+          plan={stage.clip_plan}
+          attempts={stage.attempts}
+          execution={execution}
+          frozen={frozen}
+          onChanged={onChanged}
+        />
+        <Attempts attempts={stage.attempts} />
+      </section>
+    );
+  }
 
   return (
     <section className="review">

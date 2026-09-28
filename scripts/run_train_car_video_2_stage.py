@@ -239,6 +239,8 @@ def launch_blockers(stage_key: str, manifest_path: Path = MANIFEST_PATH) -> list
     """Why this stage may not run yet (empty = allowed). Used by the CLI and the studio."""
     if stage_key not in STAGES:
         return [f"Unknown train-car stage {stage_key!r}."]
+    if plan.FROZEN:
+        return [plan.FROZEN]
     manifest = _manifest(manifest_path)
     stage = STAGES[stage_key]
     stills_dir = _stills_dir(manifest_path)

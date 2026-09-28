@@ -187,6 +187,10 @@ def submit(provider: FalVideoProvider, approve_usd: float, *, setup: dict, setup
            poll_seconds: float = 15.0, wait: bool = True) -> dict:
     """PAID: exactly one job, the reviewed prepared.json payload verbatim. Job id recorded first.
     wait=False returns right after recording it; the studio then follows the job (free status checks)."""
+    from scripts import run_train_car_video_2_plan as plan
+
+    if plan.FROZEN:
+        raise ProofError(plan.FROZEN)
     checks = final_check(setup, setup_dir, manifest_path, provider)
     failed = [f"{name}: {detail}" for name, (ok, detail) in checks.items() if not ok]
     if failed:

@@ -659,3 +659,29 @@ h2, h3, h4 { margin: 0; font-family: var(--font-display); font-weight: 600; }
 .attempts__compare-row figcaption { font-size: 0.85em; opacity: 0.8; margin-top: 4px; }
 .attempts__compare-actions { display: flex; gap: 8px; margin-top: 8px; }
 .screen__row--attempt { font-size: 0.9em; opacity: 0.85; padding-left: 10px; }
+
+/* Manual stills (upload / review / approve) and spec-driven clips */
+.mstill, .clipplan { display: flex; flex-direction: column; gap: 10px; }
+.mstill__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mstill__state.is-missing, .clipplan__state.is-blocked { background: #3f3f46; color: #e4e4e7; }
+.mstill__state.is-placed, .mstill__state.is-changed, .mstill__state.is-ambiguous,
+.clipplan__state.is-review, .clipplan__state.is-stale { background: #78350f; color: #fde68a; }
+.mstill__state.is-approved, .clipplan__state.is-accepted { background: #14532d; color: #bbf7d0; }
+.clipplan__state.is-submitted, .clipplan__state.is-queued, .clipplan__state.is-generating,
+.clipplan__state.is-downloading { background: #713f12; color: #fbbf24; }
+.mstill__media { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.mstill__media figure { margin: 0; }
+.mstill__media img { width: 100%; max-height: 360px; object-fit: contain; background: #000; border-radius: 6px; }
+.mstill__media figcaption { font-size: 0.8em; opacity: 0.75; margin-top: 4px; }
+.mstill__drop { border: 2px dashed #52525b; border-radius: 8px; padding: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: center; text-align: center; }
+.mstill__drop.is-dragging { border-color: #fbbf24; background: rgba(251, 191, 36, 0.08); }
+.mstill__drop small { flex-basis: 100%; opacity: 0.75; }
+.mstill__confirm, .mstill__approve { display: flex; flex-direction: column; gap: 8px; }
+.mstill__replace { display: flex; gap: 8px; align-items: flex-start; font-size: 0.9em; }
+.mstill__use { display: inline-block; margin-right: 8px; }
+.mstill__use.is-stale { color: #f87171; }
+.clipplan__reasons { margin: 0; padding-left: 18px; color: #fbbf24; font-size: 0.9em; }
+.clipplan__row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.clipplan__usd { width: 70px; }
+.mstill-row.is-missing { opacity: 0.7; }
+.mstill-row.is-placed, .mstill-row.is-changed { color: #fbbf24; }

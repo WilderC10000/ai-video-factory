@@ -24,7 +24,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.studio.importers.stage_maps import PROJECTS, PROJECTS_BY_SLUG, ProjectDef, StageDef
+from app.studio.importers.stage_maps import (
+    PROJECTS,
+    PROJECTS_BY_SLUG,
+    ProjectDef,
+    StageDef,
+    refresh_spec_projects,
+)
 from app.studio.models import (
     ApprovalStatus,
     ProjectSource,
@@ -326,6 +332,26 @@ def import_project(db: Session, pdef: ProjectDef, data_dir: Path | None = None) 
         stage.approval_state = approval.status
         stage.requires_human_review = approval.status in (ApprovalStatus.PENDING, ApprovalStatus.REJECTED)
 
+    # --- manual stills: the stills folder decides (placed / changed need a person) -------------------
+    from app.forma.production import stills as still_store
+    from app.studio.manual_stills import catalog
+
+    manual = catalog(pdef.slug, manifest_path)
+    for stage in stages:
+        if stage.key not in manual:
+            continue
+        st = still_store.state(manifest_path, stage.key, manifest)
+        if st["state"] in ("placed", "changed"):
+            stage.latest_output_path, stage.latest_output_exists = st["path"], True
+            stage.approval_state, stage.requires_human_review = ApprovalStatus.PENDING, True
+            if st["state"] == "placed":
+                stage.status = StageStatus.PENDING
+            else:
+                rec.event(f"{stage.key}:still_changed:{st['sha256']}", type="warning", severity=Severity.MEDIUM,
+                          stage=stage, requires_human_review=True,
+                          message=f"{stage.label}: the still was replaced after approval - review and approve the "
+                                  "new image before any clip uses it.")
+
     # --- budget -----------------------------------------------------------------
     # Same rule as the pipeline's own spent_so_far(): every manifest entry's actual cost.
     spent = round(sum(_cost(v.get("actual_cost_usd")) or 0.0 for v in manifest.values() if isinstance(v, dict)), 4)
@@ -395,7 +421,8 @@ def ensure_agents(db: Session) -> None:
 
 
 def import_all(db: Session, data_dir: Path | None = None, slugs: list[str] | None = None) -> list[ImportResult]:
-    defs = [PROJECTS_BY_SLUG[s] for s in slugs] if slugs else PROJECTS
+    refresh_spec_projects(data_dir)  # Project #3-style projects are rebuilt from their project.json
+    defs = [PROJECTS_BY_SLUG[s] for s in slugs if s in PROJECTS_BY_SLUG] if slugs else list(PROJECTS)
     results = [import_project(db, pdef, data_dir) for pdef in defs]
     ensure_agents(db)
     db.flush()

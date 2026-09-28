@@ -22,6 +22,20 @@ from scripts import run_train_car_video_2_plan as plan
 from scripts import run_train_car_video_2_stage as stage_mod
 from scripts.run_alpine_video_2_common import EditSpec, ImageGenerateSpec, VideoShotSpec
 
+
+@pytest.fixture(autouse=True)
+def _unfrozen(monkeypatch):
+    """These tests exercise the train-car machinery kept as R&D history; the project itself is frozen
+    (see test_the_frozen_train_car_refuses_new_work)."""
+    import dataclasses
+
+    from app.studio.importers import stage_maps
+    from scripts import run_train_car_video_2_plan as plan
+    monkeypatch.setattr(plan, "FROZEN", None)
+    tc = stage_maps.PROJECTS_BY_SLUG["train_car_video_2"]
+    monkeypatch.setitem(stage_maps.PROJECTS_BY_SLUG, "train_car_video_2", dataclasses.replace(tc, frozen=False))
+
+
 SLUG = plan.SLUG
 
 
@@ -107,7 +121,7 @@ def test_first_proof_runs_through_the_studio_and_stops_at_the_gate(db_session, t
     runner = JobRunner(SessionLocal)
     import_all(db_session, train_sandbox, slugs=[SLUG])
     project = db_session.scalar(select(StudioProject).where(StudioProject.slug == SLUG))
-    assert len(project.stages) == 47 and project.budget.cap_usd == 15.0
+    assert len(project.stages) == 47 + len(plan.BEAT_STILLS) and project.budget.cap_usd == 15.0
 
     def launch(key, mode):
         job = control.launch(db_session, runner, SLUG, key, mode=mode, request_id=uuid.uuid4().hex,
@@ -234,3 +248,4 @@ def test_live_specs_point_at_the_approved_still_file(manual, monkeypatch):
     stage_mod.approve_still("cp03_still", "ok", manifest_path=m)
     assert stage_mod.SPECS["clip03"].end_frame_path == stills / "cp03_still.png"
     assert stage_mod.SPECS.get("clip03").end_frame_path == stills / "cp03_still.png"
+

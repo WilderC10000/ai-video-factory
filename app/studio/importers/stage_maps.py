@@ -9,6 +9,7 @@ show planned spend for stages that have not run yet without importing, and
 thereby executing, any pipeline script at runtime.
 """
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from app.studio.models import StageKind
 
@@ -35,6 +36,8 @@ class ProjectDef:
     cap_source: str | None
     stages: list[StageDef]
     notes: list[str] = field(default_factory=list)  # standing info-level facts about the project
+    spec_driven: bool = False  # Project #3 on: stages come from <project>/project.json (app.forma.production)
+    frozen: bool = False  # R&D history: viewable and recoverable, never launched or submitted again
 
 
 def _video(key, label, script, cost, job_file):
@@ -120,7 +123,12 @@ def _train_car() -> ProjectDef:
     stages = {s.key: s for s in plan.build_stage_plan()}
     kinds = {"image_generate": StageKind.IMAGE_GENERATE, "image_edit": StageKind.IMAGE_EDIT, "video": StageKind.VIDEO}
     defs = []
+    beat_stills = {}  # manual intermediate stills, shown (and uploadable) right before the clip that needs them
+    for beat in plan.BEAT_STILLS.values():
+        beat_stills.setdefault(f"clip{beat.checkpoint:02d}", []).append(
+            StageDef(beat.key, beat.label, StageKind.IMAGE_EDIT, "continuity_office", None, 0.0))
     for key in plan.execution_order(list(stages.values())):
+        defs.extend(beat_stills.get(key, []))
         st = stages[key]
         if st.kind == "video":
             room = "render_bay"
@@ -136,8 +144,12 @@ def _train_car() -> ProjectDef:
             storyboard_ref=f"storyboard/cp{st.checkpoint:02d}.jpg",
         ))
     return ProjectDef(
-        slug=plan.SLUG, name=plan.PROJECT_NAME, cap_usd=None, cap_source=None, stages=defs,
-        notes=[f"Proof gate: nothing after {plan.PROOF_STAGE} runs until the first end-frame test is marked passed.",
+        slug=plan.SLUG, name=f"{plan.PROJECT_NAME} [R&D - frozen]", cap_usd=None, cap_source=None, stages=defs,
+        frozen=True,
+        notes=["FROZEN 2026-09-28 as R&D history (Project #2): Wan, Higgsfield and Kling proofs are kept as "
+               "evidence; nothing new is launched or submitted from this project. Production continues in "
+               "Project #3.",
+               f"Proof gate: nothing after {plan.PROOF_STAGE} runs until the first end-frame test is marked passed.",
                *(["Stills are made manually (ChatGPT): place them in stills/ and approve with "
                   "`python -m scripts.run_train_car_video_2_stage --approve-still <key> \"<note>\"` - "
                   "the studio never generates them; only video spends money."]
@@ -148,5 +160,56 @@ def _train_car() -> ProjectDef:
 
 TRAIN_CAR_VIDEO_2 = _train_car()
 
+SPEC_PROJECT_SLUGS = ("forma_project_3",)
+
+
+def spec_project(slug: str, data_dir: Path | None = None) -> ProjectDef | None:
+    """A Project #3-style project, built from its project.json: stills in the Continuity Office (uploaded and
+    approved in the studio), clips in the Render Bay (priced, approved and submitted in the studio)."""
+    from app.config import settings
+    from app.forma.production.spec import SpecError, load_spec
+    from app.forma.production.submit import model_config, route_for
+    from app.providers.base import VideoGenerationRequest
+    from app.providers.video.fal import FalVideoProvider
+
+    path = Path(data_dir or settings.studio_data_path) / slug / "project.json"
+    try:
+        spec = load_spec(path)
+    except SpecError:
+        return None
+    defs = [StageDef(still.key, still.label, StageKind.IMAGE_EDIT, "continuity_office", None, 0.0)
+            for still in spec.stills()]
+    order = {s.key: i for i, s in enumerate(spec.stills())}
+    for clip in spec.clips():
+        try:
+            route = route_for(clip)
+            est = FalVideoProvider(model_config(route, clip), api_key="-").estimate_cost(VideoGenerationRequest(
+                prompt="", duration_seconds=float(clip.beat.duration_seconds)))
+        except Exception:
+            est = None
+        label = f"{clip.shot.id.upper()} clip {clip.n}/{clip.shot.clip_count} - {clip.shot.title}"
+        defs.append(StageDef(clip.key, label, StageKind.VIDEO, "render_bay", None, est))
+    # Production order: each clip sits between its start still and its end still.
+    rank = {clip.key: order[clip.end_still] - 0.5 for clip in spec.clips()}
+    defs.sort(key=lambda d: rank.get(d.key, order.get(d.key, 0)))
+    return ProjectDef(slug=spec.slug, name=spec.name, cap_usd=spec.budget_cap_usd, cap_source="project.json budget.cap_usd",
+                      stages=defs, spec_driven=True, frozen=spec.status == "frozen",
+                      notes=[f"Project status: {spec.status}. Stills are uploaded and approved in the studio; every "
+                             "clip needs its own spend approval; nothing is retried automatically."])
+
+
 PROJECTS: list[ProjectDef] = [ALPINE_VIDEO_2, CLIFFSIDE_VIDEO_1, TRAIN_CAR_VIDEO_2]
 PROJECTS_BY_SLUG: dict[str, ProjectDef] = {p.slug: p for p in PROJECTS}
+
+
+def refresh_spec_projects(data_dir: Path | None = None) -> None:
+    """(Re)build spec-driven projects from their project.json - called on every import."""
+    for slug in SPEC_PROJECT_SLUGS:
+        pdef = spec_project(slug, data_dir)
+        PROJECTS[:] = [p for p in PROJECTS if p.slug != slug] + ([pdef] if pdef else [])
+        PROJECTS_BY_SLUG.pop(slug, None)
+        if pdef:
+            PROJECTS_BY_SLUG[slug] = pdef
+
+
+refresh_spec_projects()

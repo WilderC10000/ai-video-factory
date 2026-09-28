@@ -99,6 +99,25 @@ export function RoomScreen({ room, project, stages, budget, approvals, audio }: 
     }
 
     case "continuity_office": {
+      const manual = stages.filter((s) => s.manual_still);
+      if (manual.length > 0) {
+        const attention = manual.filter((s) => s.manual_still!.state !== "approved");
+        const shown = (attention.length ? attention : manual).slice(0, 6);
+        return (
+          <div className="screen screen--list">
+            <div className="screen__caption">
+              Manual stills: {manual.length - attention.length}/{manual.length} approved
+            </div>
+            {shown.map((s) => (
+              <div key={s.key} className={`screen__row mstill-row is-${s.manual_still!.state}`}>
+                <span>{s.manual_still!.state === "approved" ? "✓" : s.manual_still!.state === "missing" ? "○" : "!"}</span>
+                <span className="screen__row-label">{s.key}</span>
+                <span className="screen__row-meta">{s.manual_still!.state}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
       const ref = mine[0];
       return (
         <div className="screen screen--media">

@@ -21,6 +21,7 @@ interface Props {
   onSelectStage: (stage: Stage) => void;
   onChanged: () => void;
   onClose: () => void;
+  frozen?: boolean;
 }
 
 function Ref({ label, value, empty }: { label: string; value: React.ReactNode; empty: string }) {
@@ -128,6 +129,7 @@ export function Inspector({
   onSelectStage,
   onChanged,
   onClose,
+  frozen = false,
 }: Props) {
   const room = rooms.find((r) => r.id === selection.roomId);
   useEffect(() => {
@@ -213,6 +215,7 @@ export function Inspector({
               execution={execution}
               activeJob={activeJob}
               onChanged={onChanged}
+              frozen={frozen}
             />
           </>
         )}

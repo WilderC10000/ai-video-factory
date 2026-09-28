@@ -197,6 +197,7 @@ export function App() {
           onSelectStage={openStage}
           onChanged={load}
           onClose={close}
+          frozen={full.project!.frozen}
         />
       )}
     </div>

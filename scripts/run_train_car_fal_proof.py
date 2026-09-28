@@ -123,6 +123,18 @@ def existing_jobs(manifest: dict, setup: dict, setup_dir: Path) -> list[str]:
     return found
 
 
+def shot_length_check(setup: dict, provider: FalVideoProvider) -> tuple[bool, str]:
+    """Every multi_prompt shot within the model's per-shot limit (Kling v3: 512 characters - a run-time
+    limit fal's schema doesn't show; clip03__attempt4 failed on it)."""
+    shots = (setup["model"].get("extra_params") or {}).get("multi_prompt")
+    if not shots:
+        return True, "single prompt (no multi_prompt shots)"
+    limit = provider.model_config.max_shot_prompt_chars
+    lengths = [len(shot["prompt"]) for shot in shots]
+    ok = limit is None or all(n <= limit for n in lengths)
+    return ok, f"{' / '.join(map(str, lengths))} chars (limit {limit or 'none'})"
+
+
 def final_check(setup: dict, setup_dir: Path, manifest_path: Path = MANIFEST_PATH,
                 provider: FalVideoProvider | None = None) -> dict:
     """LOCAL ONLY - no network. Everything that must hold right before the paid submit."""
@@ -134,6 +146,7 @@ def final_check(setup: dict, setup_dir: Path, manifest_path: Path = MANIFEST_PAT
         checks["route"] = (True, f"{setup['shot_class']}: {route.model} ({route.status})")
     except ProofError as e:
         checks["route"] = (False, str(e))
+    checks["shot prompts"] = shot_length_check(setup, provider)
     prepared_path = setup_dir / "prepared.json"
     if not prepared_path.exists():
         checks["prepared"] = (False, "no prepared.json - run --prepare (free)")

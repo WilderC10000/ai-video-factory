@@ -194,3 +194,34 @@ def test_a_job_that_finishes_with_a_validation_error_stops_the_runner_as_failed(
                      log=lambda *_: None, poll_seconds=0, wait_seconds=5)
     entry = json.loads(manifest.read_text())["clip03__attempt4"]
     assert entry["status"] == "failed" and entry["actual_cost_usd"] is None and fake.submits() == 1
+
+
+# --- attempt 5: the same proof with every shot inside Kling's 512-character limit ----------------------
+
+V2_SETUP_DIR = proof.DATA / "provider_tests" / "fal_kling_v3_standard_clip03_v2"
+
+
+def test_attempt_5_shots_fit_the_512_character_limit_and_keep_the_structure():
+    setup = json.loads((V2_SETUP_DIR / "setup.json").read_text())
+    shots = setup["model"]["extra_params"]["multi_prompt"]
+    lengths = [len(s["prompt"]) for s in shots]
+    assert all(n <= 512 for n in lengths), lengths  # the local character-count gate
+    assert (setup["attempt_key"], setup["supersedes"]["attempt_key"]) == ("clip03__attempt5", "clip03__attempt4")
+    assert [s["duration"] for s in shots] == [2, 2, 2] and setup["model"]["duration"] == 6
+    assert "opening on the first image" in shots[0]["prompt"] and "Ends exactly on the last image" in shots[2]["prompt"]
+    assert all("hard cut" in s["prompt"] for s in shots[1:])
+    for s in shots:
+        text = s["prompt"]
+        assert "same locked camera" in text and "railcar" in text and "builder" in text
+        assert "nothing morphs or vanishes" in text
+    assert "scoop, lift, dump" in shots[0]["prompt"] and "scoop, lift, dump" in shots[1]["prompt"]
+    assert "morphing" in setup["model"]["extra_params"]["negative_prompt"]
+    ok, detail = proof.shot_length_check(setup, proof.provider_for(setup, api_key="k"))
+    assert ok and detail.startswith(" / ".join(map(str, lengths)))
+
+
+def test_the_character_count_check_fails_on_any_shot_over_512():
+    setup = json.loads((V2_SETUP_DIR / "setup.json").read_text())
+    setup["model"]["extra_params"]["multi_prompt"][1]["prompt"] += "x" * 200
+    ok, detail = proof.shot_length_check(setup, proof.provider_for(setup, api_key="k"))
+    assert not ok and "limit 512" in detail

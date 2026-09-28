@@ -81,8 +81,13 @@ def job_out(job: StudioJob, full_log: bool = False) -> dict:
 
 _MODEL_LABELS = {
     "alibaba/wan-3.0/image-to-video": ("Wan 3.0", "fal"),
+    # Higgsfield entries carry "provider" in the manifest; this fallback only covers older records.
     "bytedance/seedance-2.5/image-to-video": ("Seedance 2.5", "Higgsfield"),
     "kling-video/o3/first-last-frame": ("Kling O3", "Higgsfield"),
+    "fal-ai/kling-video/v3/standard/image-to-video": ("Kling v3 Standard", "fal"),
+    "fal-ai/kling-video/v3/pro/image-to-video": ("Kling v3 Pro", "fal"),
+    "fal-ai/veo3.1/fast/first-last-frame-to-video": ("Veo 3.1 Fast (first/last)", "fal"),
+    "bytedance/seedance-2.0/image-to-video": ("Seedance 2.0", "fal"),
 }
 
 

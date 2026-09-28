@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """FORMA VIDEO #2 (TRAIN CAR) - clip03 proof on a Higgsfield first/last-frame video model.
 
+RETIRED 2026-09-28 - R&D history, recovery only. Higgsfield is off the production path (Project #3
+uses fal: scripts/run_train_car_fal_proof.py). --prepare and --submit refuse; --check (local) and
+--recover (free: status/download of the recorded job) still work. The Seedance 2.5 result stays in
+the manifest as clip03__attempt3.
+
 The same CP02 -> CP03 proof that Wan 3.0 failed on mechanism, re-run on another provider with
 everything else held constant. setup.json (data/train_car_video_2/provider_tests/higgsfield_clip03/)
 names the ONE model that receives the paid request (`model.endpoint_id`, one of
@@ -26,7 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from app.providers.base import ProviderJobState, VideoGenerationRequest, VideoProviderError
-from app.providers.video.higgsfield import MODELS, HiggsfieldVideoProvider
+from app.providers.video.higgsfield import MODELS, RETIRED_NOTE, HiggsfieldVideoProvider
 from scripts.run_alpine_video_2_common import spent_so_far
 
 DATA = Path(__file__).resolve().parent.parent / "data" / "train_car_video_2"
@@ -134,6 +139,8 @@ def prepare(provider: HiggsfieldVideoProvider, manifest: dict, setup: dict,
 def submit(provider: HiggsfieldVideoProvider, approve_usd: float, *, manifest_path: Path = MANIFEST_PATH,
            setup: dict, log=print, wait_seconds: float = 2700.0, poll_seconds: float = 15.0) -> dict:
     """PAID: exactly one job. The job id is written to the manifest before anything else happens."""
+    if not provider.allow_retired_submit:
+        raise ProofError(RETIRED_NOTE)
     manifest = json.loads(manifest_path.read_text())
     jobs = existing_jobs(manifest)
     if jobs:
@@ -264,6 +271,8 @@ def main() -> None:
             for name, (ok, detail) in checks.items():
                 print(f"  {'OK  ' if ok else 'FAIL'} {name}: {detail}")
             sys.exit(0 if all(ok for ok, _ in checks.values()) else 1)
+        if args.prepare or args.submit:
+            raise ProofError(RETIRED_NOTE)
         provider = model_provider(setup)
         if args.prepare:
             prepared = prepare(provider, json.loads(MANIFEST_PATH.read_text()), setup, MANIFEST_PATH)

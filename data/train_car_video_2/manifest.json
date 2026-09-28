@@ -112,6 +112,24 @@
         "the model morphs toward the end checkpoint rather than performing the labor"
       ],
       "decided_at": "2026-09-25T00:15:15.313228+00:00"
+    },
+    {
+      "stage": "clip03",
+      "attempt_key": "clip03__attempt3",
+      "verdict": "revise",
+      "failure_class": "labor_too_localized",
+      "motion": "pass",
+      "continuity": "pass",
+      "model": "bytedance/seedance-2.5/image-to-video",
+      "provider_job_id": "2a0451fb-791a-4cad-9b16-f39d220c01bd",
+      "raw_video_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\train_car_video_2\\clips\\clip03_higgsfield_bytedance_seedance-2-5_image-to-video_raw.mp4",
+      "note": "Substantially better than Wan and passes the basic physical-motion test, but the labor is too localized: the builder works one small patch for nearly the whole clip. Redesign as ~3 beats separated by hard jump cuts (doctrine rule 11).",
+      "findings": [
+        "passes the basic physical-motion test",
+        "labor too localized - nearly the whole clip on one small patch",
+        "repetitive work must be distributed across the work area with hard jump cuts"
+      ],
+      "decided_at": "2026-09-28T03:00:45.119023+00:00"
     }
   ],
   "proof_gate": {

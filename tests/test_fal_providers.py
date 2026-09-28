@@ -73,7 +73,8 @@ def test_image_pricing_matches_flux_schnell():
 # ---------------------------------------------------------------------------
 
 
-def test_video_submit_without_api_key_makes_no_network_call():
+def test_video_submit_without_api_key_makes_no_network_call(monkeypatch):
+    monkeypatch.setattr("app.providers.video.fal.settings.fal_api_key", None)  # ignore a real key in .env
     client = httpx.Client(transport=httpx.MockTransport(_refuse_any_request))
     provider = FalVideoProvider(WAN_TURBO, api_key=None, client=client)
     request = VideoGenerationRequest(prompt="p", reference_image_path="/tmp/does-not-matter.jpg")
@@ -82,7 +83,8 @@ def test_video_submit_without_api_key_makes_no_network_call():
         provider.submit_video_job(request)
 
 
-def test_image_generate_without_api_key_makes_no_network_call(tmp_path):
+def test_image_generate_without_api_key_makes_no_network_call(tmp_path, monkeypatch):
+    monkeypatch.setattr("app.providers.image.fal.settings.fal_api_key", None)  # ignore a real key in .env
     client = httpx.Client(transport=httpx.MockTransport(_refuse_any_request))
     provider = FalImageProvider(FLUX_SCHNELL, api_key=None, client=client)
     request = ImageGenerationRequest(prompt="p")

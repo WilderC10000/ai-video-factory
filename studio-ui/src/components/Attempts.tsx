@@ -16,6 +16,10 @@ function verdictChip(a: Attempt) {
     return <span className="state-chip state-chip--rejected">Proof failed · {why}</span>;
   }
   if (a.verdict?.verdict === "passed") return <span className="state-chip state-chip--approved">Proof passed</span>;
+  if (a.verdict?.verdict === "revise") {
+    const why = a.verdict.failure_class ? ` · ${a.verdict.failure_class.replace(/_/g, " ")}` : "";
+    return <span className="state-chip state-chip--waiting">Revise{why}</span>;
+  }
   if (a.status === "complete") return <span className="state-chip state-chip--waiting">Awaiting your review</span>;
   return null;
 }

@@ -149,3 +149,31 @@ def test_every_prompt_carries_the_doctrine_and_clips_are_pinned():
     for clip in construction:
         prompt = plan.stage_prompt(clip)
         assert "locked, no movement" in prompt and "70 to 90" in prompt, clip.key
+
+
+# --- doctrine rule 11 (2026-09-27): repetitive work is distributed with hard jump cuts ------------
+
+def test_repetitive_work_clips_are_hard_cut_shot_lists():
+    for clip in CLIPS:
+        prompt = plan.stage_prompt(clip)
+        cp = plan.CHECKPOINTS[clip.checkpoint - 1]
+        if cp.number in plan.WORK_BEATS:
+            beats = plan.WORK_BEATS[cp.number]
+            assert len(beats) == 3, clip.key
+            assert prompt.count("HARD JUMP CUT, time has passed") == len(beats) - 1, clip.key
+            assert "Shot 1" in prompt and f"Shot {len(beats)}" in prompt, clip.key
+            assert "Opens exactly on the first image" in prompt and cp.state in prompt, clip.key
+            assert "No camera glide" in prompt and "locked" in prompt, clip.key
+        else:
+            assert "HARD JUMP CUT" not in prompt, clip.key
+
+
+def test_only_single_action_and_reveal_clips_are_one_take():
+    assert set(range(1, 21)) - set(plan.WORK_BEATS) == {1, 2, 20}
+
+
+def test_clip03_beats_follow_the_approved_stills():
+    prompt = plan.stage_prompt(next(c for c in CLIPS if c.key == "clip03"))
+    assert "wheels the wheelbarrow in from the bottom edge of frame" in prompt  # no wheelbarrow in CP02
+    assert "back in the foreground in front of the car's near end" in prompt  # where CP03 ends
+    assert "working left to right" not in prompt

@@ -431,6 +431,96 @@ def still_prompt(stage: Stage) -> str:
     )
 
 
+# Doctrine rule 11 (2026-09-27): repetitive physical work is edited as ~2 s beats separated by hard
+# jump cuts, each beat at a new place in the work area, the last converging on the end checkpoint:
+# LOCAL ACTION -> HARD JUMP CUT -> REPOSITIONED LOCAL ACTION -> HARD JUMP CUT -> ADVANCED PHASE.
+# Beat 1 opens on the start still and shows the mechanism in full; the last beat lands on the end still.
+# Checkpoints absent here (CP01 walk-in, CP02 inspection, CP20 reveal) are single actions, not repetitive.
+WORK_BEATS: dict[int, tuple[str, ...]] = {
+    # CP03 matches the approved stills: the car recedes from camera, end door at the near end facing us;
+    # CP02 has no shovel or wheelbarrow in frame, CP03 ends with the builder and loaded wheelbarrow in the
+    # foreground in front of the near end and the strip along the long side cleared into the distance.
+    3: ("the builder lowers the tape and board, wheels the wheelbarrow in from the bottom edge of frame and "
+        "shovels brush and debris from beside the end door into it, scoop after scoop",
+        "the same builder now farther along the railcar's long side, deeper in frame, shoveling a second stretch "
+        "into the wheelbarrow; the ground beside the end door behind him is already bare and a brush pile has "
+        "grown at the edge of the clearing",
+        "the builder back in the foreground in front of the car's near end beside the track, dropping a last "
+        "shovelful into the loaded wheelbarrow; the strip along the whole long side is now cleared"),
+    4: ("at the doorway end, the builder pries a row of old seats loose and carries one out the end door to a bin",
+        "further down the car, the seats near the door already gone, he tears out insulation scraps and bags trash",
+        "in the far half, he hauls the last seats toward the door past a swept-bare floor near camera"),
+    5: ("at window opening 1 he snaps chalk lines and squares the corners",
+        "window 1 outlined; he marks window opening 2",
+        "both windows outlined; he finishes the door-opening outline"),
+    6: ("the angle grinder cuts along window 1's chalk line in a shower of sparks and he lifts the panel out onto "
+        "the ground",
+        "window 1 open with raw edges; he grinds along the top line of window 2",
+        "window 2 about 80% cut with the grinder in it, cut panels on the ground"),
+    7: ("around the first opening near camera he measures, cuts and screws studs into place",
+        "further down the car, the first openings framed, he screws studs along the wall",
+        "framing along ~80% of both walls; he works the far section"),
+    8: ("at window 1 he clamps a steel frame and welds it, sparks flying",
+        "window 1 framed; he welds the frame at window 2",
+        "he welds the door-opening frame; fresh seams around every opening"),
+    9: ("at the left he carries a concrete pad into place and levels it",
+        "pads set along the middle of the facade; he levels the next one",
+        "the full row of pads set; he stacks the delivered lumber at the left"),
+    10: ("at the left he lays a beam on the pads and fastens the first joists",
+         "joists running across the middle of the span; he fastens the next one",
+         "joists across ~80% of the span; he works at the frontier toward the bare right end"),
+    11: ("at the left end he lays deck boards and screws them down one by one",
+         "boards across the middle of the deck; he screws down the next ones",
+         "boards over ~80% of the deck, the last bare joists at the right end"),
+    12: ("he carries the first large pane from the padded crate on suction cups, sets it in window 1 and shims it",
+         "window 1 glazed; he lifts the second pane into window 2",
+         "he secures the second pane; the glass entry door is fitted"),
+    13: ("he staples weather wrap around window 1",
+         "wrap and trim around all the glass; he nails the first cladding boards from the stack at the left",
+         "the first vertical cladding boards cover ~25% of the facade"),
+    14: ("at the left he nails up cladding boards one by one",
+         "cladding across the middle of the facade around the glass",
+         "cladding over ~80% of the facade; he spray-paints the steel ends matte black"),
+    15: ("on a ladder he fixes the small awning over the entry",
+         "awning done; he installs the entry steps",
+         "he bolts railing sections along ~80% of the deck; sconces mounted"),
+    16: ("in the bays near the door he cuts batts and presses them between the studs",
+         "further down the car he fits the next bays",
+         "insulation along ~80% of the car; he fits the far bays"),
+    17: ("near the door he fixes wood wall panels over the insulation",
+         "panels along ~80% of the walls; he sets the counter at the far end",
+         "he screws up the open shelving above the counter"),
+    18: ("he carries in the mattress and sets it on the bed/bench",
+         "the rug laid; he places the lamps",
+         "plants placed and textiles arranged; the warm light is on"),
+    19: ("along the deck at the left he rakes gravel",
+         "gravel along more of the deck; he sets planters as the light fades",
+         "at dusk he switches the lights on; sconces and interior glow warm"),
+}
+
+
+def beats_clip_prompt(stage: Stage, cp: "Checkpoint", cam: str, same: str) -> str:
+    """Rule 11: a hard-jump-cut shot list for repetitive physical work."""
+    from app.forma.doctrine import BEATS_DOCTRINE, VIDEO_DOCTRINE
+
+    beats = WORK_BEATS[cp.number]
+    seconds = round(float(stage.raw_seconds or cp.raw_seconds) / len(beats), 1)
+    shots = []
+    for i, beat in enumerate(beats, 1):
+        cut = "Opens exactly on the first image; " if i == 1 else "HARD JUMP CUT, time has passed - "
+        end = f" Ends exactly on the last image: {cp.state}." if i == len(beats) else ""
+        shots.append(f"Shot {i} (~{seconds:g} s): {cut}{beat}.{end}")
+    return (
+        f"Vertical 9:16, realistic documentary construction footage edited as {len(beats)} short shots separated "
+        f"by hard jump cuts. Camera: {cam} - the same locked framing in every shot, locked, no movement, no zoom, "
+        f"no angle change. The clip starts exactly on the first image and must end exactly on the last image. "
+        f"Task: {cp.title}. Across the shots, 70 to 90 percent of the task is visibly performed, "
+        f"distributed over the real work area: LOCAL ACTION, HARD JUMP CUT, REPOSITIONED LOCAL ACTION, HARD JUMP "
+        f"CUT, ADVANCED PHASE. {' '.join(shots)} Tools: {', '.join(cp.tools)}. {BEATS_DOCTRINE} {same} "
+        f"{VIDEO_DOCTRINE}"
+    )
+
+
 def clip_prompt(stage: Stage) -> str:
     from app.forma.doctrine import VIDEO_DOCTRINE
 
@@ -450,6 +540,8 @@ def clip_prompt(stage: Stage) -> str:
             f"exactly on the last image. A slow, steady camera pull-back from the finished glowing railcar cabin to "
             f"{cam}. No construction, nothing added or changed - only the camera moves. {same} {VIDEO_DOCTRINE}"
         )
+    if cp.number in WORK_BEATS:
+        return beats_clip_prompt(stage, cp, cam, same)
     return (
         f"Vertical 9:16, realistic documentary construction footage. Camera: {cam} - locked, no movement, no zoom, "
         f"no angle change. The clip starts exactly on the first image and must end exactly on the last image. "

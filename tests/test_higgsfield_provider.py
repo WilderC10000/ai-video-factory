@@ -62,12 +62,13 @@ class FakeHiggsfield:
 
 def _provider(fake, config=KLING_O3_FIRST_LAST_FRAME):
     return HiggsfieldVideoProvider(config, api_key_id="kid", api_key_secret="ksecret",
-                                   client=httpx.Client(transport=httpx.MockTransport(fake)))
+                                   client=httpx.Client(transport=httpx.MockTransport(fake)),
+                                   allow_retired_submit=True)  # exercising the retained code path
 
 
 def _setup_provider(fake, setup):
     return proof.model_provider(setup, api_key_id="kid", api_key_secret="ksecret",
-                                client=httpx.Client(transport=httpx.MockTransport(fake)))
+                                client=httpx.Client(transport=httpx.MockTransport(fake)), allow_retired_submit=True)
 
 
 @pytest.fixture
@@ -283,3 +284,32 @@ def test_final_check_is_local_and_reports_each_condition(sandbox, monkeypatch):
         assert checks[name][0], (name, checks[name])
     (manifest.parent / "stills" / "cp02_still.jpg").write_bytes(b"swapped")
     assert not proof.final_check(setup, manifest)["stills"][0]
+
+
+# --- retired 2026-09-28: recovery only --------------------------------------------------------------
+
+def test_retired_provider_refuses_to_submit_without_any_call(frames):
+    fake = FakeHiggsfield()
+    provider = HiggsfieldVideoProvider(api_key_id="kid", api_key_secret="ksecret",
+                                       client=httpx.Client(transport=httpx.MockTransport(fake)))
+    with pytest.raises(VideoProviderError, match="retired"):
+        provider.submit_video_job(VideoGenerationRequest(prompt="p", reference_image_path=str(frames[0]),
+                                                         end_image_path=str(frames[1]), duration_seconds=5.0))
+    assert fake.calls == []
+
+
+def test_retired_runner_refuses_submit_but_still_recovers(sandbox):
+    manifest, setup = sandbox
+    fake = FakeHiggsfield()
+    retired = proof.model_provider(setup, api_key_id="kid", api_key_secret="ksecret",
+                                   client=httpx.Client(transport=httpx.MockTransport(fake)))
+    with pytest.raises(proof.ProofError, match="retired"):
+        proof.submit(retired, 5.0, manifest_path=manifest, setup=setup, log=lambda *_: None)
+    assert fake.calls == []
+    data = json.loads(manifest.read_text())
+    data[proof.ENTRY_KEY] = {"provider": "higgsfield", "video_model": setup["model"]["endpoint_id"],
+                             "provider_job_id": "req-1", "meta": {}, "estimated_cost_usd": 0.5}
+    manifest.write_text(json.dumps(data))
+    entry = proof.recover(retired, manifest_path=manifest, log=lambda *_: None, poll_seconds=0,
+                          output=manifest.parent / "out.mp4")
+    assert entry["actual_cost_usd"] == 0.5 and not any(url in SUBMIT_URLS for _, url, _ in fake.calls)

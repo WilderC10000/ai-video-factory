@@ -15,6 +15,11 @@ Higgsfield is a gateway to many vendors' models behind one request lifecycle
 
 Failed/nsfw requests are not charged. Nothing in this module submits unless
 submit_video_job() is called; upload_image() and estimate_payload() never spend.
+
+RETIRED 2026-09-28: Higgsfield is no longer on the FORMA production path (Project #3 generates
+video on fal - app/forma/routing.py). This module stays for R&D history and for RECOVERY of
+already-submitted jobs (status, download, cancel). submit_video_job() refuses unless the provider
+is constructed with allow_retired_submit=True, which nothing in production does.
 """
 import hashlib
 import math
@@ -35,6 +40,7 @@ from app.providers.base import (
 )
 
 HIGGSFIELD_API_BASE = "https://api.higgsfield.ai"
+RETIRED_NOTE = ("Higgsfield was retired from the FORMA production path on 2026-09-28 (Project #3 generates video on fal). Its clip03 results are kept as R&D history; only status checks, downloads and cancels of already-submitted jobs remain.")
 
 
 @dataclass
@@ -147,8 +153,9 @@ class HiggsfieldVideoProvider(VideoProvider):
 
     def __init__(self, model_config: HiggsfieldVideoModelConfig = KLING_O3_FIRST_LAST_FRAME, *,
                  api_key_id: str | None = None, api_key_secret: str | None = None,
-                 client: httpx.Client | None = None) -> None:
+                 client: httpx.Client | None = None, allow_retired_submit: bool = False) -> None:
         self.model_config = model_config
+        self.allow_retired_submit = allow_retired_submit  # tests only - see RETIRED_NOTE
         self.name = f"higgsfield:{model_config.endpoint_id}"
         combined_id, combined_secret = _split_key(settings.hf_key)
         self.api_key_id = api_key_id or settings.hf_api_key_id or combined_id
@@ -278,6 +285,8 @@ class HiggsfieldVideoProvider(VideoProvider):
 
     def submit_video_job(self, request: VideoGenerationRequest) -> SubmittedVideoJob:
         """PAID. Submits exactly one generation of the payload build_payload() produces."""
+        if not self.allow_retired_submit:
+            raise VideoProviderError(RETIRED_NOTE)
         payload = self.build_payload(request)
         estimate = self._estimates.get(self._key(payload))
         if estimate is None:

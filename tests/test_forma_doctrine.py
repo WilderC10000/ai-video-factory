@@ -2,7 +2,13 @@
 import re
 from pathlib import Path
 
-from app.forma.doctrine import STILL_DOCTRINE, TEMPORAL_REALISM_RULES, VIDEO_DOCTRINE
+from app.forma.doctrine import (
+    PRODUCTION_LESSONS,
+    SHOT_CLASSES,
+    STILL_DOCTRINE,
+    TEMPORAL_REALISM_RULES,
+    VIDEO_DOCTRINE,
+)
 
 BRAIN = Path(__file__).resolve().parent.parent / "docs" / "forma" / "creative" / "FORMA_CREATIVE_BRAIN.md"
 
@@ -22,3 +28,16 @@ def test_prompt_blocks_carry_the_core_rules():
         assert block.startswith("SKIP REPETITION, NOT EXPLANATION")
     assert "frontier" in VIDEO_DOCTRINE and "No magical" in VIDEO_DOCTRINE
     assert "frontier" in STILL_DOCTRINE and "regress" in STILL_DOCTRINE
+
+
+def test_every_production_lesson_appears_in_the_creative_brain():
+    brain = _norm(BRAIN.read_text(encoding="utf-8"))
+    assert len(PRODUCTION_LESSONS) == 11
+    for lesson in PRODUCTION_LESSONS:
+        assert _norm(lesson) in brain, lesson
+
+
+def test_every_shot_class_is_routed_in_the_creative_brain():
+    brain = _norm(BRAIN.read_text(encoding="utf-8"))
+    for route in SHOT_CLASSES.values():
+        assert _norm(route.split(" -> ")[0]) in brain, route

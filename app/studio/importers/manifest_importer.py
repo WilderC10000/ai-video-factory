@@ -240,10 +240,18 @@ def import_project(db: Session, pdef: ProjectDef, data_dir: Path | None = None) 
         base_key, _, attempt = key.partition("__attempt")
         if isinstance(value, dict) and attempt and base_key in known:
             cost = _cost(value.get("actual_cost_usd"))
-            rec.event(f"archived:{key}", type="note", room_id="library_archive",
-                      occurred_at=_parse_ts(value.get("archived_at")),
-                      message=f"Earlier attempt {attempt} of '{base_key}' kept as an archived record"
-                              f"{f' (${cost:.2f}, still counted in spend)' if cost else ''}.")
+            spend = f" (${cost:.2f}, counted in spend)" if cost else ""
+            if value.get("archived_at"):
+                rec.event(f"archived:{key}", type="note", room_id="library_archive",
+                          occurred_at=_parse_ts(value.get("archived_at")),
+                          message=f"Earlier attempt {attempt} of '{base_key}' kept as an archived record{spend}.")
+            else:  # a separate provider attempt kept alongside the primary result (e.g. a provider comparison)
+                model = value.get("video_model") or value.get("image_model") or "another model"
+                done = "complete" if value.get("completed_at") else "in flight"
+                rec.event(f"attempt:{key}", type="note", room_id="render_bay",
+                          occurred_at=_parse_ts(value.get("completed_at") or value.get("submitted_at")),
+                          message=f"Provider attempt {attempt} of '{base_key}' on {model} ({done}){spend} - "
+                                  "shown under the stage's Provider attempts.")
             continue
         if isinstance(value, dict) and key not in known and key not in _META_KEYS:
             rec.event(f"untracked:{key}", type="warning", severity=Severity.LOW, room_id="command_deck",

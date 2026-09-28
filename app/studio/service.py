@@ -4,6 +4,7 @@ Agent status is derived fresh from imported stage / approval / budget state and
 the real job table on every call - never stored, never animated on a timer - so
 the avatars can only ever show what production state actually says.
 """
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
@@ -78,8 +79,75 @@ def job_out(job: StudioJob, full_log: bool = False) -> dict:
     }
 
 
-def _stage_out(s: StudioStage, project_slug: str, next_stage: StudioStage | None, last_job: StudioJob | None) -> dict:
+_MODEL_LABELS = {
+    "alibaba/wan-3.0/image-to-video": ("Wan 3.0", "fal"),
+    "bytedance/seedance-2.5/image-to-video": ("Seedance 2.5", "Higgsfield"),
+    "kling-video/o3/first-last-frame": ("Kling O3", "Higgsfield"),
+}
+
+
+def _read_manifest(path: str | None) -> dict:
+    try:
+        return json.loads(Path(path).read_text()) if path else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _attempt_out(key: str, entry: dict, is_primary: bool, verdicts: dict[str, dict]) -> dict:
+    """One provider attempt of a stage, straight from its manifest entry (read-only, no provider calls)."""
+    model = entry.get("video_model") or entry.get("image_model")
+    model_label, inferred_provider = _MODEL_LABELS.get(model, (model, None))
+    payload = entry.get("payload") or {}
+    output = entry.get("raw_video_path") or entry.get("output_path")
+    job_id = entry.get("provider_job_id")
+    if entry.get("status") in ("cancelled", "failed"):
+        status = entry["status"]
+    elif entry.get("completed_at") and output:
+        status = "complete"
+    elif job_id:
+        status = "in_flight"  # submitted; the runner (or a free recover) finishes it
+    else:
+        status = "not_started"
+    verdict = verdicts.get(job_id) if job_id else None
+    _, _, n = key.partition("__attempt")
     return {
+        "key": key, "is_primary": is_primary,
+        "label": "Primary result" if is_primary else f"Attempt {n}",
+        "provider": {"higgsfield": "Higgsfield", "fal": "fal"}.get(entry.get("provider") or "", entry.get("provider"))
+        or inferred_provider,
+        "model": model, "model_label": model_label, "provider_job_id": job_id, "status": status,
+        "estimated_cost_usd": entry.get("estimated_cost_usd"), "actual_cost_usd": entry.get("actual_cost_usd"),
+        "submitted_at": entry.get("submitted_at"), "completed_at": entry.get("completed_at"),
+        "resolution": payload.get("resolution") or entry.get("resolution"),
+        "duration_seconds": payload.get("duration") or entry.get("duration_seconds"),
+        "audio": (payload["generate_audio"] if "generate_audio" in payload else None),
+        "output_path": output, "output_url": media_url(output, _is_file(output)),
+        "start_frame_url": media_url(entry.get("start_frame_path"), _is_file(entry.get("start_frame_path"))),
+        "end_frame_url": media_url(entry.get("end_frame_path"), _is_file(entry.get("end_frame_path"))),
+        "verdict": None if verdict is None else {k: verdict.get(k) for k in
+                                                 ("verdict", "failure_class", "continuity", "note", "findings",
+                                                  "decided_at")},
+        "note": entry.get("note"),
+    }
+
+
+def stage_attempts(manifest: dict, key: str) -> list[dict]:
+    """The stage's primary result plus every archived / comparison attempt (<key>__attemptN).
+    Empty when the stage has only its primary result, so ordinary stages are unchanged."""
+    extra = sorted((k for k, v in manifest.items() if isinstance(v, dict) and k.startswith(f"{key}__attempt")),
+                   key=lambda k: int("".join(ch for ch in k.partition("__attempt")[2] if ch.isdigit()) or 0))
+    if not extra:
+        return []
+    verdicts = {a.get("provider_job_id"): a for a in manifest.get("proof_attempts", []) if a.get("provider_job_id")}
+    primary = manifest.get(key)
+    out = [_attempt_out(key, primary, True, verdicts)] if isinstance(primary, dict) else []
+    return out + [_attempt_out(k, manifest[k], False, verdicts) for k in extra]
+
+
+def _stage_out(s: StudioStage, project_slug: str, next_stage: StudioStage | None, last_job: StudioJob | None,
+               manifest: dict | None = None) -> dict:
+    return {
+        "attempts": stage_attempts(manifest or {}, s.key),
         "key": s.key, "label": s.label, "order": s.order, "kind": s.kind.value, "room_id": s.room_id,
         "status": s.status.value, "script_path": s.script_path, "model": s.model,
         "duration_seconds": s.duration_seconds, "planned_cost_usd": s.planned_cost_usd,
@@ -360,6 +428,7 @@ def build_snapshot(db: Session, slug: str | None = None) -> dict:
         return {"projects": project_list, "project": None, "execution": execution}
 
     stages = list(project.stages)
+    manifest = _read_manifest(project.source_path)  # provider attempts are read live, not imported
     stage_keys = {s.id: s.key for s in stages}
     approvals = db.scalars(select(StudioApproval).where(StudioApproval.project_id == project.id)).all()
     events = db.scalars(select(StudioEvent).where(StudioEvent.project_id == project.id)).all()
@@ -410,7 +479,7 @@ def build_snapshot(db: Session, slug: str | None = None) -> dict:
             "next_stage_block": st.budget_block,
         },
         "stages": [_stage_out(s, project.slug, next((n for n in stages if n.order > s.order), None),
-                              st.last_job.get(s.key)) for s in stages],
+                              st.last_job.get(s.key), manifest) for s in stages],
         "rooms": rooms,
         "approvals": [_approval_out(a, stage_keys) for a in approvals],
         "events": [_event_out(e, stage_keys) for e in events[:60]],

@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { splitLabel, usd } from "../format";
 import type { Approval, AudioReport, Budget, ProjectInfo, Room, Stage } from "../types";
 import { StageThumb } from "./StageThumb";
@@ -111,13 +112,26 @@ export function RoomScreen({ room, project, stages, budget, approvals, audio }: 
       return (
         <div className="screen screen--list">
           {mine.map((s) => (
-            <div key={s.key} className={`screen__row is-${s.status}`}>
-              <span>{tick(s)}</span>
-              <span className="screen__row-label">{splitLabel(s.label).tag}</span>
-              <span className="screen__row-meta">
-                {s.actual_cost_usd != null ? usd(s.actual_cost_usd) : s.planned_cost_usd != null ? `(${usd(s.planned_cost_usd)})` : ""}
-              </span>
-            </div>
+            <Fragment key={s.key}>
+              <div className={`screen__row is-${s.status}`}>
+                <span>{tick(s)}</span>
+                <span className="screen__row-label">{splitLabel(s.label).tag}</span>
+                <span className="screen__row-meta">
+                  {s.actual_cost_usd != null ? usd(s.actual_cost_usd) : s.planned_cost_usd != null ? `(${usd(s.planned_cost_usd)})` : ""}
+                </span>
+              </div>
+              {s.attempts
+                .filter((a) => !a.is_primary)
+                .map((a) => (
+                  <div key={a.key} className={`screen__row screen__row--attempt is-${a.status}`}>
+                    <span>{a.status === "complete" ? "▶" : a.status === "in_flight" ? "…" : "✕"}</span>
+                    <span className="screen__row-label">
+                      ↳ {a.model_label} · {a.provider}
+                    </span>
+                    <span className="screen__row-meta">{usd(a.actual_cost_usd ?? a.estimated_cost_usd)}</span>
+                  </div>
+                ))}
+            </Fragment>
           ))}
         </div>
       );

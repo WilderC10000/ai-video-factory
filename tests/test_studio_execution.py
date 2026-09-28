@@ -348,3 +348,37 @@ def test_retry_is_blocked_while_an_earlier_provider_job_is_unfinished(db_session
     assert any("Retry is blocked" in p and "job-still-queued" in p for p in retry["problems"])
     recover = control.launch_plan(db_session, SLUG, "shot6", "recover")
     assert recover["allowed"] and not recover["paid"] and recover["estimated_cost_usd"] == 0.0
+
+
+# --- provider attempts are surfaced per stage, straight from the manifest -------------------------
+
+def test_stage_attempts_lists_primary_and_comparison_attempts(tmp_path):
+    from app.studio.service import stage_attempts
+
+    clip = tmp_path / "seedance.mp4"
+    clip.write_bytes(b"mp4")
+    manifest = {
+        "clip03": {"video_model": "alibaba/wan-3.0/image-to-video", "provider_job_id": "wan-1",
+                   "raw_video_path": str(clip), "completed_at": "2026-09-24T00:00:00+00:00", "actual_cost_usd": 0.3},
+        "clip03__attempt2": {"video_model": "alibaba/wan-3.0/image-to-video", "provider_job_id": "wan-2",
+                             "status": "cancelled", "actual_cost_usd": None},
+        "clip03__attempt3": {"provider": "higgsfield", "video_model": "bytedance/seedance-2.5/image-to-video",
+                             "provider_job_id": "hf-1", "estimated_cost_usd": 1.248, "raw_video_path": None,
+                             "completed_at": None, "payload": {"resolution": "480p", "duration": 6,
+                                                               "generate_audio": False}},
+        "proof_attempts": [{"provider_job_id": "wan-1", "verdict": "failed", "failure_class": "motion_mechanism",
+                            "continuity": "pass", "findings": ["no scoop/carry/dump cycle"]}],
+    }
+    primary, cancelled, seedance = stage_attempts(manifest, "clip03")
+    assert primary["is_primary"] and primary["model_label"] == "Wan 3.0" and primary["verdict"]["verdict"] == "failed"
+    assert cancelled["status"] == "cancelled"
+    assert (seedance["model_label"], seedance["provider"], seedance["status"]) == ("Seedance 2.5", "Higgsfield",
+                                                                                   "in_flight")
+    assert seedance["provider_job_id"] == "hf-1" and seedance["estimated_cost_usd"] == 1.248
+    assert seedance["output_url"] is None and seedance["verdict"] is None and seedance["audio"] is False
+
+    manifest["clip03__attempt3"].update(raw_video_path=str(clip), completed_at="2026-09-28T02:42:37+00:00",
+                                        actual_cost_usd=1.248)
+    assert stage_attempts(manifest, "clip03")[2]["status"] == "complete"
+    assert stage_attempts(manifest, "clip03")[2]["output_url"].startswith("/studio/media?path=")
+    assert stage_attempts(manifest, "clip01") == []

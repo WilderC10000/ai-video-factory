@@ -5,7 +5,42 @@ export type Severity = "info" | "low" | "medium" | "high" | "critical";
 export type StageStatus = "pending" | "started" | "complete" | "failed";
 export type ApprovalState = "pending" | "approved" | "rejected";
 
+export interface AttemptVerdict {
+  verdict: string | null;
+  failure_class: string | null;
+  continuity: string | null;
+  note: string | null;
+  findings: string[] | null;
+  decided_at: string | null;
+}
+
+/** One provider attempt of a stage (the primary result, or a <key>__attemptN entry), read from the manifest. */
+export interface Attempt {
+  key: string;
+  is_primary: boolean;
+  label: string;
+  provider: string | null;
+  model: string | null;
+  model_label: string | null;
+  provider_job_id: string | null;
+  status: "complete" | "in_flight" | "cancelled" | "failed" | "not_started";
+  estimated_cost_usd: number | null;
+  actual_cost_usd: number | null;
+  submitted_at: string | null;
+  completed_at: string | null;
+  resolution: string | null;
+  duration_seconds: number | null;
+  audio: boolean | null;
+  output_path: string | null;
+  output_url: string | null;
+  start_frame_url: string | null;
+  end_frame_url: string | null;
+  verdict: AttemptVerdict | null;
+  note: string | null;
+}
+
 export interface Stage {
+  attempts: Attempt[];
   key: string;
   label: string;
   order: number;

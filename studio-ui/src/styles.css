@@ -626,3 +626,27 @@ h2, h3, h4 { margin: 0; font-family: var(--font-display); font-weight: 600; }
 }
 .splash b { color: var(--text); font-size: 16px; }
 .splash code { padding: 6px 10px; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); }
+
+/* --- provider attempts (e.g. clip03: Wan original vs Seedance 2.5 comparison) --- */
+.attempts { margin-top: 16px; }
+.attempts__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.attempt { border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.attempt.is-cancelled, .attempt.is-failed { opacity: 0.7; }
+.attempt__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.attempt__provider { opacity: 0.75; font-size: 0.85em; }
+.attempt__label { margin-left: auto; font-size: 0.8em; opacity: 0.6; }
+.attempt video { width: 100%; max-height: 360px; background: #000; border-radius: 6px; }
+.attempt__empty { min-height: 120px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; }
+.attempt__chips:empty { display: none; }
+.attempt__facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; font-size: 0.85em; }
+.attempt__facts dt { opacity: 0.65; }
+.attempt__facts dd { margin: 0; overflow-wrap: anywhere; }
+.attempt__status.is-in_flight { color: #fbbf24; }
+.attempt__status.is-complete { color: #4ade80; }
+.attempt__findings ul { margin: 6px 0 0 18px; padding: 0; font-size: 0.85em; }
+.attempts__compare-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.attempts__compare-row figure { margin: 0; min-width: 0; }
+.attempts__compare-row video { width: 100%; max-height: 420px; background: #000; border-radius: 6px; }
+.attempts__compare-row figcaption { font-size: 0.85em; opacity: 0.8; margin-top: 4px; }
+.attempts__compare-actions { display: flex; gap: 8px; margin-top: 8px; }
+.screen__row--attempt { font-size: 0.9em; opacity: 0.85; padding-left: 10px; }

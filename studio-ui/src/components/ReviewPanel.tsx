@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ApiError, api } from "../api";
 import { isVideo, usd } from "../format";
 import type { Budget, Execution, Job, LaunchMode, LaunchPlan, Stage } from "../types";
+import { Attempts } from "./Attempts";
 import { JobProgress } from "./JobProgress";
 
 interface Props {
@@ -277,6 +278,12 @@ export function ReviewPanel({ projectSlug, stage, stages, budget, execution, act
       </div>
 
       <MainMedia stage={stage} />
+      {stage.attempts.length > 0 && (
+        <p className="fineprint">
+          Above: the primary result ({stage.attempts[0]?.model_label ?? "original"}). Other provider attempts are listed below
+          under Provider attempts.
+        </p>
+      )}
 
       {stage.status === "started" && stage.kind === "video" && stage.provider_job_id && !jobHere && (
         <div className="review__generate">
@@ -458,6 +465,8 @@ export function ReviewPanel({ projectSlug, stage, stages, budget, execution, act
           {stage.intent.note && <p className="fineprint">{stage.intent.note}</p>}
         </div>
       )}
+
+      <Attempts attempts={stage.attempts} />
 
       <Compare stage={stage} />
     </section>

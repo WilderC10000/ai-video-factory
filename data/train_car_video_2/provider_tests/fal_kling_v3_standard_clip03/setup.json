@@ -1,0 +1,49 @@
+{
+  "purpose": "Tier 2 proof: can Kling v3 Standard perform clip03's repetitive clearing as rule-11 hard-jump-cut beats across several work areas, landing on the approved CP03 still? Same train-car project, same approved cp02/cp03 stills, same builder and location as the Wan and Seedance clip03 runs.",
+  "project": "train_car_video_2",
+  "stage": "clip03",
+  "attempt_key": "clip03__attempt4",
+  "shot_class": "repetitive_labor",
+  "stills": {
+    "start": "cp02_still",
+    "end": "cp03_still",
+    "source": "manual ChatGPT, approved in the stills folder"
+  },
+  "model": {
+    "endpoint_id": "fal-ai/kling-video/v3/standard/image-to-video",
+    "duration": 6,
+    "aspect_ratio": "9:16",
+    "extra_params": {
+      "multi_prompt": [
+        {
+          "prompt": "Shot 1 of 3. Opens exactly on the first image: the builder lowers the tape and board, wheels the wheelbarrow in from the bottom edge of frame and shovels brush and debris from beside the end door into it, scoop after scoop. Vertical 9:16 realistic documentary construction footage. Locked camera: exterior three-quarter view of the facade from about 7 m at chest height, left end of the car nearest camera, the whole facade span and the ground in front of it in frame; held completely still - no movement, no zoom, no pan. Same rusted red-brown riveted steel passenger railcar on its original track in the misty pine-forest valley under soft overcast light; same bearded builder in a black beanie, dark charcoal hoodie, tan canvas work pants, leather tool belt and work gloves. One continuous take: every change is caused by his visible shovel and hands through the full scoop, lift and dump cycle - no debris vanishing, appearing or morphing.",
+          "duration": 2
+        },
+        {
+          "prompt": "Shot 2 of 3. HARD JUMP CUT, time has passed - the same builder now farther along the railcar's long side, deeper in frame, shoveling a second stretch into the wheelbarrow; the ground beside the end door behind him is already bare and a brush pile has grown at the edge of the clearing. Vertical 9:16 realistic documentary construction footage. Locked camera: exterior three-quarter view of the facade from about 7 m at chest height, left end of the car nearest camera, the whole facade span and the ground in front of it in frame; held completely still - no movement, no zoom, no pan. Same rusted red-brown riveted steel passenger railcar on its original track in the misty pine-forest valley under soft overcast light; same bearded builder in a black beanie, dark charcoal hoodie, tan canvas work pants, leather tool belt and work gloves. One continuous take: every change is caused by his visible shovel and hands through the full scoop, lift and dump cycle - no debris vanishing, appearing or morphing.",
+          "duration": 2
+        },
+        {
+          "prompt": "Shot 3 of 3. HARD JUMP CUT, time has passed - the builder back in the foreground in front of the car's near end beside the track, dropping a last shovelful into the loaded wheelbarrow; the strip along the whole long side is now cleared. Ends exactly on the last image: weeds, brush and debris cleared from ~80% of the strip in front of the facade; a debris pile beside a wheelbarrow at the left. Vertical 9:16 realistic documentary construction footage. Locked camera: exterior three-quarter view of the facade from about 7 m at chest height, left end of the car nearest camera, the whole facade span and the ground in front of it in frame; held completely still - no movement, no zoom, no pan. Same rusted red-brown riveted steel passenger railcar on its original track in the misty pine-forest valley under soft overcast light; same bearded builder in a black beanie, dark charcoal hoodie, tan canvas work pants, leather tool belt and work gloves. One continuous take: every change is caused by his visible shovel and hands through the full scoop, lift and dump cycle - no debris vanishing, appearing or morphing.",
+          "duration": 2
+        }
+      ],
+      "shot_type": "customize",
+      "negative_prompt": "blur, distort, low quality, morphing, objects appearing or disappearing, debris vanishing, camera movement, zoom, pan, dissolve, crossfade, on-screen text"
+    }
+  },
+  "schema_check": {
+    "checked_at": "2026-09-28",
+    "source": "https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=fal-ai/kling-video/v3/standard/image-to-video",
+    "multi_prompt": "optional list of {prompt, duration '1'..'15'}; 'Either prompt or multi_prompt must be provided, but not both.'",
+    "end_image_url": "optional; no stated restriction against multi_prompt",
+    "verdict": "ACCEPTED BY SCHEMA, NOT CONFIRMED: fal's schema allows both together and states no exclusivity; Kling's own VIDEO 3.0 guide is silent; a third-party Kling host (LetzAI) says multi-shot is 'not compatible' with first/last frame. The combination can only be confirmed by a real submission: a 4xx rejection costs nothing; a silent drop of the end frame would still bill.",
+    "no_aspect_ratio_field": "aspect comes from the 9:16 start still"
+  },
+  "cost": {
+    "expected_usd": 0.504,
+    "basis": "Kling v3 Standard $0.084/s with audio off x 6 s (fal model page, 2026-09-28)",
+    "max_approved_usd": null,
+    "approved": null
+  }
+}

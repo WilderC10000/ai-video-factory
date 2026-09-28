@@ -49,12 +49,6 @@ def _approve_all_stills(spec, manifest):
 
 # --- spec + rules --------------------------------------------------------------------------------
 
-def test_template_is_empty_and_cannot_spend():
-    spec = load_spec(TEMPLATE)
-    assert spec.status == "template" and spec.concept is None and not spec.checkpoints and not spec.shots
-    assert spec.budget_cap_usd == 0.0  # nothing can be spent until a person sets a cap
-
-
 def test_example_derives_the_anchored_clip_chain_with_adaptive_counts(project):
     spec, _ = project
     assert rules.errors(spec) == []
@@ -73,7 +67,6 @@ def test_example_derives_the_anchored_clip_chain_with_adaptive_counts(project):
     (lambda r: r["shots"][0]["beats"].pop(), "adaptive clip count"),
     (lambda r: r["shots"][2].update(complexity="complex"), "adaptive clip count"),
     (lambda r: r["shots"][0].update(camera_moves=True), "camera vs complexity"),
-    (lambda r: r["shots"][0].update(proof=False), "model routing"),
     (lambda r: r["shots"][3].update(beats=[{"task": "x", "location": "y"}]), "static = still edit"),
     (lambda r: r["checkpoints"][1].update(camera="close"), "stable cameras"),
     (lambda r: r["shots"][2]["beats"][0].update(duration_seconds=3), "model limits"),  # Seedance 2.5 is 4-30 s
@@ -275,3 +268,28 @@ def test_the_train_car_is_frozen_but_its_stills_are_still_manual_and_uploadable(
     cat = manual_stills.catalog("train_car_video_2", Path("data/train_car_video_2/manifest.json"))
     assert {"cp03a_still", "cp03b_still", "cp02_still"} <= set(cat)
     assert "clip03__attempt6" in cat["cp03a_still"]["used_by"]
+
+
+def test_a_non_proof_shot_on_an_unproven_route_is_planned_but_blocked(project):
+    spec, manifest = project
+    spec.shots[0] = type(spec.shots[0])(**{**spec.shots[0].__dict__, "proof": False})
+    assert not rules.errors(spec)
+    assert any(p.rule == "proof before scaling" and "blocked until" in p.message for p in rules.check(spec))
+    _approve_all_stills(spec, manifest)
+    budget.approve(manifest, spec, "s01_clip1", 0.30, "x")
+    plan = submit.plan(spec, manifest, "s01_clip1")
+    assert plan["state"] == "blocked" and "waits until a proof" in plan["reasons"][0]
+
+
+def test_project_3_plan_is_valid_and_priced():
+    spec = load_spec(TEMPLATE)
+    assert spec.status == "planning" and spec.concept["title"].startswith("Giant Concrete Drainage Pipe")
+    assert len(spec.checkpoints) == 20 and rules.errors(spec) == []
+    assert {s.id for s in spec.shots if s.proof} == {"s01", "s15", "s17"}
+    assert spec.budget_cap_usd == 0.0  # no spend until a person sets a cap
+    manifest = TEMPLATE.parent / "manifest.json"
+    total = sum(submit.plan(spec, manifest, c.key)["estimate_usd"] for c in spec.clips())
+    assert len(spec.clips()) == 30 and round(total, 3) == 9.878
+    cp09 = spec.checkpoint("cp09")
+    assert "earth berm over the pipe" in spec.must_not_exist(cp09) and "concrete saddles" not in spec.must_not_exist(cp09)
+    assert all(cp.action for cp in spec.checkpoints)

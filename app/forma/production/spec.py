@@ -33,6 +33,8 @@ class Checkpoint:
     built: tuple[str, ...] = ()  # every construction element present (cumulative)
     materials: dict[str, str] = field(default_factory=dict)  # element -> where its material visibly comes from
     tools_in_view: tuple[str, ...] = ()
+    action: str = ""  # what the builder is visibly doing in this still
+    not_yet: tuple[str, ...] = ()  # extra "must not appear yet" items beyond later checkpoints' elements
 
     @property
     def still_key(self) -> str:
@@ -145,6 +147,15 @@ class ProjectSpec:
     def still_keys(self) -> set[str]:
         return {s.key for s in self.stills()}
 
+    def must_not_exist(self, cp: Checkpoint) -> list[str]:
+        """Every element a later checkpoint adds (derived, so it never drifts) plus the checkpoint's own not_yet."""
+        i = [c.id for c in self.checkpoints].index(cp.id)
+        later = [e for c in self.checkpoints[i + 1:] for e in c.built if e not in cp.built]
+        return list(dict.fromkeys([*later, *cp.not_yet]))
+
+    def shot_into(self, cp_id: str) -> "Shot | None":
+        return next((s for s in self.shots if s.to_cp == cp_id), None)
+
     def dependents(self, still_key: str) -> list[str]:
         """Clips that start or end on this still."""
         return [c.key for c in self.clips() if still_key in (c.start_still, c.end_still)]
@@ -161,9 +172,11 @@ class ProjectSpec:
     def _cp_brief(self, cp: Checkpoint) -> str:
         new = [e for e in cp.built if e not in self._previous_built(cp)]
         materials = "; ".join(f"{e}: from {cp.materials[e]}" for e in new if e in cp.materials)
+        not_yet = self.must_not_exist(cp)
         return (f"{cp.id.upper()} - {cp.title}. Visible state: {cp.state} Built so far: "
                 f"{', '.join(cp.built) or 'nothing yet'}. {('Material sources in view: ' + materials + '. ') if materials else ''}"
-                f"Tools in view: {', '.join(cp.tools_in_view) or 'none'}. {self._lock(cp.camera)}")
+                f"Builder: {cp.action or 'as in the previous still'}. Tools in view: {', '.join(cp.tools_in_view) or 'none'}. "
+                f"{('Must NOT appear yet: ' + ', '.join(not_yet) + '. ') if not_yet else ''}{self._lock(cp.camera)}")
 
     def _mid_brief(self, shot: Shot, n: int) -> str:
         cp_from, cp_to = self.checkpoint(shot.from_cp), self.checkpoint(shot.to_cp)
@@ -187,7 +200,8 @@ def load_spec(path: Path) -> ProjectSpec:
         raise SpecError(f"Cannot read project spec {path}: {e}") from e
     try:
         checkpoints = [Checkpoint(c["id"], c["title"], c["state"], c["camera"], tuple(c.get("built", ())),
-                                  dict(c.get("materials", {})), tuple(c.get("tools_in_view", ())))
+                                  dict(c.get("materials", {})), tuple(c.get("tools_in_view", ())),
+                                  c.get("action", ""), tuple(c.get("not_yet", ())))
                        for c in raw.get("checkpoints", [])]
         shots = [Shot(s["id"], s["from"], s["to"], s["title"], s["complexity"], s["shot_class"],
                       tuple(Beat(b["task"], b["location"], int(b.get("duration_seconds", 3))) for b in s.get("beats", [])),

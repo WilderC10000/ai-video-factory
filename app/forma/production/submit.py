@@ -36,7 +36,9 @@ def _now() -> str:
 
 
 def route_for(clip: Clip) -> Route:
-    return select_video_model(clip.shot.shot_class, allow_unproven=clip.shot.proof, model=clip.shot.model)
+    """The route a clip is priced and generated on: the proven one if any, else the first candidate
+    (which only a proof shot may actually submit - see plan())."""
+    return select_video_model(clip.shot.shot_class, allow_unproven=True, model=clip.shot.model)
 
 
 def model_config(route: Route, clip: Clip) -> FalVideoModelConfig:
@@ -74,6 +76,10 @@ def plan(spec: ProjectSpec, manifest_path: Path, clip_key: str) -> dict:
     except Exception as e:  # routing / pricing problems are shown, not raised
         route_out, estimate = {"model": None, "status": "none", "evidence": str(e)}, None
     st = clip_state(spec, manifest_path, manifest, clip, bool(spec_errors))
+    if (route_out["status"] == "candidate_unproven" and not clip.shot.proof
+            and st["state"] in ("ready", "budget_approved")):
+        st = {**st, "state": "blocked", "reasons": [f"{route_out['model']} is unproven for {clip.shot.shot_class} - "
+                                                    "this shot waits until a proof shot of that route passes."]}
     return {"clip": clip.key, "shot": clip.shot.id, "shot_title": clip.shot.title, "n": clip.n,
             "of": clip.shot.clip_count, "shot_class": clip.shot.shot_class, "complexity": clip.shot.complexity,
             "proof": clip.shot.proof, "start_still": clip.start_still, "end_still": clip.end_still,

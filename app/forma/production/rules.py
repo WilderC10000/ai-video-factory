@@ -33,6 +33,8 @@ def check(spec: ProjectSpec) -> list[Problem]:
     if len(set(ids)) != len(ids):
         err("checkpoints", "unique ids", "checkpoint ids repeat")
     for cp in spec.checkpoints:
+        if not cp.action.strip():
+            warn(cp.id, "builder working", "no visible builder action described")
         if cp.camera not in spec.cameras:
             err(cp.id, "camera bible", f"camera {cp.camera!r} is not defined in cameras")
 
@@ -78,14 +80,17 @@ def check(spec: ProjectSpec) -> list[Problem]:
         if len(cams) > 1 and not shot.camera_moves:
             err(shot.id, "stable cameras", f"{shot.from_cp} and {shot.to_cp} use different cameras - change the "
                                            "camera at a static cut (time_jump) or plan an environmental camera move")
-        # Routing (lesson 11): a model must exist; unproven routes only as a proof.
+        # Routing (lesson 11): a model must exist. On an unproven route only proof shots may run; the rest are
+        # valid plans that stay blocked until the route passes a reviewed proof.
         try:
-            route = select_video_model(shot.shot_class, allow_unproven=shot.proof, model=shot.model)
+            route = select_video_model(shot.shot_class, allow_unproven=True, model=shot.model)
         except RoutingError as e:
             err(shot.id, "model routing", str(e))
             continue
         if route.status == CANDIDATE_UNPROVEN:
-            warn(shot.id, "proof before scaling", f"{route.model} is unproven for {shot.shot_class}: this shot is a proof")
+            warn(shot.id, "proof before scaling",
+                 f"{route.model} is unproven for {shot.shot_class}: "
+                 + ("this shot is a proof" if shot.proof else "blocked until a proof of this route passes"))
         cfg = FAL_VIDEO_MODELS[route.model]
         for i, beat in enumerate(shot.beats, 1):
             if cfg.allowed_durations and beat.duration_seconds not in cfg.allowed_durations:

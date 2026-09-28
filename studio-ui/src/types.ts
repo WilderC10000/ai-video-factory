@@ -14,6 +14,9 @@ export interface AttemptVerdict {
   decided_at: string | null;
 }
 
+export type AttemptPhase =
+  | "not_started" | "submitted" | "queued" | "generating" | "downloading" | "complete" | "failed" | "cancelled";
+
 /** One provider attempt of a stage (the primary result, or a <key>__attemptN entry), read from the manifest. */
 export interface Attempt {
   key: string;
@@ -24,6 +27,15 @@ export interface Attempt {
   model_label: string | null;
   provider_job_id: string | null;
   status: "complete" | "in_flight" | "cancelled" | "failed" | "not_started";
+  /** Live lifecycle, derived from what the runner/studio persisted in the manifest. */
+  phase: AttemptPhase;
+  attempt_number: number | null;
+  provider_status: string | null;
+  status_checked_at: string | null;
+  local_file_exists: boolean;
+  ended_at: string | null;
+  error: string | null;
+  last_check_error: string | null;
   estimated_cost_usd: number | null;
   actual_cost_usd: number | null;
   submitted_at: string | null;

@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.studio.actions import get_action, stage_intent
+from app.studio.attempt_status import attempt_phase, orphan_job_entries
 from app.studio.execution import execution_info
 from app.studio.media_probe import AudioProbe, ffprobe_available, probe_audio
 from app.studio.models import (
@@ -115,9 +116,20 @@ def _attempt_out(key: str, entry: dict, is_primary: bool, verdicts: dict[str, di
         status = "not_started"
     verdict = verdicts.get(job_id) if job_id else None
     _, _, n = key.partition("__attempt")
+    output_exists = _is_file(output)
     return {
         "key": key, "is_primary": is_primary,
         "label": "Primary result" if is_primary else f"Attempt {n}",
+        "attempt_number": int(n) if n.isdigit() else None,
+        # Live lifecycle, derived only from what is persisted in the manifest (survives restarts):
+        # submitted | queued | generating | downloading | complete | failed | cancelled | not_started
+        "phase": attempt_phase(entry, output_exists),
+        "provider_status": entry.get("provider_status"),
+        "status_checked_at": entry.get("status_checked_at"),
+        "local_file_exists": output_exists,
+        "ended_at": entry.get("completed_at") or entry.get("failed_at") or entry.get("cancelled_at"),
+        "error": entry.get("error"),
+        "last_check_error": entry.get("last_check_error"),
         "provider": {"higgsfield": "Higgsfield", "fal": "fal"}.get(entry.get("provider") or "", entry.get("provider"))
         or inferred_provider,
         "model": model, "model_label": model_label, "provider_job_id": job_id, "status": status,
@@ -434,6 +446,8 @@ def build_snapshot(db: Session, slug: str | None = None) -> dict:
 
     stages = list(project.stages)
     manifest = _read_manifest(project.source_path)  # provider attempts are read live, not imported
+    if project.source_path:  # a submitted job recorded only in job.json still shows (never invisible)
+        manifest = manifest | orphan_job_entries(Path(project.source_path), manifest)
     stage_keys = {s.id: s.key for s in stages}
     approvals = db.scalars(select(StudioApproval).where(StudioApproval.project_id == project.id)).all()
     events = db.scalars(select(StudioEvent).where(StudioEvent.project_id == project.id)).all()

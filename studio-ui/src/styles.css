@@ -643,6 +643,15 @@ h2, h3, h4 { margin: 0; font-family: var(--font-display); font-weight: 600; }
 .attempt__facts dd { margin: 0; overflow-wrap: anywhere; }
 .attempt__status.is-in_flight { color: #fbbf24; }
 .attempt__status.is-complete { color: #4ade80; }
+.attempt__status.is-submitted, .attempt__status.is-queued, .attempt__status.is-generating,
+.attempt__status.is-downloading { color: #fbbf24; }
+.attempt__status.is-failed { color: #f87171; }
+.attempt__empty--live { flex-direction: column; gap: 4px; border: 1px dashed #fbbf24; }
+.attempt__error { white-space: pre-wrap; word-break: break-word; font-size: 0.75em; max-height: 160px; overflow: auto; margin: 6px 0 0; }
+.screen__row-sub { display: block; font-size: 0.8em; opacity: 0.75; }
+.screen__row--attempt.is-phase-queued, .screen__row--attempt.is-phase-generating,
+.screen__row--attempt.is-phase-submitted, .screen__row--attempt.is-phase-downloading { opacity: 1; color: #fbbf24; }
+.screen__row--attempt.is-phase-failed { color: #f87171; }
 .attempt__findings ul { margin: 6px 0 0 18px; padding: 0; font-size: 0.85em; }
 .attempts__compare-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .attempts__compare-row figure { margin: 0; min-width: 0; }

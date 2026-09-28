@@ -4,6 +4,7 @@ Reads mirror the pipeline manifests; writes go to studio_* tables only, except
 launches, which run the real pipeline stage (mock sandbox or live, per
 STUDIO_EXECUTION_MODE) behind explicit confirmation and budget checks.
 """
+import json
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -14,6 +15,13 @@ from sqlalchemy.orm import Session
 
 from app.db import get_session
 from app.studio import control
+from app.studio.attempt_status import (
+    AttemptCheckError,
+    attempt_phase,
+    check_attempt,
+    heartbeat_fresh,
+    is_unfinished,
+)
 from app.studio.execution import execution_info
 from app.studio.importers.manifest_importer import default_data_dir, import_all
 from app.studio.jobs import JobRunner, get_runner
@@ -97,6 +105,29 @@ def launch(slug: str, key: str, body: LaunchIn, db: Session = Depends(get_sessio
     except control.ControlError as e:
         return _error(e)
     return job_out(job)
+
+
+@router.post("/projects/{slug}/attempts/{key}/check")
+def check_attempt_status(slug: str, key: str, db: Session = Depends(get_session)):
+    """FREE: one status read of an already-submitted provider attempt, persisted to the manifest.
+
+    Never submits, resubmits or retries a generation. Skipped while a runner is actively polling
+    the same job (fresh heartbeat), and for attempts that already finished."""
+    project = db.scalars(select(StudioProject).where(StudioProject.slug == slug)).first()
+    if project is None or not project.source_path:
+        raise HTTPException(status_code=404, detail=f"Studio project {slug} has no manifest")
+    if "__attempt" not in key:
+        raise HTTPException(status_code=400, detail="Only provider attempts (<stage>__attemptN) are checked here")
+    manifest_path = Path(project.source_path)
+    try:
+        before = json.loads(manifest_path.read_text()).get(key) or {}
+        skipped = not is_unfinished(before) or heartbeat_fresh(before)
+        entry = check_attempt(manifest_path, key)
+    except AttemptCheckError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    output = entry.get("raw_video_path")
+    return {"key": key, "checked": not skipped, "phase": attempt_phase(entry, bool(output) and Path(output).is_file()),
+            "provider_status": entry.get("provider_status"), "status_checked_at": entry.get("status_checked_at")}
 
 
 @router.get("/jobs/{job_id}")

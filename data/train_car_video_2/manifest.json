@@ -168,5 +168,56 @@
     "actual_cost_usd": 1.248,
     "completed_at": "2026-09-28T02:42:37.609367+00:00",
     "note": "clip03 proof comparison - Higgsfield bytedance/seedance-2.5/image-to-video"
+  },
+  "clip03__attempt4": {
+    "provider": "fal",
+    "video_model": "fal-ai/kling-video/v3/standard/image-to-video",
+    "shot_class": "repetitive_labor",
+    "route_status_at_submit": "candidate_unproven",
+    "payload": {
+      "start_image_url": "https://v3b.fal.media/files/b/0aac48a3/QtcvG0zuWGNvUUSxc0b78_cp02_still.jpg",
+      "multi_prompt": [
+        {
+          "prompt": "Shot 1 of 3. Opens exactly on the first image: the builder lowers the tape and board, wheels the wheelbarrow in from the bottom edge of frame and shovels brush and debris from beside the end door into it, scoop after scoop. Vertical 9:16 realistic documentary construction footage. Locked camera: exterior three-quarter view of the facade from about 7 m at chest height, left end of the car nearest camera, the whole facade span and the ground in front of it in frame; held completely still - no movement, no zoom, no pan. Same rusted red-brown riveted steel passenger railcar on its original track in the misty pine-forest valley under soft overcast light; same bearded builder in a black beanie, dark charcoal hoodie, tan canvas work pants, leather tool belt and work gloves. One continuous take: every change is caused by his visible shovel and hands through the full scoop, lift and dump cycle - no debris vanishing, appearing or morphing.",
+          "duration": "2"
+        },
+        {
+          "prompt": "Shot 2 of 3. HARD JUMP CUT, time has passed - the same builder now farther along the railcar's long side, deeper in frame, shoveling a second stretch into the wheelbarrow; the ground beside the end door behind him is already bare and a brush pile has grown at the edge of the clearing. Vertical 9:16 realistic documentary construction footage. Locked camera: exterior three-quarter view of the facade from about 7 m at chest height, left end of the car nearest camera, the whole facade span and the ground in front of it in frame; held completely still - no movement, no zoom, no pan. Same rusted red-brown riveted steel passenger railcar on its original track in the misty pine-forest valley under soft overcast light; same bearded builder in a black beanie, dark charcoal hoodie, tan canvas work pants, leather tool belt and work gloves. One continuous take: every change is caused by his visible shovel and hands through the full scoop, lift and dump cycle - no debris vanishing, appearing or morphing.",
+          "duration": "2"
+        },
+        {
+          "prompt": "Shot 3 of 3. HARD JUMP CUT, time has passed - the builder back in the foreground in front of the car's near end beside the track, dropping a last shovelful into the loaded wheelbarrow; the strip along the whole long side is now cleared. Ends exactly on the last image: weeds, brush and debris cleared from ~80% of the strip in front of the facade; a debris pile beside a wheelbarrow at the left. Vertical 9:16 realistic documentary construction footage. Locked camera: exterior three-quarter view of the facade from about 7 m at chest height, left end of the car nearest camera, the whole facade span and the ground in front of it in frame; held completely still - no movement, no zoom, no pan. Same rusted red-brown riveted steel passenger railcar on its original track in the misty pine-forest valley under soft overcast light; same bearded builder in a black beanie, dark charcoal hoodie, tan canvas work pants, leather tool belt and work gloves. One continuous take: every change is caused by his visible shovel and hands through the full scoop, lift and dump cycle - no debris vanishing, appearing or morphing.",
+          "duration": "2"
+        }
+      ],
+      "end_image_url": "https://v3b.fal.media/files/b/0aac48a3/1dcsqtbNX6c53Ll7c30Tq_cp03_still.jpg",
+      "duration": "6",
+      "shot_type": "customize",
+      "negative_prompt": "blur, distort, low quality, morphing, objects appearing or disappearing, debris vanishing, camera movement, zoom, pan, dissolve, crossfade, on-screen text",
+      "generate_audio": false
+    },
+    "estimated_cost_usd": 0.504,
+    "approved_usd": 0.51,
+    "estimate_basis": "Kling v3 Standard $0.084/s with audio off x 6 s (fal model page, 2026-09-28)",
+    "provider_job_id": "01a0e9da-4874-7001-b5fc-a2be99b8f9ce",
+    "meta": {
+      "status_url": "https://queue.fal.run/fal-ai/kling-video/requests/01a0e9da-4874-7001-b5fc-a2be99b8f9ce/status",
+      "response_url": "https://queue.fal.run/fal-ai/kling-video/requests/01a0e9da-4874-7001-b5fc-a2be99b8f9ce"
+    },
+    "start_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\train_car_video_2\\stills\\cp02_still.jpg",
+    "start_frame_sha256": "56c1d11507c2f19d11ef9a8faef20264e857cbed7b918f84800e5cabc08bf95a",
+    "end_frame_path": "C:\\Users\\wcoun\\ai-video-factory\\data\\train_car_video_2\\stills\\cp03_still.jpg",
+    "end_frame_sha256": "ec5b34ca2596a4f39fbcc7aa778cbbb5637abb2a9c11c0c853b1404c5839f159",
+    "submitted_at": "2026-09-28T21:09:53.430067+00:00",
+    "raw_video_path": null,
+    "actual_cost_usd": null,
+    "completed_at": null,
+    "note": "Tier 2 proof: can Kling v3 Standard perform clip03's repetitive clearing as rule-11 hard-jump-cut beats across several work areas, landing on the approved CP03 still? Same train-car project, same approved cp02/cp03 stills, same builder and location as the Wan and Seedance clip03 runs.",
+    "status": "failed",
+    "provider_status": "FAILED",
+    "failed_at": "2026-09-28T21:24:09.444566+00:00",
+    "status_checked_at": "2026-09-28T21:24:09.444566+00:00",
+    "error": "fal.ai result 422: {\"detail\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"multi_prompt\",0,\"prompt\"],\"msg\":\"Value error, Prompt must not exceed 512 characters.\",\"input\":\"Shot 1 of 3. Opens exactly on the first image: the builder lowers the tape and board, wheels the wheelbarrow in from the bottom edge of frame and shovels brush and debris from beside the end door into it, scoop after scoop. Vertical 9:16 realistic documentary construction footage. Locked camera: exterior three-quarter view of the facade from about 7 m at chest height, left end of the car nearest camera, the whole facade span and the ground in front of it in frame; held completely still - no movement, no zoom, no pan. Same rusted red-brown riveted steel passenger railcar on its original track in the misty pine-forest valley under soft overcast light; same bearded builder in a black beanie, dark charcoal hoodie, tan canvas work pants, leather tool belt and work gloves. One continuous take: every change is caused by his visible shovel and hands through the full scoop, lift and dump cycle - no debris vanishing, appearing or morphing.\",\"ctx\":{\"error\":\"Prompt must not exceed 512 characters.\"}},{\"type\":\"value_error\",\"loc\":[\"body\",\"multi_prompt\",1,\"prompt\"],\"msg\":\"Value error, Prompt must not exceed 512 characters.\",\"input\":\"Shot 2 of 3. HARD JUMP CUT, time has passed - the same builder now farther along the railcar's long side, deeper in frame, shoveling a second stretch into the wheelbarrow; the ground beside the end door behind him is already bare and a brush pile has grown at the edge of the clearing. Vertical 9:16 realistic documentary construction footage. Locked camera: exterior three-quarter view of the facade from about 7 m at chest height, left end of the car nearest camera, the whole facade span and the ground in front of it in frame; held completely still - no movement, no zoom, no pan. Same rusted red-brown riveted steel passenger railcar on its original track in the misty pine-forest valley under soft overcast light; sa",
+    "last_check_error": null
   }
 }

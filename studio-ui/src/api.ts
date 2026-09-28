@@ -43,7 +43,12 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ decision, note }),
     }),
-  launchPreview: (slug: string, key: string, mode: LaunchMode) =>
+  /** FREE status read of an already-submitted provider attempt (never submits or retries). */
+  checkAttempt: (slug: string, key: string) =>
+    request<{ key: string; checked: boolean; phase: string }>(`/studio/projects/${slug}/attempts/${key}/check`, {
+      method: "POST",
+    }),
+  launchPreview:(slug: string, key: string, mode: LaunchMode) =>
     request<LaunchPlan>(`${stagePath(slug, key)}/launch-preview?mode=${mode}`),
   launch: (
     slug: string,

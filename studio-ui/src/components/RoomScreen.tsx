@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import { splitLabel, usd } from "../format";
-import type { Approval, AudioReport, Budget, ProjectInfo, Room, Stage } from "../types";
+import type { Approval, Attempt, AudioReport, Budget, ProjectInfo, Room, Stage } from "../types";
+import { PHASE_TEXT, attemptElapsed, attemptTitle, isUnfinished, useNow } from "./Attempts";
 import { StageThumb } from "./StageThumb";
 
 interface Props {
@@ -24,6 +25,34 @@ export const clipAudioClass = (hasAudio: boolean | null) =>
   hasAudio === true ? "has" : hasAudio === false ? "none" : "unknown";
 
 const tick = (s: Stage) => (s.status === "complete" ? "✓" : s.status === "started" ? "…" : "○");
+
+const PHASE_ICON: Record<Attempt["phase"], string> = {
+  not_started: "○", submitted: "…", queued: "…", generating: "…", downloading: "↓",
+  complete: "▶", failed: "✕", cancelled: "✕",
+};
+
+/** One provider attempt on the Render Bay wall - visible from the moment its job id is recorded. */
+function AttemptRow({ a }: { a: Attempt }) {
+  const live = isUnfinished(a);
+  const now = useNow(live);
+  const elapsed = attemptElapsed(a, now);
+  const state = live ? a.provider_status ?? PHASE_TEXT[a.phase] : PHASE_TEXT[a.phase];
+  return (
+    <div className={`screen__row screen__row--attempt is-${a.status} is-phase-${a.phase}`}
+         title={a.provider_job_id ? `${a.provider} job ${a.provider_job_id}` : undefined}>
+      <span>{PHASE_ICON[a.phase]}</span>
+      <span className="screen__row-label">
+        ↳ {attemptTitle(a)}
+        <small className="screen__row-sub">
+          {state}{elapsed ? ` · ${elapsed}` : ""}{a.local_file_exists ? " · file ✓" : live ? " · no file yet" : ""}
+        </small>
+      </span>
+      <span className="screen__row-meta">
+        {a.actual_cost_usd != null ? usd(a.actual_cost_usd) : `est ${a.estimated_cost_usd != null ? `$${a.estimated_cost_usd.toFixed(3)}` : "—"}`}
+      </span>
+    </div>
+  );
+}
 
 function NoData({ label }: { label: string }) {
   return (
@@ -123,13 +152,7 @@ export function RoomScreen({ room, project, stages, budget, approvals, audio }: 
               {s.attempts
                 .filter((a) => !a.is_primary)
                 .map((a) => (
-                  <div key={a.key} className={`screen__row screen__row--attempt is-${a.status}`}>
-                    <span>{a.status === "complete" ? "▶" : a.status === "in_flight" ? "…" : "✕"}</span>
-                    <span className="screen__row-label">
-                      ↳ {a.model_label} · {a.provider}
-                    </span>
-                    <span className="screen__row-meta">{usd(a.actual_cost_usd ?? a.estimated_cost_usd)}</span>
-                  </div>
+                  <AttemptRow key={a.key} a={a} />
                 ))}
             </Fragment>
           ))}

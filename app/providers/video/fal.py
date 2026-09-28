@@ -83,6 +83,9 @@ class FalVideoModelConfig:
     audio_off_param: str | None = None
     requires_end_image: bool = False  # Veo first-last-frame has no single-image mode
     supports_multi_prompt: bool = False  # Kling v3: extra_params["multi_prompt"] replaces "prompt"
+    # Per-shot prompt limit, enforced by the model at run time but NOT in fal's OpenAPI schema
+    # (Kling v3: "Prompt must not exceed 512 characters" - learned from clip03__attempt4's 422).
+    max_shot_prompt_chars: int | None = None
     # extra_params keys passed through as-is (the original Wan whitelist unless a config says otherwise).
     passthrough_params: tuple[str, ...] = ("enable_prompt_expansion", "seed", "acceleration")
 
@@ -274,6 +277,7 @@ _KLING_V3 = dict(
     allowed_durations=tuple(range(3, 16)),
     audio_off_param="generate_audio",  # default true; audio on is +50%
     supports_multi_prompt=True,  # list of {prompt, duration "1".."15"}; replaces "prompt"
+    max_shot_prompt_chars=512,  # run-time limit, absent from the schema (422 on clip03__attempt4)
     passthrough_params=("shot_type", "negative_prompt", "cfg_scale"),
 )
 # $0.084/s audio off. Tier 2 CANDIDATE (unproven) for repetitive labor with internal cuts.
@@ -452,6 +456,12 @@ class FalVideoProvider(VideoProvider):
                 raise VideoProviderError(f"{cfg.submit_path} has no multi_prompt (multi-shot) input.")
             if not shots or any(not (shot.get("prompt") or "").strip() for shot in shots):
                 raise VideoProviderError("multi_prompt needs at least one shot, each with a prompt.")
+            limit = cfg.max_shot_prompt_chars
+            too_long = [i for i, shot in enumerate(shots, 1) if limit and len(shot["prompt"]) > limit]
+            if too_long:
+                raise VideoProviderError(
+                    f"multi_prompt shot(s) {too_long} exceed the {limit}-character per-shot limit of {cfg.submit_path}."
+                )
             total = sum(int(shot["duration"]) for shot in shots)
             if total != request.duration_seconds:
                 raise VideoProviderError(
@@ -552,6 +562,14 @@ class FalVideoProvider(VideoProvider):
             )
             self._diag("GET", result_url)
             result_resp = self._client.get(result_url, headers=self._headers())
+            if result_resp.status_code in (400, 422):
+                # The request finished WITHOUT a video: fal ran it and the model rejected the input
+                # (e.g. Kling v3: "Prompt must not exceed 512 characters"). Terminal - polling again
+                # can never succeed, so report it as failed rather than as a transient error.
+                return VideoJobStatusResult(
+                    status=ProviderJobState.FAILED,
+                    error_message=f"fal.ai result {result_resp.status_code}: {result_resp.text[:2000]}",
+                )
             if result_resp.status_code >= 400:
                 raise VideoProviderError(
                     f"fal.ai result fetch failed: {result_resp.status_code} {result_resp.text}"

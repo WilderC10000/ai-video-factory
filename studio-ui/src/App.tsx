@@ -4,10 +4,14 @@ import { Building } from "./components/Building";
 import { Inspector } from "./components/Inspector";
 import { ActivityPanel, AttentionPanel, BudgetPanel, ProjectPanel } from "./components/Panels";
 import { StoryboardStrip } from "./components/StoryboardStrip";
-import type { Selection, Snapshot, Stage } from "./types";
+import { parseIso } from "./format";
+import type { AttemptPhase, Selection, Snapshot, Stage } from "./types";
 
 const POLL_MS = 5000;
 const POLL_ACTIVE_MS = 1500; // while a job runs, so phase changes show up promptly
+const UNFINISHED: AttemptPhase[] = ["submitted", "queued", "generating", "downloading"];
+const STALE_CHECK_MS = 45_000; // matches the backend's runner-heartbeat window
+const MIN_CHECK_GAP_MS = 20_000;
 
 // The open room/stage lives in the URL hash (#room=render_bay&stage=shot4) so it can be linked and survives reloads.
 function readHash(): Selection | null {
@@ -59,6 +63,24 @@ export function App() {
     const id = window.setInterval(load, jobRunning ? POLL_ACTIVE_MS : POLL_MS);
     return () => window.clearInterval(id);
   }, [load, jobRunning]);
+
+  // Unfinished provider attempts (submitted outside the studio, e.g. by a proof runner) are kept live:
+  // when nobody has checked one for a while - the runner stopped, or the backend restarted - ask the
+  // backend for a FREE status read, which persists to the manifest. Never submits or retries anything.
+  const lastCheck = useRef<Record<string, number>>({});
+  useEffect(() => {
+    const slug = snap?.project?.slug;
+    if (!slug || !snap?.stages) return;
+    const now = Date.now();
+    const due = snap.stages
+      .flatMap((s) => s.attempts)
+      .filter((a) => UNFINISHED.includes(a.phase))
+      .filter((a) => !a.status_checked_at || now - parseIso(a.status_checked_at) > STALE_CHECK_MS)
+      .filter((a) => now - (lastCheck.current[a.key] ?? 0) > MIN_CHECK_GAP_MS);
+    if (due.length === 0) return;
+    due.forEach((a) => (lastCheck.current[a.key] = now));
+    void Promise.allSettled(due.map((a) => api.checkAttempt(slug, a.key))).then(load);
+  }, [snap, load]);
 
   const switchProject = async (slug: string) => {
     slugRef.current = slug;

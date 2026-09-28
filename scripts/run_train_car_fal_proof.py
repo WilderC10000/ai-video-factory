@@ -28,8 +28,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from app.forma import routing
-from app.providers.base import ProviderJobState, VideoGenerationRequest, VideoProviderError
+from app.providers.base import VideoGenerationRequest, VideoProviderError
 from app.providers.video.fal import FAL_VIDEO_MODELS, FalVideoProvider
+from app.studio.attempt_status import check_attempt
 from scripts.run_alpine_video_2_common import spent_so_far
 
 DATA = Path(__file__).resolve().parent.parent / "data" / "train_car_video_2"
@@ -195,8 +196,9 @@ def submit(provider: FalVideoProvider, approve_usd: float, *, setup: dict, setup
         "provider_job_id": submitted.provider_job_id, "meta": submitted.meta,
         "start_frame_path": prepared["start_frame"], "start_frame_sha256": prepared["start_frame_sha256"],
         "end_frame_path": prepared["end_frame"], "end_frame_sha256": prepared["end_frame_sha256"],
-        "submitted_at": _now(), "raw_video_path": None, "actual_cost_usd": None, "completed_at": None,
-        "note": setup.get("purpose")}
+        "submitted_at": _now(), "provider_status": None, "status_checked_at": None,
+        "planned_output_path": str(raw_output_path(setup)), "raw_video_path": None, "actual_cost_usd": None,
+        "completed_at": None, "note": setup.get("purpose")}
     manifest_path.write_text(json.dumps(manifest, indent=2))
     (setup_dir / "job.json").write_text(json.dumps({"provider_job_id": submitted.provider_job_id,
                                                     "meta": submitted.meta}, indent=2))
@@ -207,39 +209,25 @@ def submit(provider: FalVideoProvider, approve_usd: float, *, setup: dict, setup
 
 def recover(provider: FalVideoProvider, *, setup: dict, manifest_path: Path = MANIFEST_PATH, log=print,
             wait_seconds: float = 2700.0, poll_seconds: float = 15.0) -> dict:
-    """FREE: poll the recorded job; on completion download and record cost. Never resubmits."""
+    """FREE: poll the recorded job until it finishes; each check is persisted in the manifest (the studio
+    shows it live) via app.studio.attempt_status.check_attempt. Never resubmits."""
     key = setup["attempt_key"]
     entry = json.loads(manifest_path.read_text()).get(key) or {}
-    job_id = entry.get("provider_job_id")
-    if not job_id:
+    if not entry.get("provider_job_id"):
         raise ProofError(f"No {key} job recorded - nothing to recover.")
-    if entry.get("completed_at"):
-        return entry
-    output = raw_output_path(setup)
     deadline = time.monotonic() + wait_seconds
     while True:
-        try:
-            result = provider.get_job_status(job_id, entry.get("meta"))
-        except VideoProviderError as e:
-            log(f"  status check failed ({e}); retrying")
-            result = None
-        if result and result.status == ProviderJobState.COMPLETED:
-            provider.download_result(job_id, result.output_url, str(output))
-            manifest = json.loads(manifest_path.read_text())
-            manifest[key].update(raw_video_path=str(output), completed_at=_now(),
-                                 actual_cost_usd=manifest[key]["estimated_cost_usd"])
-            manifest_path.write_text(json.dumps(manifest, indent=2))
-            log(f"Done: {output}")
-            return manifest[key]
-        if result and result.status == ProviderJobState.FAILED:
-            manifest = json.loads(manifest_path.read_text())
-            manifest[key].update(status="failed", error=result.error_message, failed_at=_now())
-            manifest_path.write_text(json.dumps(manifest, indent=2))
-            raise ProofError(f"fal job {job_id} ended without a video: {result.error_message}")
+        entry = check_attempt(manifest_path, key, provider=provider, force=True)
+        if entry.get("completed_at"):
+            log(f"Done: {entry['raw_video_path']}")
+            return entry
+        if entry.get("status") in ("failed", "cancelled"):
+            raise ProofError(f"fal job {entry['provider_job_id']} ended without a video: {entry.get('error')}")
         if time.monotonic() > deadline:
-            raise ProofError(f"Still not finished after {wait_seconds:.0f}s - job {job_id} is recorded; "
-                             "run --recover later (free).")
-        log(f"  {(result.meta or {}).get('provider_status', 'checking') if result else 'retrying'}...")
+            raise ProofError(f"Still not finished after {wait_seconds:.0f}s - job {entry['provider_job_id']} is "
+                             "recorded; run --recover later (free).")
+        log(f"  {entry.get('provider_status') or 'checking'}"
+            f"{' (check failed: ' + entry['last_check_error'][:120] + ')' if entry.get('last_check_error') else ''}...")
         time.sleep(poll_seconds)
 
 

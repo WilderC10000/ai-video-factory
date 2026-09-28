@@ -93,6 +93,7 @@ def test_kling_multi_prompt_replaces_prompt_and_keeps_the_end_frame(tmp_path):
     (KLING_3_STANDARD, {"extra_params": {"multi_prompt": SHOTS[:2]}}, "add up to 4 s"),
     (KLING_3_STANDARD, {"extra_params": {"multi_prompt": [{"prompt": " ", "duration": 6}]}}, "each with a prompt"),
     (SEEDANCE_2_5, {"extra_params": {"multi_prompt": SHOTS}}, "no multi_prompt"),
+    (KLING_3_STANDARD, {"extra_params": {"multi_prompt": [{"prompt": "x" * 513, "duration": 6}]}}, "512-character"),
     (KLING_3_STANDARD, {"duration_seconds": 16.0}, "takes durations"),
     (VEO_3_1_FAST_FIRST_LAST, {"duration_seconds": 5.0}, "takes durations"),
     (VEO_3_1_FAST_FIRST_LAST, {"end_image_path": None}, "both a first and a last frame"),

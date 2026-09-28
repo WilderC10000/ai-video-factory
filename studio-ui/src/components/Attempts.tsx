@@ -1,14 +1,39 @@
 import { useEffect, useRef, useState } from "react";
-import { timeAgo, usd } from "../format";
-import type { Attempt } from "../types";
+import { fmtDuration, parseIso, timeAgo, usd } from "../format";
+import type { Attempt, AttemptPhase } from "../types";
 
-const STATUS_TEXT: Record<Attempt["status"], string> = {
-  complete: "Complete",
-  in_flight: "Generating at the provider",
-  cancelled: "Cancelled (not billed)",
-  failed: "Failed (not billed)",
+export const PHASE_TEXT: Record<AttemptPhase, string> = {
   not_started: "Not started",
+  submitted: "Submitted",
+  queued: "Queued at the provider",
+  generating: "Generating",
+  downloading: "Downloading",
+  complete: "Complete",
+  failed: "Failed",
+  cancelled: "Cancelled (not billed)",
 };
+
+export const isUnfinished = (a: Attempt) => ["submitted", "queued", "generating", "downloading"].includes(a.phase);
+
+/** Ticks every second while `active`, so elapsed times count up live. */
+export function useNow(active: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [active]);
+  return now;
+}
+
+/** Time since submission - live while unfinished, frozen at completion/failure. */
+export function attemptElapsed(a: Attempt, now: number): string | null {
+  if (!a.submitted_at) return null;
+  const end = a.ended_at ? parseIso(a.ended_at) : now;
+  return fmtDuration(end - parseIso(a.submitted_at));
+}
+
+export const attemptTitle = (a: Attempt) => `${a.model_label ?? a.model ?? "Unknown model"} · ${a.label}`;
 
 function verdictChip(a: Attempt) {
   if (a.verdict?.verdict === "failed") {
@@ -25,9 +50,12 @@ function verdictChip(a: Attempt) {
 }
 
 function AttemptCard({ a }: { a: Attempt }) {
-  const cost = a.actual_cost_usd ?? a.estimated_cost_usd;
+  const live = isUnfinished(a);
+  const now = useNow(live);
+  const elapsed = attemptElapsed(a, now);
+  const costLabel = a.actual_cost_usd != null ? "Cost recorded" : "Estimated cost";
   return (
-    <div className={`attempt is-${a.status}`}>
+    <div className={`attempt is-${a.status} is-phase-${a.phase}`}>
       <div className="attempt__head">
         <b>{a.model_label ?? a.model ?? "Unknown model"}</b>
         {a.provider && <span className="attempt__provider">via {a.provider}</span>}
@@ -36,21 +64,31 @@ function AttemptCard({ a }: { a: Attempt }) {
       {a.output_url ? (
         <video src={a.output_url} poster={a.start_frame_url ?? undefined} controls playsInline loop preload="metadata" />
       ) : (
-        <div className="thumb thumb--empty attempt__empty">
-          {a.status === "in_flight" ? "Generating - the clip appears here when it finishes." : STATUS_TEXT[a.status]}
+        <div className={`thumb thumb--empty attempt__empty${live ? " attempt__empty--live" : ""}`}>
+          <b>{PHASE_TEXT[a.phase]}{a.provider_status && live ? ` · ${a.provider_status}` : ""}</b>
+          {live && elapsed && <span>{elapsed} since submit</span>}
+          {live && <small>The clip plays here as soon as it is downloaded.</small>}
         </div>
       )}
       <div className="attempt__chips">{verdictChip(a)}</div>
       <dl className="attempt__facts">
         <dt>Status</dt>
-        <dd className={`attempt__status is-${a.status}`}>{STATUS_TEXT[a.status]}</dd>
+        <dd className={`attempt__status is-${a.phase}`}>
+          {PHASE_TEXT[a.phase]}
+          {a.provider_status ? <> · <code>{a.provider_status}</code></> : null}
+          {a.status_checked_at && live ? <span className="fineprint"> (checked {timeAgo(a.status_checked_at)})</span> : null}
+        </dd>
         <dt>Job ID</dt>
         <dd>{a.provider_job_id ? <code>{a.provider_job_id}</code> : "—"}</dd>
-        <dt>{a.actual_cost_usd != null ? "Cost recorded" : "Estimated cost"}</dt>
+        <dt>Elapsed</dt>
+        <dd>{elapsed ?? "—"}</dd>
+        <dt>{costLabel}</dt>
         <dd>
-          {usd(cost)}
-          {a.status === "cancelled" || a.status === "failed" ? " (not billed)" : ""}
+          {usd(a.actual_cost_usd ?? a.estimated_cost_usd)}
+          {a.phase === "cancelled" ? " (not billed)" : a.phase === "failed" ? " (no video produced)" : ""}
         </dd>
+        <dt>Local file</dt>
+        <dd>{a.local_file_exists ? "Yes" : "Not yet"}</dd>
         <dt>Settings</dt>
         <dd>
           {[a.resolution, a.duration_seconds != null ? `${a.duration_seconds} s` : null,
@@ -59,6 +97,13 @@ function AttemptCard({ a }: { a: Attempt }) {
         <dt>{a.completed_at ? "Completed" : "Submitted"}</dt>
         <dd>{a.completed_at ? timeAgo(a.completed_at) : a.submitted_at ? timeAgo(a.submitted_at) : "—"}</dd>
       </dl>
+      {a.error && (
+        <details className="attempt__findings" open={a.phase === "failed"}>
+          <summary>Provider error</summary>
+          <pre className="attempt__error">{a.error}</pre>
+        </details>
+      )}
+      {live && a.last_check_error && <p className="fineprint">Last status check failed: {a.last_check_error}</p>}
       {a.verdict?.findings && a.verdict.findings.length > 0 && (
         <details className="attempt__findings">
           <summary>Review findings ({a.verdict.findings.length})</summary>
@@ -118,7 +163,7 @@ export function Attempts({ attempts }: { attempts: Attempt[] }) {
     const other = [...playable].reverse().find((x) => !x.is_primary);
     setPair(primary && other ? [primary.key, other.key] : playable.length >= 2 ? [playable[0].key, playable[1].key] : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attempts.map((x) => `${x.key}:${x.status}`).join("|")]);
+  }, [attempts.map((x) => `${x.key}:${x.phase}`).join("|")]);
 
   if (attempts.length === 0) return null;
   const left = playable.find((x) => x.key === pair?.[0]);

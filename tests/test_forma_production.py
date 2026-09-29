@@ -58,7 +58,7 @@ def test_example_derives_the_anchored_clip_chain_with_adaptive_counts(project):
         ("s02_clip3", "s02_mid2_still", "cp03_still")]
     assert {s.id: s.clip_count for s in spec.shots} == {"s01": 2, "s02": 3, "s03": 1, "s04": 0, "s05": 1}
     assert spec.dependents("cp02_still") == ["s01_clip2", "s02_clip1"]
-    assert "Edit the previous approved still" in next(s for s in spec.stills() if s.key == "s02_mid1_still").brief
+    assert "Edit the attached approved still" in next(s for s in spec.stills() if s.key == "s02_mid1_still").brief
 
 
 @pytest.mark.parametrize("mutate,rule", [
@@ -293,3 +293,15 @@ def test_project_3_plan_is_valid_and_priced():
     cp09 = spec.checkpoint("cp09")
     assert "earth berm over the pipe" in spec.must_not_exist(cp09) and "concrete saddles" not in spec.must_not_exist(cp09)
     assert all(cp.action for cp in spec.checkpoints)
+
+
+def test_project_3_briefs_are_first_edit_or_new_camera_and_name_only_the_next_steps():
+    spec = load_spec(TEMPLATE)
+    briefs = {s.key: s.brief for s in spec.stills()}
+    assert briefs["cp01_still"].startswith("CP01") and "Create a vertical 9:16" in briefs["cp01_still"]
+    assert "Edit the attached approved still" in briefs["cp02_still"]
+    assert "from a new camera" in briefs["cp10_still"] and "from a new camera" in briefs["cp15_still"]
+    assert "kitchenette" not in briefs["cp01_still"]  # only the next few steps are named, not the whole future
+    assert "material yard" not in spec.cameras["wide"]
+    assert all(b.after for s in spec.shots for b in s.beats[:-1])  # every intermediate still has a concrete state
+    assert all(len(b) < 2500 for b in briefs.values())

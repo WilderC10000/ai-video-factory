@@ -46,6 +46,7 @@ class Beat:
     task: str  # one local physical task
     location: str  # where in the frame / work area
     duration_seconds: int = 3
+    after: str = ""  # the visible state once this beat's work is done (the intermediate still that follows it)
 
 
 @dataclass(frozen=True)
@@ -161,32 +162,51 @@ class ProjectSpec:
         return [c.key for c in self.clips() if still_key in (c.start_still, c.end_still)]
 
     # --- ChatGPT briefs ------------------------------------------------------------------------------
-    def _lock(self, camera: str) -> str:
-        return (f"Camera: {self.cameras.get(camera, camera)} - identical framing to the previous approved still. "
-                f"Location: {self.bibles.get('location', '')} Builder: {self.bibles.get('builder', '')} "
-                f"Structure: {self.bibles.get('structure', '')} Keep every pixel of the scene identical except the "
-                "construction progress, the builder's position, tools and materials. Realistic documentary "
-                "photograph, not illustration. Nothing already built may disappear or regress; add nothing that "
-                "is not described.")
+    BRIEF_NOT_YET_LOOKAHEAD = 3  # "must not appear" names only the next few steps: naming the whole future invites it
+
+    def _lock(self, camera: str, *, first: bool = False, new_camera: bool = False) -> str:
+        bible = (f"Location: {self.bibles.get('location', '')}. Builder (always the same person): "
+                 f"{self.bibles.get('builder', '')}. Structure: {self.bibles.get('structure', '')}.")
+        if first:
+            return (f"Create a vertical 9:16 realistic documentary photograph, not an illustration. Camera: "
+                    f"{self.cameras.get(camera, camera)}. {bible} Candid and unposed; the builder is working, not "
+                    "looking at the camera. Add nothing that is not described.")
+        if new_camera:
+            return (f"Vertical 9:16. Show the build exactly as it stands in the attached approved still, from a new "
+                    f"camera: {self.cameras.get(camera, camera)}. Every object, material and construction detail stays "
+                    f"where it is in reality; only the viewpoint changes, plus anything the visible state below adds. "
+                    f"{bible} Realistic documentary photograph, not an illustration. Add nothing that is not described.")
+        return (f"Vertical 9:16. Edit the attached approved still: same camera ({self.cameras.get(camera, camera)}) "
+                f"with identical framing. {bible} Keep every pixel of the scene identical except the construction "
+                "progress, the builder's position, tools and materials. Realistic documentary photograph, not an "
+                "illustration. Nothing already built may disappear or regress; add nothing that is not described.")
 
     def _cp_brief(self, cp: Checkpoint) -> str:
+        i = [c.id for c in self.checkpoints].index(cp.id)
+        prev = self.checkpoints[i - 1] if i else None
         new = [e for e in cp.built if e not in self._previous_built(cp)]
         materials = "; ".join(f"{e}: from {cp.materials[e]}" for e in new if e in cp.materials)
-        not_yet = self.must_not_exist(cp)
-        return (f"{cp.id.upper()} - {cp.title}. Visible state: {cp.state} Built so far: "
-                f"{', '.join(cp.built) or 'nothing yet'}. {('Material sources in view: ' + materials + '. ') if materials else ''}"
-                f"Builder: {cp.action or 'as in the previous still'}. Tools in view: {', '.join(cp.tools_in_view) or 'none'}. "
-                f"{('Must NOT appear yet: ' + ', '.join(not_yet) + '. ') if not_yet else ''}{self._lock(cp.camera)}")
+        soon = [e for c in self.checkpoints[i + 1:i + 1 + self.BRIEF_NOT_YET_LOOKAHEAD] for e in c.built
+                if e not in cp.built]
+        not_yet = list(dict.fromkeys([*soon, *cp.not_yet]))
+        lock = self._lock(cp.camera, first=prev is None, new_camera=prev is not None and prev.camera != cp.camera)
+        return (f"{cp.id.upper()} - {cp.title}. {lock} Visible state: {cp.state} "
+                f"{('Built so far: ' + ', '.join(cp.built) + '. ') if cp.built else ''}"
+                f"{('Material sources in view: ' + materials + '. ') if materials else ''}"
+                f"Builder action: {cp.action or 'as in the previous still'}. "
+                f"Tools in view: {', '.join(cp.tools_in_view) or 'none'}. "
+                f"{('Must NOT appear yet: ' + ', '.join(not_yet) + '.') if not_yet else ''}").strip()
 
     def _mid_brief(self, shot: Shot, n: int) -> str:
         cp_from, cp_to = self.checkpoint(shot.from_cp), self.checkpoint(shot.to_cp)
         done = shot.beats[n - 1]
         nxt = shot.beats[n]
-        return (f"Intermediate still {n} of {shot.clip_count - 1} for shot {shot.id} ({shot.title}), between "
-                f"{cp_from.id.upper()} and {cp_to.id.upper()}. Edit the previous approved still. Progress: the work "
-                f"of beat {n} is done ({done.task}, at {done.location}); the builder is now positioned for beat "
-                f"{n + 1} ({nxt.task}, at {nxt.location}). The rest of the work toward {cp_to.id.upper()} "
-                f"({cp_to.state}) is NOT done yet. {self._lock(cp_from.camera)}")
+        state = done.after or (f"the work of beat {n} is done ({done.task}, at {done.location}); the rest of the work "
+                               f"toward {cp_to.id.upper()} is not done yet")
+        return (f"{shot.id} intermediate still {n} of {shot.clip_count - 1} ({shot.title}), between "
+                f"{cp_from.id.upper()} and {cp_to.id.upper()}. {self._lock(cp_from.camera)} Visible state: {state}. "
+                f"Builder action: in position for the next step - {nxt.task} ({nxt.location}), caught mid-work. "
+                f"The rest of the work toward {cp_to.id.upper()} is NOT done yet.")
 
     def _previous_built(self, cp: Checkpoint) -> tuple[str, ...]:
         i = [c.id for c in self.checkpoints].index(cp.id)
@@ -204,7 +224,8 @@ def load_spec(path: Path) -> ProjectSpec:
                                   c.get("action", ""), tuple(c.get("not_yet", ())))
                        for c in raw.get("checkpoints", [])]
         shots = [Shot(s["id"], s["from"], s["to"], s["title"], s["complexity"], s["shot_class"],
-                      tuple(Beat(b["task"], b["location"], int(b.get("duration_seconds", 3))) for b in s.get("beats", [])),
+                      tuple(Beat(b["task"], b["location"], int(b.get("duration_seconds", 3)), b.get("after", ""))
+                            for b in s.get("beats", [])),
                       bool(s.get("camera_moves", False)), bool(s.get("proof", False)), s.get("model"))
                  for s in raw.get("shots", [])]
         spec = ProjectSpec(raw["slug"], raw["name"], raw["status"], float(raw["budget"]["cap_usd"]),

@@ -14,11 +14,11 @@
   "bibles": {
     "location": "a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight, a dirt forest track entering at the left edge",
     "structure": "one precast concrete drainage pipe section, about 3 m inside diameter and 12 m long, lying on its side along the slope - the same pipe, size and position in every shot",
-    "builder": "one builder: dark beard, olive beanie, rust-orange work jacket, grey canvas work pants, brown boots, work gloves - always the same person, working, never posing",
+    "builder": "dark beard, olive beanie, rust-orange work jacket, grey canvas work pants, brown boots, work gloves - working, never posing",
     "materials": "everything arrives on the flatbed trailer on the forest track and waits in the material yard at the left until it is used; removed debris and soil go to piles at the left"
   },
   "cameras": {
-    "wide": "high three-quarter view from the front-right at about 15 m: the whole pipe length, its front opening, the slope behind and the material yard at the left edge",
+    "wide": "high three-quarter view from the front-right at about 15 m: the whole pipe length, its front opening, the slope behind and the open ground where the forest track enters at the left edge",
     "interior": "inside the pipe at the front end, chest height, looking along its length to the rear end",
     "front": "ground level straight on to the front opening from about 6 m, the full circle in frame",
     "reveal": "farther back down the forest track at about 30 m, low, the mound and glass front in the trees"
@@ -30,14 +30,14 @@
       "camera": "wide",
       "state": "A single giant precast concrete drainage pipe section - about 3 m inside diameter and 12 m long, weathered grey with moss streaks and a chipped rim - lies abandoned on its side along the foot of a wooded slope in a pine and fern forest clearing. Its near (front) open end faces the camera side; leaf litter and brush are heaped around it, a fallen branch lies across the front opening and dark silt fills the bottom of the pipe.",
       "built": [],
-      "action": "walks in from the forest track at the left edge carrying a backpack, looking at the pipe",
+      "action": "pushes a wheelbarrow in from the forest track at the left edge, loaded with a rake, a bow saw, a shovel and two buckets, looking at the pipe",
       "tools_in_view": [
-        "backpack"
+        "wheelbarrow with rake, bow saw, shovel and buckets"
       ],
       "materials": {},
       "not_yet": [
-        "any tools on the ground",
-        "any cleared ground"
+        "any cleared ground",
+        "any cut branches"
       ]
     },
     {
@@ -545,7 +545,8 @@
         {
           "task": "cuts the fallen branch across the front opening with the bow saw and carries the lengths to a stack",
           "location": "front opening",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "the fallen branch is gone from the front opening, cut into lengths stacked at the left; the leaf litter around the pipe is still untouched; the wheelbarrow stands at the pipe's right flank"
         },
         {
           "task": "rakes leaf litter along the pipe's right flank into the wheelbarrow and dumps it on the brush pile",
@@ -566,7 +567,8 @@
         {
           "task": "shovels silt from the pipe floor into the wheelbarrow just inside the front opening",
           "location": "inside the front end",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "the first few metres inside the front opening are shoveled down to bare concrete, the silt further in untouched; the wheelbarrow at the opening is heaped with silt; a small new spoil pile beside the brush pile"
         },
         {
           "task": "wheels a loaded barrow out of the opening and tips it on the spoil pile",
@@ -595,7 +597,8 @@
         {
           "task": "operates the mini excavator: bucket digs the near trench and swings the soil to the spoil pile",
           "location": "near flank",
-          "duration_seconds": 4
+          "duration_seconds": 4,
+          "after": "the trench along the near flank is dug its full length; the far flank is untouched; the spoil pile is larger; the excavator has turned toward the far side"
         },
         {
           "task": "bucket lifts the last scoop from the far trench onto the spoil pile",
@@ -615,12 +618,14 @@
         {
           "task": "carries boards from the lumber stack and nails the first form box against the pipe",
           "location": "near trench, front",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "two form boxes stand braced in the near trench at the front; no rebar yet; the lumber stack slightly smaller"
         },
         {
           "task": "stakes and braces a form box further along",
           "location": "near trench, middle",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "all six form boxes stand braced in both trenches; the first two hold tied rebar cages, the rest are empty"
         },
         {
           "task": "lowers a rebar cage into the last form and ties it",
@@ -640,7 +645,8 @@
         {
           "task": "tips cement and gravel into the turning mixer and fills the wheelbarrow from the drum",
           "location": "mixer in the yard",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "the two front form boxes are filled with wet concrete, the other four still empty; the mixer drum wet and the cement pallet lower"
         },
         {
           "task": "wheels concrete to a form, tips it in and screeds it flat",
@@ -669,12 +675,14 @@
         {
           "task": "peels the backing and unrolls the first membrane strip over the top from the front rim",
           "location": "front third of the pipe",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "black membrane covers the front third of the pipe over the top and both sides; the rest is bare concrete"
         },
         {
           "task": "lays an overlapping strip down the near side and rolls it flat",
           "location": "middle third",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "membrane covers the front two thirds; the rear third is bare concrete; the membrane pallet is visibly lower"
         },
         {
           "task": "rolls the last strip over the top at the rear",
@@ -703,12 +711,14 @@
         {
           "task": "carries joists in and sets them across the curve near the front",
           "location": "front third",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "joists and plywood decking cover the front third of the pipe floor; the rest is bare curved concrete"
         },
         {
           "task": "lays and screws plywood sheets over the joists",
           "location": "middle third",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "the deck covers the front two thirds; joists without decking in the rear third"
         },
         {
           "task": "screws down the last sheet at the rear",
@@ -728,7 +738,8 @@
         {
           "task": "stands studs in the rear opening and screws them to a top and bottom plate",
           "location": "rear opening",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "the rear opening is filled with bare timber studs on top and bottom plates, forest visible between them; no plywood yet"
         },
         {
           "task": "screws plywood over the studs and cuts the round window hole",
@@ -748,12 +759,14 @@
         {
           "task": "presses insulation against the curved wall and nails cedar slats over it",
           "location": "front third",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "the front third of the curved walls and ceiling is lined with cedar slats; bare concrete beyond"
         },
         {
           "task": "bends and nails slats over the ceiling curve from the step ladder",
           "location": "middle third",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "cedar lining covers the front two thirds; insulation partly fitted in the rear third"
         },
         {
           "task": "nails the last slats at the rear wall",
@@ -791,7 +804,8 @@
         {
           "task": "bolts the black steel frame ring into the front rim of the pipe",
           "location": "front rim",
-          "duration_seconds": 4
+          "duration_seconds": 4,
+          "after": "the black steel frame ring with its mullions is bolted into the front rim, all openings still empty; the glass panels still in the padded crate"
         },
         {
           "task": "lifts a curved glass panel from the crate with the suction lifter and sets it into the frame",
@@ -821,12 +835,14 @@
         {
           "task": "excavator bucket carries soil from the spoil pile and spreads it over the rear half of the pipe",
           "location": "rear half",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "soil covers the rear half of the pipe and blends into the slope; the front half still shows black membrane; the spoil pile is gone and the topsoil heap untouched"
         },
         {
           "task": "bucket carries topsoil onto the front half above the glass",
           "location": "front half",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "soil covers the whole pipe down to the glass front, rough and uneven on top; the topsoil heap is nearly gone"
         },
         {
           "task": "bucket smooths the berm top into the slope",
@@ -847,7 +863,8 @@
         {
           "task": "carries moss mats from the pallet and lays them over the berm, planting ferns between",
           "location": "berm",
-          "duration_seconds": 3
+          "duration_seconds": 3,
+          "after": "moss mats and ferns cover the whole berm; the path is still bare soil with the flagstone stack beside it"
         },
         {
           "task": "sets flagstones along the path and taps them level with the mallet",

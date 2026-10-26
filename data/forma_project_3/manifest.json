@@ -1,5 +1,159 @@
 {
   "project": "forma_project_3",
   "created_at": "2026-09-28T22:51:31.522794+00:00",
-  "note": "State only. The plan lives in project.json; the cap in project.json budget.cap_usd."
+  "note": "State only. The plan lives in project.json; the cap in project.json budget.cap_usd.",
+  "cp01_still__gen1": {
+    "kind": "still_generation",
+    "still": "cp01_still",
+    "provider": "fal:fal-ai/nano-banana",
+    "model": "fal-ai/nano-banana",
+    "mode": "generate",
+    "execution_mode": "live",
+    "prompt": "CP01 - Abandoned pipe discovered. Create a vertical 9:16 realistic documentary photograph, not an illustration. Camera: high three-quarter view from the front-right at about 15 m: the whole pipe length, its front opening, the slope behind and the open ground where the forest track enters at the left edge. Location: a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight, a dirt forest track entering at the left edge. Builder (always the same person): dark beard, olive beanie, rust-orange work jacket, grey canvas work pants, brown boots, work gloves - working, never posing. Structure: one precast concrete drainage pipe section, about 3 m inside diameter and 12 m long, lying on its side along the slope - the same pipe, size and position in every shot. Candid and unposed; the builder is working, not looking at the camera. Add nothing that is not described. Visible state: A single giant precast concrete drainage pipe section - about 3 m inside diameter and 12 m long, weathered grey with moss streaks and a chipped rim - lies abandoned on its side along the foot of a wooded slope in a pine and fern forest clearing. Its near (front) open end faces the camera side; leaf litter and brush are heaped around it, a fallen branch lies across the front opening and dark silt fills the bottom of the pipe. Builder action: pushes a wheelbarrow in from the forest track at the left edge, loaded with a rake, a bow saw, a shovel and two buckets, looking at the pipe. Tools in view: wheelbarrow with rake, bow saw, shovel and buckets. Must NOT appear yet: cleared ground around the pipe, mucked-out pipe interior, material yard with mini excavator, any cleared ground, any cut branches.",
+    "source_still": null,
+    "source_path": null,
+    "source_sha256": null,
+    "references": [],
+    "approved_usd": 0.05,
+    "estimated_cost_usd": 0.0398,
+    "actual_cost_usd": 0.0398,
+    "status": "complete",
+    "started_at": "2026-10-26T19:26:25.769540+00:00",
+    "completed_at": "2026-10-26T19:26:33.227416+00:00",
+    "output_path": "data\\forma_project_3\\stills\\cp01_still.png",
+    "output_sha256": "f4273d3b0637d0d9a15d7c3090c867ded3384e2ca4e382b0bccee9e72c670dd8",
+    "width": 768,
+    "height": 1344,
+    "provider_meta": {
+      "seed": null
+    },
+    "replaced": null,
+    "review": {
+      "verdict": "rejected",
+      "at": "2026-10-26T19:34:16.392910+00:00",
+      "note": "Rejected by the user: a multi-section pipeline running into the forest (not one 12 m section, rear end not visible), low camera along the track instead of the raised front-right wide view, no open clearing at the left. The CP01 brief, structure, location and wide camera were tightened in project.json."
+    }
+  },
+  "still_generations": {
+    "cp01_still": "cp01_still__gen2",
+    "s01_mid1_still": "s01_mid1_still__gen2"
+  },
+  "cp01_still__gen2": {
+    "kind": "still_generation",
+    "still": "cp01_still",
+    "provider": "fal:fal-ai/nano-banana",
+    "model": "fal-ai/nano-banana",
+    "mode": "generate",
+    "execution_mode": "live",
+    "prompt": "CP01 - Abandoned pipe discovered. Create a vertical 9:16 realistic documentary photograph, not an illustration. Camera: raised about 6 m, high three-quarter view from the front-right at about 15 m, looking down on the full pipe length: front opening toward camera-right/front, rear circular end visible, the slope behind, the open clearing and forest track at the left edge. Location: a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight; open bare-earth clearing left of the pipe, a dirt forest track entering at the left edge. Builder (always the same person): dark beard, olive beanie, rust-orange work jacket, grey canvas work pants, brown boots, work gloves - working, never posing. Structure: exactly one standalone precast concrete drainage pipe section, about 3 m inside diameter and 12 m long (about 4x its diameter), on its side along the foot of the slope, never joined to other sections or continuing into the forest - both circular ends visible; the same single pipe, size and position in every shot. Candid and unposed; the builder is working, not looking at the camera. Add nothing that is not described. Visible state: Exactly one standalone giant precast concrete drainage pipe section - about 3 m inside diameter, about 12 m long, roughly 4x longer than its diameter, weathered grey with moss streaks and a chipped rim - lies abandoned on its side along the foot of the wooded slope. Both circular ends are visible in the same frame: the front opening faces camera-right/front and the rear circular end is visible at the far end. No other pipe sections are connected to it and nothing continues into the forest. Leaf litter and brush are heaped around the pipe, a fallen branch lies across the front opening and dark silt fills the bottom of the pipe. To the left lies an untouched open clearing of bare earth and sparse grass. Builder action: pushes a wheelbarrow in from the forest track at the left edge, loaded with a rake, a bow saw, a shovel and two buckets, looking at the pipe. Tools in view: wheelbarrow with rake, bow saw, shovel and buckets. Must NOT appear yet: cleared ground around the pipe, mucked-out pipe interior, material yard with mini excavator, any cleared ground, any cut branches, flatbed trailer, mini excavator, any construction work or building materials.",
+    "source_still": null,
+    "source_path": null,
+    "source_sha256": null,
+    "references": [],
+    "approved_usd": 0.05,
+    "estimated_cost_usd": 0.0398,
+    "actual_cost_usd": 0.0398,
+    "status": "complete",
+    "started_at": "2026-10-26T19:34:16.747096+00:00",
+    "completed_at": "2026-10-26T19:34:23.948227+00:00",
+    "output_path": "data\\forma_project_3\\stills\\cp01_still.png",
+    "output_sha256": "f7b44830072aa2e353a549f7ce19a3f5748f3a3faeffa2f597c6b85b61a12b90",
+    "width": 768,
+    "height": 1344,
+    "provider_meta": {
+      "seed": null
+    },
+    "replaced": {
+      "previous_state": "placed",
+      "previous_sha256": "f4273d3b0637d0d9a15d7c3090c867ded3384e2ca4e382b0bccee9e72c670dd8",
+      "archived_to": [
+        "data\\forma_project_3\\stills\\_replaced\\cp01_still__20261026T193423Z.png"
+      ]
+    }
+  },
+  "cp01_still": {
+    "actual_cost_usd": 0.0,
+    "source": "generated",
+    "output_path": "data\\forma_project_3\\stills\\cp01_still.png",
+    "completed_at": "2026-10-26T19:38:31.861539+00:00",
+    "approved_sha256": "f7b44830072aa2e353a549f7ce19a3f5748f3a3faeffa2f597c6b85b61a12b90",
+    "approved_at": "2026-10-26T19:38:31.861539+00:00",
+    "approved_via": "manual",
+    "approval_note": "Approved by the user (chat, 2026-10-26): one standalone pipe section, raised front-left view near the pipe axis, full length visible, builder/wheelbarrow/tools match; fallen branch on the ground in front of the opening and natural loose sticks are part of the approved state. These pixels are authoritative."
+  },
+  "s01_mid1_still__gen1": {
+    "kind": "still_generation",
+    "still": "s01_mid1_still",
+    "provider": "fal:fal-ai/nano-banana/edit",
+    "model": "fal-ai/nano-banana/edit",
+    "mode": "edit",
+    "execution_mode": "live",
+    "prompt": "s01 intermediate still 1 of 1 (Clearing the site), between CP01 and CP02. Vertical 9:16. Edit the attached approved still: same camera (the approved CP01 frame: raised about 6 m, front-left three-quarter view near the pipe's long axis, looking down the full pipe length from the front opening (lower right) to the rear end (upper middle); track and open ground left, wooded slope right - the same exact camera position and framing in every wide shot) with identical framing. Location: a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight; open bare-earth clearing left of the pipe, a dirt forest track entering at the left edge. Builder (always the same person): dark beard, olive beanie, rust-orange work jacket, grey canvas work pants, brown boots, work gloves - working, never posing. Structure: exactly one standalone precast concrete drainage pipe section, about 3 m inside diameter and 12 m long, on its side along the foot of the slope, never joined to other sections or continuing into the forest - front opening and rear end both visible; the same single pipe, size and position in every shot. The attached image is authoritative: keep its camera, framing, structure, environment, builder, lighting and geometry exactly; keep every pixel of the scene identical except the construction progress, the builder's position, tools and materials. Realistic documentary photograph, not an illustration. Nothing already built may disappear or regress; add nothing that is not described. Visible state: the fallen branch is gone from in front of the opening, cut into lengths stacked at the left; the leaf litter around the pipe is still untouched; the wheelbarrow stands at the pipe's track-side flank. Builder action: in position for the next step - rakes leaf litter along the pipe's track-side flank into the wheelbarrow and dumps it on the brush pile (track-side flank), caught mid-work. The rest of the work toward CP02 is NOT done yet.",
+    "source_still": "cp01_still",
+    "source_path": "data\\forma_project_3\\stills\\cp01_still.png",
+    "source_sha256": "f7b44830072aa2e353a549f7ce19a3f5748f3a3faeffa2f597c6b85b61a12b90",
+    "references": [],
+    "approved_usd": 0.05,
+    "estimated_cost_usd": 0.0398,
+    "actual_cost_usd": 0.0398,
+    "status": "complete",
+    "started_at": "2026-10-26T19:41:09.428200+00:00",
+    "completed_at": "2026-10-26T19:41:23.942416+00:00",
+    "output_path": "data\\forma_project_3\\stills\\s01_mid1_still.png",
+    "output_sha256": "e054321e4c4a1d9f6d329c2d4844d9f4b3075b85ae0e194b1df5141ab297865b",
+    "width": 768,
+    "height": 1344,
+    "provider_meta": {
+      "description": ""
+    },
+    "replaced": null,
+    "review": {
+      "verdict": "rejected",
+      "at": "2026-10-26T19:43:34.968063+00:00",
+      "note": "Rejected by the user: continuity held, but the end state was half done - the fallen branch is still in front of the opening, only one sawn log at the left instead of a stack, and a brush pile appeared early. Beat 1 'after' made explicit."
+    }
+  },
+  "s01_mid1_still__gen2": {
+    "kind": "still_generation",
+    "still": "s01_mid1_still",
+    "provider": "fal:fal-ai/nano-banana/edit",
+    "model": "fal-ai/nano-banana/edit",
+    "mode": "edit",
+    "execution_mode": "live",
+    "prompt": "s01 intermediate still 1 of 1 (Clearing the site), between CP01 and CP02. Vertical 9:16. Edit the attached approved still: same camera (the approved CP01 frame: raised about 6 m, front-left three-quarter view near the pipe's long axis, looking down the full pipe length from the front opening (lower right) to the rear end (upper middle); track and open ground left, wooded slope right - the same exact camera position and framing in every wide shot) with identical framing. Location: a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight; open bare-earth clearing left of the pipe, a dirt forest track entering at the left edge. Builder (always the same person): dark beard, olive beanie, rust-orange work jacket, grey canvas work pants, brown boots, work gloves - working, never posing. Structure: exactly one standalone precast concrete drainage pipe section, about 3 m inside diameter and 12 m long, on its side along the foot of the slope, never joined to other sections or continuing into the forest - front opening and rear end both visible; the same single pipe, size and position in every shot. The attached image is authoritative: keep its camera, framing, structure, environment, builder, lighting and geometry exactly; keep every pixel of the scene identical except the construction progress, the builder's position, tools and materials. Realistic documentary photograph, not an illustration. Nothing already built may disappear or regress; add nothing that is not described. Visible state: the long fallen branch that lay in front of the pipe opening is completely gone from the opening; that same branch has been visibly sawn into exactly three short lengths, all three stacked together on the bare ground at the left beside the forest track; there is no brush pile yet; the leaf litter is otherwise largely untouched; the wheelbarrow stays at the pipe's track-side flank; no later clearing and no materials. Builder action: in position for the next step - rakes leaf litter along the pipe's track-side flank into the wheelbarrow, to be wheeled to the left edge of the clearing (track-side flank), caught mid-work. The rest of the work toward CP02 is NOT done yet.",
+    "source_still": "cp01_still",
+    "source_path": "data\\forma_project_3\\stills\\cp01_still.png",
+    "source_sha256": "f7b44830072aa2e353a549f7ce19a3f5748f3a3faeffa2f597c6b85b61a12b90",
+    "references": [],
+    "approved_usd": 0.05,
+    "estimated_cost_usd": 0.0398,
+    "actual_cost_usd": 0.0398,
+    "status": "complete",
+    "started_at": "2026-10-26T19:43:55.028719+00:00",
+    "completed_at": "2026-10-26T19:44:08.319918+00:00",
+    "output_path": "data\\forma_project_3\\stills\\s01_mid1_still.png",
+    "output_sha256": "c89ff362ec5f0f3c6e5ca6c067914e8711fa0fc3c70ec35e3a0f06ce355fa807",
+    "width": 768,
+    "height": 1344,
+    "provider_meta": {
+      "description": ""
+    },
+    "replaced": {
+      "previous_state": "placed",
+      "previous_sha256": "e054321e4c4a1d9f6d329c2d4844d9f4b3075b85ae0e194b1df5141ab297865b",
+      "archived_to": [
+        "data\\forma_project_3\\stills\\_replaced\\s01_mid1_still__20261026T194408Z.png"
+      ]
+    }
+  },
+  "s01_mid1_still": {
+    "actual_cost_usd": 0.0,
+    "source": "generated",
+    "output_path": "data\\forma_project_3\\stills\\s01_mid1_still.png",
+    "completed_at": "2026-10-26T19:49:56.391835+00:00",
+    "approved_sha256": "c89ff362ec5f0f3c6e5ca6c067914e8711fa0fc3c70ec35e3a0f06ce355fa807",
+    "approved_at": "2026-10-26T19:49:56.391835+00:00",
+    "approved_via": "manual",
+    "approval_note": "Approved by the user (chat, 2026-10-26): branch gone from the opening, three sawn lengths stacked at the left beside the track, no brush pile, builder with rake and wheelbarrow at the track-side flank; camera/pipe/forest/lighting continuous with CP01 (about 1% horizontal frame offset noted)."
+  }
 }

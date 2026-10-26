@@ -16,3 +16,6 @@ data/fal_continuity_test/
 studio-ui/node_modules/
 studio-ui/dist/
 data/studio_sandbox/
+
+# Raw still-generation outputs: byte-identical copies of stills/<key>.png and stills/_replaced/ (hashes are in the manifest)
+data/*/stills/_generated/

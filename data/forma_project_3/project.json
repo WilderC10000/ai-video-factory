@@ -25,13 +25,13 @@
     ]
   },
   "bibles": {
-    "location": "a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight, a dirt forest track entering at the left edge",
-    "structure": "one precast concrete drainage pipe section, about 3 m inside diameter and 12 m long, lying on its side along the slope - the same pipe, size and position in every shot",
+    "location": "a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight; open bare-earth clearing left of the pipe, a dirt forest track entering at the left edge",
+    "structure": "exactly one standalone precast concrete drainage pipe section, about 3 m inside diameter and 12 m long, on its side along the foot of the slope, never joined to other sections or continuing into the forest - front opening and rear end both visible; the same single pipe, size and position in every shot",
     "builder": "dark beard, olive beanie, rust-orange work jacket, grey canvas work pants, brown boots, work gloves - working, never posing",
     "materials": "everything arrives on the flatbed trailer on the forest track and waits in the material yard at the left until it is used; removed debris and soil go to piles at the left"
   },
   "cameras": {
-    "wide": "high three-quarter view from the front-right at about 15 m: the whole pipe length, its front opening, the slope behind and the open ground where the forest track enters at the left edge",
+    "wide": "the approved CP01 frame: raised about 6 m, front-left three-quarter view near the pipe's long axis, looking down the full pipe length from the front opening (lower right) to the rear end (upper middle); track and open ground left, wooded slope right - the same exact camera position and framing in every wide shot",
     "interior": "inside the pipe at the front end, chest height, looking along its length to the rear end",
     "front": "ground level straight on to the front opening from about 6 m, the full circle in frame",
     "reveal": "farther back down the forest track at about 30 m, low, the mound and glass front in the trees"
@@ -41,7 +41,7 @@
       "id": "cp01",
       "title": "Abandoned pipe discovered",
       "camera": "wide",
-      "state": "A single giant precast concrete drainage pipe section - about 3 m inside diameter and 12 m long, weathered grey with moss streaks and a chipped rim - lies abandoned on its side along the foot of a wooded slope in a pine and fern forest clearing. Its near (front) open end faces the camera side; leaf litter and brush are heaped around it, a fallen branch lies across the front opening and dark silt fills the bottom of the pipe.",
+      "state": "Exactly one standalone giant precast concrete drainage pipe section - about 3 m inside diameter, about 12 m long, weathered grey with moss streaks and a chipped rim - lies abandoned on its side along the foot of the wooded slope, its front opening facing the camera and its rear end visible at the far end; no other pipe sections, nothing continuing into the forest. Leaf litter and brush lie around the pipe, a fallen branch lies on the ground in front of the opening among natural loose sticks, and dark silt fills the bottom of the pipe. To the left the open ground and the forest track are untouched.",
       "built": [],
       "action": "pushes a wheelbarrow in from the forest track at the left edge, loaded with a rake, a bow saw, a shovel and two buckets, looking at the pipe",
       "tools_in_view": [
@@ -50,7 +50,10 @@
       "materials": {},
       "not_yet": [
         "any cleared ground",
-        "any cut branches"
+        "any sawn branch lengths or stacks",
+        "flatbed trailer",
+        "mini excavator",
+        "any construction work or building materials"
       ]
     },
     {
@@ -61,7 +64,7 @@
       "built": [
         "cleared ground around the pipe"
       ],
-      "action": "rakes the last strip of leaf litter along the pipe's right flank toward the brush pile",
+      "action": "rakes the last strip of leaf litter along the pipe's track-side flank toward the brush pile",
       "tools_in_view": [
         "rake",
         "bow saw",
@@ -556,14 +559,14 @@
       "shot_class": "repetitive_labor",
       "beats": [
         {
-          "task": "cuts the fallen branch across the front opening with the bow saw and carries the lengths to a stack",
+          "task": "cuts the fallen branch in front of the opening with the bow saw and carries the lengths to a stack",
           "location": "front opening",
           "duration_seconds": 3,
-          "after": "the fallen branch is gone from the front opening, cut into lengths stacked at the left; the leaf litter around the pipe is still untouched; the wheelbarrow stands at the pipe's right flank"
+          "after": "the long fallen branch that lay in front of the pipe opening is completely gone from the opening; that same branch has been visibly sawn into exactly three short lengths, all three stacked together on the bare ground at the left beside the forest track; there is no brush pile yet; the leaf litter is otherwise largely untouched; the wheelbarrow stays at the pipe's track-side flank; no later clearing and no materials"
         },
         {
-          "task": "rakes leaf litter along the pipe's right flank into the wheelbarrow and dumps it on the brush pile",
-          "location": "right flank",
+          "task": "rakes leaf litter along the pipe's track-side flank into the wheelbarrow, to be wheeled to the left edge of the clearing",
+          "location": "track-side flank",
           "duration_seconds": 3
         }
       ],

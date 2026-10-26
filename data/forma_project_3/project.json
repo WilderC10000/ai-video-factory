@@ -95,7 +95,7 @@
       "id": "cp03",
       "title": "First load tipped - mucking out under way",
       "camera": "wide",
-      "state": "A small new dark spoil pile of silt sits on the bare ground at the left, next to the brush pile and separate from the three stacked sawn lengths; the emptied wheelbarrow stands tipped up beside it, the two buckets and the bow saw set down on the ground next to it. Inside the pipe the floor is clean grey concrete from the front rim to about a quarter of the way in; dark silt still covers the floor behind that edge all the way to the rear. The shovel leans against the pipe rim; the rake lies on the bare strip.",
+      "state": "A small new dark spoil pile of silt sits on the bare ground at the left, next to the brush pile and separate from the three stacked sawn lengths; the emptied wheelbarrow stands tipped up beside it, the two buckets and the bow saw set down on the ground next to it. Inside the pipe the silt patch is exactly as in the previous still: clean grey concrete nearest the rim, the rest of the dark patch untouched. The shovel leans against the pipe rim; the rake lies on the bare strip.",
       "built": [
         "cleared ground around the pipe"
       ],
@@ -109,7 +109,7 @@
       ],
       "materials": {},
       "not_yet": [
-        "clean pipe floor beyond the first quarter",
+        "silt removed from the rest of the pipe floor",
         "flatbed trailer or any building materials"
       ]
     },
@@ -603,13 +603,13 @@
           "task": "shovels silt from just inside the front rim into the wheelbarrow where it already stands at the track-side flank",
           "location": "just inside the front opening, track-side edge",
           "duration_seconds": 5,
-          "after": "There is exactly one wheelbarrow, still in its exact CP02 position at the track-side flank beside the opening, with the two buckets and the bow saw still in it and a first few shovelfuls of dark silt on top. Only a narrow strip of the pipe floor, about half a metre deep just inside the front rim, is shoveled to clean grey concrete with a clear edge; the dark silt behind that edge is clearly visible and untouched all the way in. The builder stands just inside the opening at its track-side edge, half-turned toward the wheelbarrow with a shovelful of silt, so the cleaned strip and the silt edge stay visible. No spoil pile yet; no new objects; the rake, the brush pile and the three stacked sawn lengths are unchanged"
+          "after": "There is exactly one wheelbarrow, still in its exact CP02 position at the track-side flank, with the two buckets and the bow saw still in it and now a low layer of dark silt in its tray. The dark silt patch on the pipe floor keeps exactly its CP02 shape, size and position; only the silt right at the front rim is removed, so the patch is slightly smaller at its very front edge. The builder stands at the front rim on the track side with the shovel, a shovelful of silt on the blade, turning toward the barrow. No spoil pile yet; no new objects; the rake, the brush pile and the three stacked sawn lengths are unchanged"
         },
         {
           "task": "keeps shoveling silt from the floor just inside the opening into the barrow until it is heaped",
           "location": "inside the front end",
           "duration_seconds": 4,
-          "after": "The cleaned floor now reaches about a quarter of the way into the pipe: clean grey concrete from the front rim to a clear edge, and dark silt untouched behind that edge all the way to the rear. The wheelbarrow, still in the same track-side flank position, is heaped with dark silt around the two buckets and the bow saw; the shovel leans against the pipe rim and the builder grips the barrow handles. No spoil pile yet; the rake, the brush pile and the three stacked sawn lengths are unchanged"
+          "after": "The dark silt patch on the pipe floor keeps its CP02 shape and position but is now visibly shorter at the front: the silt is removed from the floor nearest the rim, which shows clean grey concrete there, and the rest of the patch is untouched. The wheelbarrow, still in the same track-side flank position, is heaped with dark silt around the two buckets and the bow saw; the shovel leans against the pipe rim and the builder grips the barrow handles. No spoil pile yet; the rake, the brush pile and the three stacked sawn lengths are unchanged"
         },
         {
           "task": "wheels the heaped barrow from the flank to the left and tips the silt out beside the brush pile, starting the spoil pile",

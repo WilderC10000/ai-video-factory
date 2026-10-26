@@ -38,7 +38,7 @@
     "cp01_still": "cp01_still__gen2",
     "s01_mid1_still": "s01_mid1_still__gen2",
     "cp02_still": "cp02_still__gen3",
-    "s02_mid1_still": "s02_mid1_still__gen1"
+    "s02_mid1_still": "s02_mid1_still__gen2"
   },
   "cp01_still__gen2": {
     "kind": "still_generation",
@@ -354,7 +354,52 @@
         ],
         "reason": "s02 restructured into three clips; this Nano Banana 2 attempt (over-removal, tools vanished) kept as R&D",
         "at": "2026-10-26T21:17:47.451283+00:00"
+      },
+      {
+        "sha256": "5937be23d6a141d5351cd88a2eb5f67a834fc5ef09db6ae7a1f4e527c2e0fe55",
+        "archived_to": [
+          "data\\forma_project_3\\stills\\_replaced\\s02_mid1_still__20261026T213713Z.png"
+        ],
+        "reason": "second wheelbarrow spawned (object moves fail); kept as R&D",
+        "at": "2026-10-26T21:37:13.645041+00:00"
       }
     ]
+  },
+  "s02_mid1_still__gen2": {
+    "kind": "still_generation",
+    "still": "s02_mid1_still",
+    "provider": "fal:fal-ai/nano-banana-2/edit",
+    "model": "fal-ai/nano-banana-2/edit",
+    "mode": "edit",
+    "execution_mode": "live",
+    "prompt": "s02 intermediate still 1 of 2 (Mucking out the pipe), between CP02 and CP03. Vertical 9:16. Edit the attached approved still: same camera (the approved CP01 frame: raised about 6 m, front-left three-quarter view near the pipe's long axis, looking down the full pipe length from the front opening (lower right) to the rear end (upper middle); track and open ground left, wooded slope right - the same exact camera position and framing in every wide shot) with identical framing. Location: a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight; open bare-earth clearing left of the pipe, a dirt forest track entering at the left edge. Builder (always the same person): dark beard, olive beanie, rust-orange work jacket, grey canvas work pants, brown boots, work gloves - working, never posing. Structure: exactly one standalone precast concrete drainage pipe section, about 3 m inside diameter and 12 m long, on its side along the foot of the slope, never joined to other sections or continuing into the forest - front opening and rear end both visible; the same single pipe, size and position in every shot. The attached image is authoritative: keep its camera, framing, structure, environment, builder, lighting and geometry exactly; keep every pixel of the scene identical except the construction progress, the builder's position, tools and materials. Realistic documentary photograph, not an illustration. Nothing already built may disappear or regress; add nothing that is not described. Visible state: The wheelbarrow stands at the front opening, about half full of dark silt. A strip of the pipe floor about one metre deep just inside the front rim is shoveled to clean grey concrete; all the dark silt behind that strip is untouched. The builder stands in the opening with the shovel. The two buckets and the bow saw lie on the bare strip beside the pipe, near the rake. No spoil pile yet; the brush pile and the three stacked sawn lengths at the left are unchanged. Builder action: in position for the next step - keeps shoveling silt from the floor just inside the opening into the barrow until it is heaped (inside the front end), caught mid-work. The rest of the work toward CP03 is NOT done yet - must NOT appear yet: clean pipe floor beyond the first quarter, flatbed trailer or any building materials.",
+    "source_still": "cp02_still",
+    "source_path": "data\\forma_project_3\\stills\\cp02_still.png",
+    "source_sha256": "6c984212b434468b64cb90f89dd44032e2ee7315894c8852d1e487b45243d8d3",
+    "references": [],
+    "approved_usd": 0.1,
+    "estimated_cost_usd": 0.08,
+    "actual_cost_usd": 0.08,
+    "status": "complete",
+    "started_at": "2026-10-26T21:24:05.280873+00:00",
+    "completed_at": "2026-10-26T21:24:17.167150+00:00",
+    "output_path": "data\\forma_project_3\\stills\\s02_mid1_still.png",
+    "output_sha256": "5937be23d6a141d5351cd88a2eb5f67a834fc5ef09db6ae7a1f4e527c2e0fe55",
+    "width": 768,
+    "height": 1344,
+    "provider_meta": {
+      "description": ""
+    },
+    "replaced": null,
+    "normalized_from": [
+      768,
+      1376
+    ],
+    "review": {
+      "verdict": "rejected",
+      "rnd": true,
+      "at": "2026-10-26T21:37:13.636898+00:00",
+      "note": "Rejected (user, option 3): a second wheelbarrow appeared at the opening while the original stayed at the flank; buckets and saw not set down; cleared depth hidden by the builder. Plan changed so the wheelbarrow never moves in early muck-out."
+    }
   }
 }

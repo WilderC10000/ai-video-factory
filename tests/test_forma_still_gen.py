@@ -233,9 +233,10 @@ def test_a_proof_allowlist_blocks_every_other_still(project):
     assert not any("Proof in progress" in p for p in still_gen.plan(spec, manifest, "s01_mid1_still")["problems"])
 
 
-def test_project_3_still_proof_is_cp01_and_s01_mid1_under_a_one_dollar_cap():
+def test_project_3_still_proof_runs_through_cp02_under_a_one_dollar_cap():
     spec = load_spec(TEMPLATE)
-    assert spec.budget_cap_usd == 1.0 and spec.stills_config.proof_stills == ("cp01_still", "s01_mid1_still")
+    assert spec.budget_cap_usd == 1.0
+    assert spec.stills_config.proof_stills == ("cp01_still", "s01_mid1_still", "cp02_still")
 
 
 # --- still doctrine: explicit end states, continuity checkpoints --------------------------------

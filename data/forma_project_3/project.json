@@ -21,7 +21,8 @@
     "note": "Default workflow: the Studio generates each still (one confirmed fal call), you review, Approve & Continue. CP01 is text-to-image; every later still is an edit of the previous approved still. Upload still is an optional override. Fallback if continuity fails: fal-ai/nano-banana-pro (+ /edit), $0.15/image.",
     "proof_stills": [
       "cp01_still",
-      "s01_mid1_still"
+      "s01_mid1_still",
+      "cp02_still"
     ]
   },
   "bibles": {
@@ -60,7 +61,7 @@
       "id": "cp02",
       "title": "Site and pipe mouth cleared",
       "camera": "wide",
-      "state": "The ground around the pipe and in front of its open end is raked clear to bare forest soil; the fallen branch is cut into lengths stacked at the left; a brush pile of leaves and branches has grown at the left edge of the clearing. Silt still fills the bottom of the pipe.",
+      "state": "All leaf litter, brush and loose sticks are gone from around the pipe and from in front of its opening: that ground is raked down to bare brown forest soil. Everything raked up now sits in one low brush pile of leaves and sticks on the open ground at the left beside the forest track, next to the three stacked sawn branch lengths, which stay exactly where they were. Dark silt still fills the bottom of the pipe; the pipe interior is untouched.",
       "built": [
         "cleared ground around the pipe"
       ],
@@ -73,7 +74,10 @@
       "materials": {
         "cleared ground around the pipe": "debris raked and wheeled to the brush pile at the left edge"
       },
-      "not_yet": []
+      "not_yet": [
+        "silt removed from the pipe",
+        "flatbed trailer or any building materials"
+      ]
     },
     {
       "id": "cp03",

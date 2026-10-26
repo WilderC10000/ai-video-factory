@@ -7,6 +7,7 @@ from app.forma.doctrine import (
     PRODUCTION_LESSONS,
     SHOT_CLASSES,
     STILL_DOCTRINE,
+    STILL_RULES,
     TEMPORAL_REALISM_RULES,
     VIDEO_DOCTRINE,
 )
@@ -50,3 +51,10 @@ def test_adaptive_clip_counts_are_in_the_creative_brain():
     for phase in PHASE_CLIP_COUNTS:
         assert _norm(phase) in brain, phase
     assert max(PHASE_CLIP_COUNTS.values()) == 3 and PHASE_CLIP_COUNTS["static elapsed-time completion"] == 0
+
+
+def test_every_still_rule_appears_in_the_creative_brain():
+    brain = _norm(BRAIN.read_text(encoding="utf-8"))
+    assert len(STILL_RULES) == 3
+    for rule in STILL_RULES:
+        assert _norm(rule) in brain, rule

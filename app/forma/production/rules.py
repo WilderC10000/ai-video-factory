@@ -3,6 +3,7 @@
 Errors block production (the studio will not brief stills or submit clips while any exist); warnings are
 shown for review. Each check names the Creative Brain rule or production lesson it enforces.
 """
+import re
 from dataclasses import dataclass
 
 from app.forma.production.spec import COMPLEXITY_CLIPS, ProjectSpec
@@ -10,6 +11,10 @@ from app.forma.routing import CANDIDATE_UNPROVEN, RoutingError, select_video_mod
 from app.providers.video.fal import FAL_VIDEO_MODELS
 
 MAX_CLIP_SECONDS = 5  # a single anchored clip is one local task, not a phase (lesson 3)
+# Still doctrine 2: removal tasks and the words an explicit removal end state must contain.
+REMOVAL = re.compile(r"\b(removes?|clears?|rakes?|mucks?|shovels?|hauls?|scrapes?|digs?|(cuts?|saws?)\s+(up\b|the\s+(fallen\s+)?(branch|tree|brush|roots?|limbs?)))\b", re.I)
+GONE = re.compile(r"\b(gone|no longer|removed|bare|empty|clear(ed)?|clean|dug|excavated)\b", re.I)
+DESTINATION = re.compile(r"\b(stack(ed)?|pile[ds]?|heap(ed)?|dumped|spoil|in the wheelbarrow|at the left|beside|on the)\b", re.I)
 
 
 @dataclass(frozen=True)
@@ -98,6 +103,19 @@ def check(spec: ProjectSpec) -> list[Problem]:
                     f"{route.model} takes {list(cfg.allowed_durations)} s, not {beat.duration_seconds}")
         if cfg.end_image_param_name is None:
             err(shot.id, "anchored clips", f"{route.model} cannot pin an end still")
+
+    # Still doctrine 1-2: end states are explicit final visual conditions; removals say what is gone and where it went.
+    for shot in spec.shots:
+        cp_to = spec.checkpoint(shot.to_cp)
+        ends = [(f"{shot.id} beat {i}", b.task, b.after) for i, b in enumerate(shot.beats[:-1], 1)]
+        if shot.beats:
+            ends.append((cp_to.id, shot.beats[-1].task, cp_to.state))
+        for where, task, end in ends:
+            if not end.strip():
+                warn(where, "explicit end state", "no end state: write the visible final condition, not the action")
+            elif REMOVAL.search(task) and not (GONE.search(end) and DESTINATION.search(end)):
+                warn(where, "explicit end state",
+                     "removal task: say exactly what is gone and where the removed material ends up")
 
     sc = spec.stills_config
     if sc.source == "generate":

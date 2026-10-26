@@ -24,7 +24,7 @@ from app.studio.attempt_status import (
 )
 from app.studio.execution import execution_info
 from app.forma.production import budget as production_budget
-from app.forma.production import still_gen
+from app.forma.production import continuity, still_gen
 from app.forma.production import stills as still_store
 from app.forma.production import submit as production_submit
 from app.forma.production.spec import SpecError, load_spec
@@ -135,6 +135,12 @@ class NoteIn(BaseModel):
     note: str
 
 
+class ContinuityIn(BaseModel):
+    verdict: str  # pass | fail
+    note: str
+    dimensions: dict[str, bool] = {}
+
+
 class GenerateStillIn(BaseModel):
     max_usd: float
     confirmed: bool = False
@@ -176,6 +182,20 @@ def generate_still(slug: str, key: str, body: GenerateStillIn, db: Session = Dep
                                     confirmed=body.confirmed, replace=body.replace)
     except still_gen.StillGenError as e:
         return JSONResponse(status_code=e.status, content={"detail": str(e), "problems": e.problems})
+    _resync(db, slug)
+    return result
+
+
+@router.post("/projects/{slug}/stills/{key}/continuity")
+def record_continuity(slug: str, key: str, body: ContinuityIn, db: Session = Depends(get_session)):
+    """A person's continuity verdict (geometry, camera, builder, environment) against the chain's anchor. Local."""
+    spec, manifest_path = _spec(db, slug)
+    if key not in spec.still_keys():
+        raise HTTPException(status_code=404, detail=f"{key} is not a still of {slug}")
+    try:
+        result = continuity.record(spec, manifest_path, key, body.verdict, body.note, body.dimensions)
+    except continuity.ContinuityError as e:
+        raise HTTPException(status_code=e.status, detail=str(e))
     _resync(db, slug)
     return result
 

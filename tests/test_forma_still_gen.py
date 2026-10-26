@@ -236,3 +236,51 @@ def test_a_proof_allowlist_blocks_every_other_still(project):
 def test_project_3_still_proof_is_cp01_and_s01_mid1_under_a_one_dollar_cap():
     spec = load_spec(TEMPLATE)
     assert spec.budget_cap_usd == 1.0 and spec.stills_config.proof_stills == ("cp01_still", "s01_mid1_still")
+
+
+# --- still doctrine: explicit end states, continuity checkpoints --------------------------------
+
+def test_a_removal_end_state_must_say_what_is_gone_and_where_it_went(tmp_path):
+    raw = json.loads(TEMPLATE.read_text(encoding="utf-8"))
+    raw["shots"][0]["beats"][0]["after"] = "the builder has cut the branch"
+    path = tmp_path / "project.json"
+    path.write_text(json.dumps(raw))
+    hits = [p for p in rules.check(load_spec(path)) if p.rule == "explicit end state"]
+    assert [p.where for p in hits] == ["s01 beat 1"] and "where the removed material ends up" in hits[0].message
+    assert not [p for p in rules.check(load_spec(TEMPLATE)) if p.rule == "explicit end state"]
+
+
+def test_every_fifth_chained_edit_blocks_the_chain_until_a_continuity_check_passes(project):
+    from app.forma.production import continuity
+
+    spec, manifest = project
+    keys = [s.key for s in spec.stills()]
+    assert continuity.chain_position(spec, "cp01_still") == ("cp01_still", 0)
+    fifth = keys[5]
+    assert continuity.chain_position(spec, fifth) == ("cp01_still", 5) and continuity.due(spec, fifth)
+    for key in keys[:6]:
+        still_gen.generate(spec, manifest, key, execution_mode="mock", max_usd=0.05, confirmed=True)
+        stills.approve(manifest, key, "ok")
+    nxt = keys[6]
+    assert any("Continuity checkpoint" in p for p in still_gen.plan(spec, manifest, nxt)["problems"])
+    with pytest.raises(continuity.ContinuityError, match="all of"):
+        continuity.record(spec, manifest, fifth, "pass", "compared", {"geometry": True})
+    continuity.record(spec, manifest, fifth, "fail", "builder face changed", {})
+    assert any("FAILED" in p for p in still_gen.plan(spec, manifest, nxt)["problems"])
+    continuity.record(spec, manifest, fifth, "pass", "pipe, camera, builder, forest hold",
+                      {d: True for d in continuity.DIMENSIONS})
+    assert still_gen.plan(spec, manifest, nxt)["problems"] == []
+    # A different (replaced) fifth still needs a new check. (A mock edit returns its source unchanged, so upload.)
+    stills.upload(manifest, fifth, "other.png", png(salt=b"other"), replace=True)
+    stills.approve(manifest, fifth, "new version")
+    assert any("Continuity checkpoint" in p for p in still_gen.plan(spec, manifest, nxt)["problems"])
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="needs ffmpeg")
+def test_drift_metrics_find_the_frame_offset_between_cp01_and_s01_mid1():
+    from app.forma.production import continuity
+
+    d = TEMPLATE.parent / "stills"
+    m = continuity.measure(d / "cp01_still.png", d / "s01_mid1_still.png")
+    assert abs(m["offset_px"][0]) <= 12 and m["offset_pct"] < continuity.FLAG_SHIFT_PCT
+    assert m["band_psnr_aligned_db"] > m["band_psnr_db"] - 0.01 and m["flags"] == []

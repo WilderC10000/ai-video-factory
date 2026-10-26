@@ -73,13 +73,30 @@ planned and routed so a model can actually deliver it. Established 2026-09-28.
     - medium phase → 2 clips;
     - complex / repetitive phase → up to 3 clips;
     - static elapsed-time completion → still edit only.
-    Multi-clip phases add manual ChatGPT beat stills between the checkpoint stills so each clip is one
+    Multi-clip phases add intermediate beat stills between the checkpoint stills so each clip is one
     believable local task, and the clips are joined by hard cuts in the edit (which may trim or speed-ramp
     them). Established 2026-09-28 with the Clip 03 three-clip Kling proof.
 
+## Still doctrine — generated stills (from Project #3)
+
+Every generated still after the first is an image edit of the previous approved still, so the previous
+pixels are authoritative and errors carry forward. Established 2026-10-26 from the CP01 → s01_mid1 proof.
+
+1. **End states are written as explicit final visual conditions, never as implied actions.** Write "the
+   three sawn lengths lie stacked at the left", not "cuts the branch".
+2. **A removal end state says exactly what is gone, where the removed material ends up, and what must not
+   appear yet.** The first s01_mid1 edit left the branch in place and invented an early brush pile because
+   the end state implied the removal instead of stating it.
+3. **Every 5 chained still edits, compare the current frame against the last major approved anchor and flag
+   cumulative drift in geometry, camera, builder identity or environment before continuing.** The anchor is
+   the first still or the first still of a new camera; the chain stays blocked until a person records the
+   comparison (`app/forma/production/continuity.py`).
+
 ## Provider policy (from Project #3)
 
-- Checkpoint stills: made and approved manually in ChatGPT; the stills folder is the source of truth.
+- Checkpoint stills: generated in the studio on fal (Nano Banana; CP01 text-to-image, every later still an
+  edit of the previous approved still), one confirmed call each, approved by a person. A manual upload
+  (e.g. ChatGPT) is an optional override; the stills folder is the source of truth.
 - Video: fal.ai, routed per shot by difficulty class (production lesson 11).
 - Higgsfield: retired from the active production path. The Clip 03 Seedance 2.5 / Kling O3 work
   is kept as R&D history (Project #2 manifest `clip03__attempt3`, `provider_tests/higgsfield_clip03/`);

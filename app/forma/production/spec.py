@@ -176,6 +176,14 @@ class ProjectSpec:
         i = keys.index(still_key)
         return keys[i - 1] if i else None
 
+    def still_camera(self, still_key: str) -> str:
+        """The camera a still is seen from (an intermediate keeps its shot's start camera)."""
+        still = next(s for s in self.stills() if s.key == still_key)
+        if still.checkpoint:
+            return self.checkpoint(still.checkpoint).camera
+        shot = next(s for s in self.shots if s.id == still.shot)
+        return self.checkpoint(shot.from_cp).camera
+
     def must_not_exist(self, cp: Checkpoint) -> list[str]:
         """Every element a later checkpoint adds (derived, so it never drifts) plus the checkpoint's own not_yet."""
         i = [c.id for c in self.checkpoints].index(cp.id)
@@ -235,10 +243,12 @@ class ProjectSpec:
         nxt = shot.beats[n]
         state = done.after or (f"the work of beat {n} is done ({done.task}, at {done.location}); the rest of the work "
                                f"toward {cp_to.id.upper()} is not done yet")
+        not_yet = list(dict.fromkeys([*(e for e in cp_to.built if e not in cp_from.built), *cp_to.not_yet]))
         return (f"{shot.id} intermediate still {n} of {shot.clip_count - 1} ({shot.title}), between "
                 f"{cp_from.id.upper()} and {cp_to.id.upper()}. {self._lock(cp_from.camera)} Visible state: {state}. "
                 f"Builder action: in position for the next step - {nxt.task} ({nxt.location}), caught mid-work. "
-                f"The rest of the work toward {cp_to.id.upper()} is NOT done yet.")
+                f"The rest of the work toward {cp_to.id.upper()} is NOT done yet"
+                f"{(' - must NOT appear yet: ' + ', '.join(not_yet)) if not_yet else ''}.")
 
     def _previous_built(self, cp: Checkpoint) -> tuple[str, ...]:
         i = [c.id for c in self.checkpoints].index(cp.id)

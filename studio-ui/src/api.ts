@@ -71,6 +71,12 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ max_usd, replace, confirmed: true }),
     }),
+  /** LOCAL: a person's continuity verdict against the chain's anchor (no provider call). */
+  recordContinuity: (slug: string, key: string, verdict: "pass" | "fail", note: string, dimensions: Record<string, boolean>) =>
+    request<unknown>(`/studio/projects/${slug}/stills/${key}/continuity`, {
+      method: "POST",
+      body: JSON.stringify({ verdict, note, dimensions }),
+    }),
   approveStill: (slug: string, key: string, note: string) =>
     request<{ state: string }>(`/studio/projects/${slug}/stills/${key}/approve`, {
       method: "POST",

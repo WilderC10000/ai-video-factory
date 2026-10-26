@@ -22,7 +22,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from app.forma.production import budget, stills
+from app.forma.production import budget, continuity, stills
 from app.forma.production.spec import ProjectSpec
 from app.providers.base import ImageEditRequest, ImageGenerationRequest, ImageProviderError
 from app.providers.image.fal import (
@@ -119,6 +119,9 @@ def plan(spec: ProjectSpec, manifest_path: Path, key: str, manifest: dict | None
         if st["state"] != "approved":
             problems.append(f"The source still {source_key} is {st['state']} - approve it first; every later still "
                             "is an edit of the previous approved still.")
+        gate = continuity.required_problem(spec, manifest_path, source_key, manifest)
+        if gate:
+            problems.append(gate)
     for r in refs:
         if not r.is_file():
             problems.append(f"Reference image {r} does not exist.")
@@ -143,6 +146,7 @@ def plan(spec: ProjectSpec, manifest_path: Path, key: str, manifest: dict | None
             "per_still_max_usd": cfg_s.per_still_max_usd, "source": source, "references": [str(r) for r in refs],
             "prompt": still.brief, "exists": current["state"] != "missing", "stale_source": stale_source,
             "problems": problems, "budget": budget.spend(manifest, spec),
+            "continuity": continuity.info(spec, manifest_path, key, manifest, media_url),
             "attempts": [{"key": k, "status": v.get("status"), "model": v.get("model"), "cost_usd": v.get("actual_cost_usd"),
                           "started_at": v.get("started_at"), "error": v.get("error")} for k, v in tries]}
 

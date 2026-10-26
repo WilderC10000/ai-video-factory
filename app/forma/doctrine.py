@@ -34,6 +34,14 @@ PRODUCTION_LESSONS: tuple[str, ...] = (
     "Select the video model by task difficulty, never one model for the whole video",
 )
 
+# Still doctrine for generated stills (Project #3 on): each still is an edit of the previous approved one.
+STILL_RULES: tuple[str, ...] = (
+    "End states are written as explicit final visual conditions, never as implied actions",
+    "A removal end state says exactly what is gone, where the removed material ends up, and what must not appear yet",
+    "Every 5 chained still edits, compare the current frame against the last major approved anchor and flag "
+    "cumulative drift in geometry, camera, builder identity or environment before continuing",
+)
+
 # Production lesson 11: shot difficulty class -> what kind of generation it gets.
 SHOT_CLASSES: dict[str, str] = {
     "environmental": "simple environmental motion / reveal -> economical video model",

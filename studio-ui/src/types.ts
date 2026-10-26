@@ -142,6 +142,26 @@ export interface StillGeneration {
   problems: string[];
   budget: { cap_usd: number; spent_usd: number; reserved_usd: number; remaining_usd: number };
   attempts: { key: string; status: string; model: string; cost_usd: number | null; started_at: string; error: string | null }[];
+  continuity: StillContinuity;
+}
+
+/** Still doctrine 3: every N chained edits the still is compared against the chain's anchor before continuing. */
+export interface StillContinuity {
+  anchor: string;
+  depth: number;
+  every: number;
+  due: boolean;
+  anchor_url: string | null;
+  metrics: {
+    offset_px: [number, number];
+    offset_pct: number;
+    band_psnr_db: number;
+    band_psnr_aligned_db: number;
+    frame_psnr_db: number;
+    flags: string[];
+  } | null;
+  check: { verdict: "pass" | "fail"; note: string; at: string; still_sha256: string; dimensions: Record<string, boolean> } | null;
+  error: string | null;
 }
 
 export type ClipState =

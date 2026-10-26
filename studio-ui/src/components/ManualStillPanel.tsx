@@ -243,6 +243,9 @@ export function ManualStillPanel({
           <p className="fineprint">Continue only opens the next still or clip - it never generates or submits anything by itself.</p>
         </div>
       )}
+      {gen?.continuity.due && !picked && (
+        <ContinuityPanel projectSlug={projectSlug} still={still} c={gen.continuity} busy={busy} run={run} />
+      )}
       {error && <p className="confirm__problem">✕ {error}</p>}
       {problems.length > 0 && (
         <ul className="attn">
@@ -314,6 +317,97 @@ export function ManualStillPanel({
           <p className="intent__prompt">{still.brief}</p>
         </details>
       )}
+    </div>
+  );
+}
+
+const DIMENSIONS = ["geometry", "camera", "builder", "environment"] as const;
+
+/** Still doctrine 3: compare this still against the chain's anchor and record the verdict before the chain continues. */
+function ContinuityPanel({
+  projectSlug,
+  still,
+  c,
+  busy,
+  run,
+}: {
+  projectSlug: string;
+  still: ManualStill;
+  c: StillGeneration["continuity"];
+  busy: boolean;
+  run: (fn: () => Promise<unknown>) => Promise<void>;
+}) {
+  const [dims, setDims] = useState<Record<string, boolean>>({});
+  const [note, setNote] = useState("");
+  useEffect(() => {
+    setDims({});
+    setNote("");
+  }, [still.key, still.sha256]);
+  const current = c.check && c.check.still_sha256 === still.sha256 ? c.check : null;
+  const approved = still.state === "approved";
+  const send = (verdict: "pass" | "fail") => run(() => api.recordContinuity(projectSlug, still.key, verdict, note, dims));
+  const m = c.metrics;
+  return (
+    <div className="mstill__gen">
+      <p>
+        <strong>Continuity checkpoint</strong> - chained edit {c.depth} since the anchor <code>{c.anchor}</code> (every {c.every}).
+        {current ? (
+          <span className={current.verdict === "pass" ? "" : "confirm__problem"}> Recorded: {current.verdict.toUpperCase()} - “{current.note}”</span>
+        ) : (
+          " The next still stays blocked until you compare and record."
+        )}
+      </p>
+      <div className="mstill__media">
+        <figure>
+          {c.anchor_url ? <img src={c.anchor_url} alt={c.anchor} /> : <div className="thumb thumb--empty">{c.anchor}</div>}
+          <figcaption>Anchor: {c.anchor}</figcaption>
+        </figure>
+        <figure>
+          {still.url ? <img src={still.url} alt={still.key} /> : <div className="thumb thumb--empty">No file yet</div>}
+          <figcaption>Now: {still.key}</figcaption>
+        </figure>
+      </div>
+      {m && (
+        <p className="fineprint">
+          Frame offset {m.offset_px[0]}, {m.offset_px[1]} px ({m.offset_pct}%) · background band {m.band_psnr_db} dB ({m.band_psnr_aligned_db} dB
+          aligned) · whole frame {m.frame_psnr_db} dB
+        </p>
+      )}
+      {c.error && <p className="fineprint">Metrics unavailable: {c.error}</p>}
+      {m && m.flags.length > 0 && (
+        <ul className="attn">
+          {m.flags.map((f) => (
+            <li key={f}>{f}</li>
+          ))}
+        </ul>
+      )}
+      {!current && approved && (
+        <>
+          <div className="mstill__row">
+            {DIMENSIONS.map((d) => (
+              <label key={d} className="mstill__replace">
+                <input type="checkbox" checked={!!dims[d]} onChange={(e) => setDims({ ...dims, [d]: e.target.checked })} />
+                {d} holds
+              </label>
+            ))}
+          </div>
+          <textarea className="note" rows={2} placeholder="What did you compare? (required)" value={note} onChange={(e) => setNote(e.target.value)} />
+          <div className="mstill__row">
+            <button
+              type="button"
+              className="btn btn--primary"
+              disabled={busy || !note.trim() || !DIMENSIONS.every((d) => dims[d])}
+              onClick={() => send("pass")}
+            >
+              Continuity holds - continue
+            </button>
+            <button type="button" className="btn" disabled={busy || !note.trim()} onClick={() => send("fail")}>
+              Drift - stop the chain
+            </button>
+          </div>
+        </>
+      )}
+      {!current && !approved && <p className="fineprint">Approve the still first, then record the comparison.</p>}
     </div>
   );
 }

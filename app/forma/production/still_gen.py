@@ -108,6 +108,9 @@ def plan(spec: ProjectSpec, manifest_path: Path, key: str, manifest: dict | None
         problems.append(f"{spec.name} is frozen - nothing new is generated.")
     if known is None:
         problems.append(f"{model} is not a known still model ({', '.join(STILL_MODELS)}).")
+    if cfg_s.proof_stills and key not in cfg_s.proof_stills:
+        problems.append(f"Proof in progress: only {', '.join(cfg_s.proof_stills)} may be generated "
+                        "(stills.proof_stills in project.json).")
     source = None
     if source_key is not None:
         st = stills.state(manifest_path, source_key, manifest)

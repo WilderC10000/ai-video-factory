@@ -109,6 +109,7 @@ class StillsConfig:
     edit_model: str = DEFAULT_EDIT_MODEL  # every later still: edit of the previous approved still
     per_still_max_usd: float = 0.20  # the most one approval may spend on one still call
     first_still_references: tuple[str, ...] = ()  # optional images (relative to the project dir) for the first still
+    proof_stills: tuple[str, ...] = ()  # non-empty = a proof: ONLY these stills may be generated for now
 
 
 @dataclass
@@ -278,4 +279,4 @@ def _stills_config(raw: dict) -> StillsConfig:
     d = StillsConfig()
     return StillsConfig(raw.get("source", d.source), raw.get("generate_model", d.generate_model),
                         raw.get("edit_model", d.edit_model), float(raw.get("per_still_max_usd", d.per_still_max_usd)),
-                        tuple(raw.get("first_still_references", ())))
+                        tuple(raw.get("first_still_references", ())), tuple(raw.get("proof_stills", ())))

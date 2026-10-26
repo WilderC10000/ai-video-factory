@@ -8,8 +8,9 @@
     "planned": "2026-09-28"
   },
   "budget": {
-    "cap_usd": 0.0,
-    "per_clip_max_usd": 1.3
+    "cap_usd": 1.0,
+    "per_clip_max_usd": 1.3,
+    "note": "TEMPORARY cap for the still proof (CP01 text-to-image + s01_mid1 edit, about $0.08). Set back to 0 or to a production cap after the proof."
   },
   "stills": {
     "source": "generate",
@@ -17,7 +18,11 @@
     "edit_model": "fal-ai/nano-banana/edit",
     "per_still_max_usd": 0.2,
     "first_still_references": [],
-    "note": "Default workflow: the Studio generates each still (one confirmed fal call), you review, Approve & Continue. CP01 is text-to-image; every later still is an edit of the previous approved still. Upload still is an optional override. Fallback if continuity fails: fal-ai/nano-banana-pro (+ /edit), $0.15/image."
+    "note": "Default workflow: the Studio generates each still (one confirmed fal call), you review, Approve & Continue. CP01 is text-to-image; every later still is an edit of the previous approved still. Upload still is an optional override. Fallback if continuity fails: fal-ai/nano-banana-pro (+ /edit), $0.15/image.",
+    "proof_stills": [
+      "cp01_still",
+      "s01_mid1_still"
+    ]
   },
   "bibles": {
     "location": "a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight, a dirt forest track entering at the left edge",

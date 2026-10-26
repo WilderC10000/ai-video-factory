@@ -106,13 +106,18 @@ export function RoomScreen({ room, project, stages, budget, approvals, audio }: 
         return (
           <div className="screen screen--list">
             <div className="screen__caption">
-              Manual stills: {manual.length - attention.length}/{manual.length} approved
+              Stills: {manual.length - attention.length}/{manual.length} approved
             </div>
             {shown.map((s) => (
               <div key={s.key} className={`screen__row mstill-row is-${s.manual_still!.state}`}>
                 <span>{s.manual_still!.state === "approved" ? "✓" : s.manual_still!.state === "missing" ? "○" : "!"}</span>
                 <span className="screen__row-label">{s.key}</span>
-                <span className="screen__row-meta">{s.manual_still!.state}</span>
+                <span className="screen__row-meta">
+                  {s.manual_still!.state}
+                  {s.manual_still!.generation?.estimate_usd != null && s.manual_still!.state !== "approved"
+                    ? ` · ${s.manual_still!.generation.mode} $${s.manual_still!.generation.estimate_usd.toFixed(4)}`
+                    : ""}
+                </span>
               </div>
             ))}
           </div>

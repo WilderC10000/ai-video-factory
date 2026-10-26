@@ -219,3 +219,20 @@ def test_project_3_template_generates_stills_by_default_with_the_cheap_tier():
     assert rules.errors(spec) == []
     assert spec.edit_source("cp02_still") == "s01_mid1_still" and spec.edit_source("cp04_still") == "cp03_still"
     assert "The attached image is authoritative" in next(s.brief for s in spec.stills() if s.key == "cp10_still")
+
+
+def test_a_proof_allowlist_blocks_every_other_still(project):
+    spec, manifest = project
+    raw = json.loads(EXAMPLE.read_text())
+    raw["stills"] = {"proof_stills": ["cp01_still", "s01_mid1_still"]}
+    path = manifest.parent / "project.json"
+    path.write_text(json.dumps(raw))
+    spec = load_spec(path)
+    assert still_gen.plan(spec, manifest, "cp01_still")["problems"] == []
+    assert any("Proof in progress" in p for p in still_gen.plan(spec, manifest, "cp02_still")["problems"])
+    assert not any("Proof in progress" in p for p in still_gen.plan(spec, manifest, "s01_mid1_still")["problems"])
+
+
+def test_project_3_still_proof_is_cp01_and_s01_mid1_under_a_one_dollar_cap():
+    spec = load_spec(TEMPLATE)
+    assert spec.budget_cap_usd == 1.0 and spec.stills_config.proof_stills == ("cp01_still", "s01_mid1_still")

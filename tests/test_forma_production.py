@@ -286,7 +286,7 @@ def test_project_3_plan_is_valid_and_priced():
     assert spec.status == "planning" and spec.concept["title"].startswith("Giant Concrete Drainage Pipe")
     assert len(spec.checkpoints) == 20 and rules.errors(spec) == []
     assert {s.id for s in spec.shots if s.proof} == {"s01", "s15", "s17"}
-    assert spec.budget_cap_usd == 0.0  # no spend until a person sets a cap
+    assert spec.budget_cap_usd == 1.0  # temporary cap for the CP01 -> s01_mid1 still proof (2026-10-26)
     manifest = TEMPLATE.parent / "manifest.json"
     total = sum(submit.plan(spec, manifest, c.key)["estimate_usd"] for c in spec.clips())
     assert len(spec.clips()) == 30 and round(total, 3) == 9.878

@@ -82,8 +82,18 @@ CLIP   blocked --stills approved--> ready --approve spend--> budget_approved --s
 | fallback | `fal-ai/nano-banana-pro` (+ `/edit`) | $0.15 | proven (Alpine / Video #1 / train-car stills) |
 
 Edits are sent with `aspect_ratio: auto` (keep the source frame) and PNG output (no recompression drift
-along the chain). If the cheap tier drifts (identity, geometry, lighting), switch `edit_model` to the Pro
-edit endpoint in `project.json` - nothing else changes.
+along the chain).
+
+**Model policy (CP01 → CP02 proof, 2026-10-26):** the cheap edit holds continuity very well and handles additive
+or local changes (a sawn stack, a brush pile, a builder pose), but it under-did large-area removals twice and
+dropped approved objects. Use `stills.model_overrides` to put large-area removals / changes on
+`fal-ai/nano-banana-2/edit` (it cleared CP02 in one call); escalate a still to `fal-ai/nano-banana-pro/edit` only if
+Nano Banana 2 fails. The default stays cheap.
+
+**Frame size:** `stills.frame_size` (Project #3: 768×1344, CP01's size). Every generated still is scaled to it
+(models that change size stretch the same scene, so a scale - not a crop - keeps it aligned), and
+`still_gen.normalize_approved()` scales an already-approved still and carries its approval over. A clip whose
+start and end stills differ in size is blocked before any spend.
 
 A shot on an unproven route must be marked `"proof": true`; production shots only get proven routes. Every
 request is first/last-frame anchored, audio off, one prompt (Kling cannot combine an end frame with

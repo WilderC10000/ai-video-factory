@@ -19,6 +19,8 @@ for any still, and a still regenerated after approval is `changed` (its clips bl
 """
 import json
 import os
+import shutil
+import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -213,9 +215,9 @@ def generate(spec: ProjectSpec, manifest_path: Path, key: str, *, execution_mode
         else:
             result = provider.generate_image(ImageGenerationRequest(info["prompt"], 768, 1344, dict(GENERATE_PARAMS)),
                                              str(out))
-        data = Path(result.file_path).read_bytes()
+        data, normalized_from = _to_frame_size(Path(result.file_path), spec.stills_config.frame_size)
         record = stills.place(manifest_path, key, data, original_filename=out.name, source=f"generated ({cfg.model_id})")
-    except (ImageProviderError, stills.StillError, OSError) as e:
+    except (ImageProviderError, stills.StillError, OSError, subprocess.CalledProcessError) as e:
         manifest = _read(manifest_path)
         charged = getattr(e, "charged", True) and execution_mode == "live"
         manifest[gen_key].update(status="failed", error=str(e), completed_at=_now().isoformat(),
@@ -228,7 +230,52 @@ def generate(spec: ProjectSpec, manifest_path: Path, key: str, *, execution_mode
                              actual_cost_usd=cost if execution_mode == "live" else 0.0,
                              output_path=record["stored_as"], output_sha256=record["sha256"],
                              width=record["width"], height=record["height"],
-                             provider_meta=result.meta, replaced=record.get("replaced"))
+                             provider_meta=result.meta, replaced=record.get("replaced"),
+                             normalized_from=normalized_from)
     manifest.setdefault("still_generations", {})[key] = gen_key
     _write(manifest_path, manifest)
     return {"generation": gen_key, **manifest[gen_key], "state": stills.state(manifest_path, key)["state"]}
+
+
+def _scale(src: Path, size: tuple[int, int]) -> bytes:
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise OSError("ffmpeg is needed to scale a still to the project frame size")
+    return subprocess.run([ffmpeg, "-v", "error", "-i", str(src), "-vf", f"scale={size[0]}:{size[1]}:flags=lanczos",
+                           "-f", "image2pipe", "-vcodec", "png", "-"], capture_output=True, check=True).stdout
+
+
+def _to_frame_size(path: Path, size: tuple[int, int] | None) -> tuple[bytes, list[int] | None]:
+    """The image bytes at the project frame size (scaled, never cropped: models that change the frame size
+    stretch the same scene, so a scale keeps it aligned with the previous still). (bytes, original size or None)."""
+    data = path.read_bytes()
+    _, w, h = stills.sniff(data)
+    if size is None or (w, h) == tuple(size):
+        return data, None
+    return _scale(path, size), [w, h]
+
+
+def normalize_approved(spec: ProjectSpec, manifest_path: Path, key: str) -> dict:
+    """FREE, local: scale an approved still to the project frame size and carry its approval over (the content
+    a person approved is unchanged; only the pixel dimensions are). The original goes to stills/_replaced/."""
+    size = spec.stills_config.frame_size
+    if size is None:
+        raise StillGenError("project.json stills.frame_size is not set.", 400)
+    manifest = _read(manifest_path)
+    st = stills.state(manifest_path, key, manifest)
+    if st["state"] != "approved":
+        raise StillGenError(f"{key} is {st['state']} - only an approved still is normalized (approve it first).")
+    data, original = _to_frame_size(Path(st["path"]), size)
+    if original is None:
+        return {"key": key, "normalized": False, "size": list(size)}
+    previous = manifest[key]
+    record = stills.place(manifest_path, key, data, original_filename=f"{key}.png",
+                          source=f"normalized to {size[0]}x{size[1]} from {original[0]}x{original[1]}")
+    manifest = _read(manifest_path)
+    manifest.setdefault("still_normalizations", {})[key] = {**record, "from_size": original,
+                                                           "approved_sha256_before": previous.get("approved_sha256")}
+    _write(manifest_path, manifest)
+    note = (f"Scaled {original[0]}x{original[1]} -> {size[0]}x{size[1]} (normalization only). Content approval carried "
+            f"over: {previous.get('approval_note')}")
+    stills.approve(manifest_path, key, note)
+    return {"key": key, "normalized": True, "from": original, "size": list(size), "sha256": record["sha256"]}

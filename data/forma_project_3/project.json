@@ -18,7 +18,7 @@
     "edit_model": "fal-ai/nano-banana/edit",
     "per_still_max_usd": 0.2,
     "first_still_references": [],
-    "note": "Default workflow: the Studio generates each still (one confirmed fal call), you review, Approve & Continue. CP01 is text-to-image; every later still is an edit of the previous approved still. Upload still is an optional override. Fallback if continuity fails: fal-ai/nano-banana-pro (+ /edit), $0.15/image.",
+    "note": "Default workflow: the Studio generates each still (one confirmed fal call), you review, Approve & Continue. CP01 is text-to-image; every later still is an edit of the previous approved still. Model policy (from the CP01-CP02 proof, 2026-10-26): fal-ai/nano-banana/edit ($0.0398) for simple, additive or local edits; fal-ai/nano-banana-2/edit ($0.08) as a per-still override for large-area removals or changes; fal-ai/nano-banana-pro/edit ($0.15) only if Nano Banana 2 fails. Every still is scaled to frame_size so clip start/end frames always match. Upload still is an optional override.",
     "proof_stills": [
       "cp01_still",
       "s01_mid1_still",
@@ -26,7 +26,11 @@
     ],
     "model_overrides": {
       "cp02_still": "fal-ai/nano-banana-2/edit"
-    }
+    },
+    "frame_size": [
+      768,
+      1344
+    ]
   },
   "bibles": {
     "location": "a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight; open bare-earth clearing left of the pipe, a dirt forest track entering at the left edge",

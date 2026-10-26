@@ -37,7 +37,7 @@
   "still_generations": {
     "cp01_still": "cp01_still__gen2",
     "s01_mid1_still": "s01_mid1_still__gen2",
-    "cp02_still": "cp02_still__gen2"
+    "cp02_still": "cp02_still__gen3"
   },
   "cp01_still__gen2": {
     "kind": "still_generation",
@@ -226,5 +226,85 @@
       "at": "2026-10-26T20:13:44.752924+00:00",
       "note": "Rejected by the user: the strip beside the track was cleared and the wheelbarrow kept, but the litter directly in front of the opening stayed, the stack of three sawn lengths dropped to one log, the brush pile moved into the foreground and the bow saw is not visible. The cheap tier is not retried for CP02; escalated to fal-ai/nano-banana-2/edit (per-still override)."
     }
+  },
+  "cp02_still__gen3": {
+    "kind": "still_generation",
+    "still": "cp02_still",
+    "provider": "fal:fal-ai/nano-banana-2/edit",
+    "model": "fal-ai/nano-banana-2/edit",
+    "mode": "edit",
+    "execution_mode": "live",
+    "prompt": "CP02 - Site and pipe mouth cleared. Vertical 9:16. Edit the attached approved still: same camera (the approved CP01 frame: raised about 6 m, front-left three-quarter view near the pipe's long axis, looking down the full pipe length from the front opening (lower right) to the rear end (upper middle); track and open ground left, wooded slope right - the same exact camera position and framing in every wide shot) with identical framing. Location: a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight; open bare-earth clearing left of the pipe, a dirt forest track entering at the left edge. Builder (always the same person): dark beard, olive beanie, rust-orange work jacket, grey canvas work pants, brown boots, work gloves - working, never posing. Structure: exactly one standalone precast concrete drainage pipe section, about 3 m inside diameter and 12 m long, on its side along the foot of the slope, never joined to other sections or continuing into the forest - front opening and rear end both visible; the same single pipe, size and position in every shot. The attached image is authoritative: keep its camera, framing, structure, environment, builder, lighting and geometry exactly; keep every pixel of the scene identical except the construction progress, the builder's position, tools and materials. Realistic documentary photograph, not an illustration. Nothing already built may disappear or regress; add nothing that is not described. Visible state: The brown leaf litter and the crossed sticks in the lower foreground directly in front of the pipe opening are completely gone. The entire strip of ground between the pipe and the forest track is visibly cleared to bare brown soil. The three sawn branch lengths stay stacked at the left beside the track. One low brush pile at the left beside the track holds only the removed litter and sticks. The wheelbarrow still stands at the pipe's track-side flank where it stood before, with the bow saw visible in it beside the buckets. The pipe interior and the dark silt in its bottom are untouched. Built so far: cleared ground around the pipe. Material sources in view: cleared ground around the pipe: from debris raked and wheeled to the brush pile at the left edge. Builder action: rakes the last few leaves off the bare strip toward the brush pile. Tools in view: rake, bow saw (in the wheelbarrow), wheelbarrow at the track-side flank. Must NOT appear yet: mucked-out pipe interior, material yard with mini excavator, footing trenches along both flanks, silt removed from the pipe, flatbed trailer, excavator, any construction materials or later-stage work.",
+    "source_still": "s01_mid1_still",
+    "source_path": "data\\forma_project_3\\stills\\s01_mid1_still.png",
+    "source_sha256": "c89ff362ec5f0f3c6e5ca6c067914e8711fa0fc3c70ec35e3a0f06ce355fa807",
+    "references": [],
+    "approved_usd": 0.1,
+    "estimated_cost_usd": 0.08,
+    "actual_cost_usd": 0.08,
+    "status": "complete",
+    "started_at": "2026-10-26T20:15:46.092644+00:00",
+    "completed_at": "2026-10-26T20:16:07.098909+00:00",
+    "output_path": "data\\forma_project_3\\stills\\cp02_still.png",
+    "output_sha256": "8cc7ab9824095e0ead5fb08ba003a55c05c444b24036ade65f4564d0b4408f41",
+    "width": 768,
+    "height": 1376,
+    "provider_meta": {
+      "description": ""
+    },
+    "replaced": {
+      "previous_state": "placed",
+      "previous_sha256": "375ef1bb84f9a8b414b14392e7d2d4998a4956ebed6d9208de7ff9413d4f0d49",
+      "archived_to": [
+        "data\\forma_project_3\\stills\\_replaced\\cp02_still__20261026T201607Z.png"
+      ]
+    }
+  },
+  "cp02_still": {
+    "actual_cost_usd": 0.0,
+    "source": "folder",
+    "output_path": "data\\forma_project_3\\stills\\cp02_still.png",
+    "completed_at": "2026-10-26T20:31:07.922525+00:00",
+    "approved_sha256": "6c984212b434468b64cb90f89dd44032e2ee7315894c8852d1e487b45243d8d3",
+    "approved_at": "2026-10-26T20:31:07.922525+00:00",
+    "approved_via": "manual",
+    "approval_note": "Scaled 768x1376 -> 768x1344 (normalization only). Content approval carried over: Approved by the user (chat, 2026-10-26): Nano Banana 2 edit - front of the opening and the strip beside the track cleared to bare soil, three sawn lengths kept, one brush pile at the left, wheelbarrow at the track-side flank; continuity holds (0.5% vs CP01). Leftover crossed sticks on the uncleared grass accepted as natural debris."
+  },
+  "still_normalizations": {
+    "cp02_still": {
+      "sha256": "6c984212b434468b64cb90f89dd44032e2ee7315894c8852d1e487b45243d8d3",
+      "stored_as": "data\\forma_project_3\\stills\\cp02_still.png",
+      "original_filename": "cp02_still.png",
+      "file_type": "png",
+      "width": 768,
+      "height": 1344,
+      "size_bytes": 2071048,
+      "uploaded_at": "2026-10-26T20:31:07.916185+00:00",
+      "source": "normalized to 768x1344 from 768x1376",
+      "replaced": {
+        "previous_state": "approved",
+        "previous_sha256": "8cc7ab9824095e0ead5fb08ba003a55c05c444b24036ade65f4564d0b4408f41",
+        "archived_to": [
+          "data\\forma_project_3\\stills\\_replaced\\cp02_still__20261026T203107Z.png"
+        ]
+      },
+      "from_size": [
+        768,
+        1376
+      ],
+      "approved_sha256_before": "8cc7ab9824095e0ead5fb08ba003a55c05c444b24036ade65f4564d0b4408f41"
+    }
+  },
+  "cp02_still__attempt1": {
+    "actual_cost_usd": 0.0,
+    "source": "generated",
+    "output_path": "data\\forma_project_3\\stills\\cp02_still.png",
+    "completed_at": "2026-10-26T20:29:47.807658+00:00",
+    "approved_sha256": "8cc7ab9824095e0ead5fb08ba003a55c05c444b24036ade65f4564d0b4408f41",
+    "approved_at": "2026-10-26T20:29:47.807658+00:00",
+    "approved_via": "manual",
+    "approval_note": "Approved by the user (chat, 2026-10-26): Nano Banana 2 edit - front of the opening and the strip beside the track cleared to bare soil, three sawn lengths kept, one brush pile at the left, wheelbarrow at the track-side flank; continuity holds (0.5% vs CP01). Leftover crossed sticks on the uncleared grass accepted as natural debris.",
+    "archived_at": "2026-10-26T20:31:07.922525+00:00",
+    "archive_reason": "replaced by a newer still"
   }
 }

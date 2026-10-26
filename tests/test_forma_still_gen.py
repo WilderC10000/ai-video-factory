@@ -313,3 +313,37 @@ def test_a_per_still_override_uses_another_tier_for_that_still_only(project):
     raw["stills"] = {"model_overrides": {"cp02_still": "fal-ai/nano-banana-2"}}
     path.write_text(json.dumps(raw))
     assert any("edit endpoint" in p.message for p in rules.errors(load_spec(path)))
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="needs ffmpeg")
+def test_stills_are_scaled_to_the_project_frame_size_and_a_normalized_approval_carries_over(project):
+    from app.forma.production import submit
+
+    spec, manifest = project
+    raw = json.loads(EXAMPLE.read_text())
+    path = manifest.parent / "project.json"
+    path.write_text(json.dumps(raw))
+    fixture = Path("app/providers/image/fixtures/mock_reference.jpg").read_bytes()  # a real 576x1024 JPEG
+    # No frame size yet: a clip whose stills differ in size is blocked before any spend.
+    stills.upload(manifest, "cp01_still", "a.jpg", fixture)
+    stills.approve(manifest, "cp01_still", "ok")
+    stills.upload(manifest, "s01_mid1_still", "b.png", png(768, 1344, b"x"))
+    stills.approve(manifest, "s01_mid1_still", "ok")
+    p = submit.plan(spec, manifest, "s01_clip1")
+    assert p["state"] == "blocked" and "differ in size" in p["reasons"][0]
+    # With a frame size, normalizing scales the approved file and keeps it approved.
+    raw["stills"] = {"frame_size": [768, 1344]}
+    path.write_text(json.dumps(raw))
+    spec = load_spec(path)
+    out = still_gen.normalize_approved(spec, manifest, "cp01_still")
+    assert out["normalized"] and out["from"] == [576, 1024]
+    info = stills.info(manifest, "cp01_still", label="x", dependents=[])
+    assert info["state"] == "approved" and (info["width"], info["height"]) == (768, 1344)
+    assert "normalization only" in info["approval_note"]
+    assert still_gen.normalize_approved(spec, manifest, "cp01_still")["normalized"] is False
+    # A generated still that comes back at another size is scaled before it is placed.
+    stills.upload(manifest, "cp01_still", "a.jpg", fixture, replace=True)
+    stills.approve(manifest, "cp01_still", "ok")
+    out = still_gen.generate(spec, manifest, "s01_mid1_still", execution_mode="mock", max_usd=0.05, confirmed=True,
+                             replace=True)
+    assert out["normalized_from"] == [576, 1024] and (out["width"], out["height"]) == (768, 1344)

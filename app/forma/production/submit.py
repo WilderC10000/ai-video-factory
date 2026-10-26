@@ -61,6 +61,19 @@ def prompt(spec: ProjectSpec, clip: Clip) -> str:
             "vanishes on its own.")
 
 
+def _frame_sizes(manifest_path: Path, manifest: dict, clip: Clip) -> dict[str, tuple[int, int]]:
+    out = {}
+    for key in (clip.start_still, clip.end_still):
+        path = stills.state(manifest_path, key, manifest).get("path")
+        if path:
+            try:
+                _, w, h = stills.sniff(Path(path).read_bytes()[:65536])
+                out[key] = (w, h)
+            except (stills.StillError, OSError):
+                pass
+    return out
+
+
 def plan(spec: ProjectSpec, manifest_path: Path, clip_key: str) -> dict:
     """FREE, local: everything the studio shows before any spend."""
     clip = spec.clip(clip_key)
@@ -76,6 +89,11 @@ def plan(spec: ProjectSpec, manifest_path: Path, clip_key: str) -> dict:
     except Exception as e:  # routing / pricing problems are shown, not raised
         route_out, estimate = {"model": None, "status": "none", "evidence": str(e)}, None
     st = clip_state(spec, manifest_path, manifest, clip, bool(spec_errors))
+    sizes = _frame_sizes(manifest_path, manifest, clip)
+    if st["state"] in ("ready", "budget_approved") and len(set(sizes.values())) > 1:
+        st = {**st, "state": "blocked", "reasons": [
+            "Start and end stills differ in size (" + ", ".join(f"{k} {w}x{h}" for k, (w, h) in sizes.items())
+            + ") - normalize them to the project frame size first."]}
     if (route_out["status"] == "candidate_unproven" and not clip.shot.proof
             and st["state"] in ("ready", "budget_approved")):
         st = {**st, "state": "blocked", "reasons": [f"{route_out['model']} is unproven for {clip.shot.shot_class} - "

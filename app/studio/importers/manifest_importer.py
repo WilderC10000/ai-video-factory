@@ -56,7 +56,8 @@ def default_data_dir() -> Path:
 _OUTPUT_FIELDS = ("raw_video_path", "output_path", "final_visual_master_path", "rough_assembly_path")
 _PREVIOUS_FRAME_FIELDS = ("start_frame_path", "source_frame_path")
 # Manifest entries that are pipeline bookkeeping, not stages.
-_META_KEYS = {"proof_gate", "still_uploads", "still_generations", "clip_budget", "continuity_checks"}
+_META_KEYS = {"proof_gate", "still_uploads", "still_generations", "clip_budget", "continuity_checks",
+              "still_normalizations"}
 
 
 @dataclass

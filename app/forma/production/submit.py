@@ -94,6 +94,8 @@ def plan(spec: ProjectSpec, manifest_path: Path, clip_key: str) -> dict:
         st = {**st, "state": "blocked", "reasons": [
             "Start and end stills differ in size (" + ", ".join(f"{k} {w}x{h}" for k, (w, h) in sizes.items())
             + ") - normalize them to the project frame size first."]}
+    if clip.shot.hold and st["state"] in ("ready", "budget_approved"):
+        st = {**st, "state": "blocked", "reasons": [f"{clip.shot.id} is on hold: {clip.shot.hold}"]}
     if (route_out["status"] == "candidate_unproven" and not clip.shot.proof
             and st["state"] in ("ready", "budget_approved")):
         st = {**st, "state": "blocked", "reasons": [f"{route_out['model']} is unproven for {clip.shot.shot_class} - "

@@ -70,6 +70,7 @@ class Shot:
     camera_moves: bool = False
     proof: bool = False  # the first clip of an unproven route: allowed only as a proof
     model: str | None = None  # explicit fal model (must be an allowed route); None = routing decides
+    hold: str = ""  # a planning concern to resolve first: while set, the shot's clips are blocked (stills are not)
 
     @property
     def clip_count(self) -> int:
@@ -273,7 +274,8 @@ def load_spec(path: Path) -> ProjectSpec:
         shots = [Shot(s["id"], s["from"], s["to"], s["title"], s["complexity"], s["shot_class"],
                       tuple(Beat(b["task"], b["location"], int(b.get("duration_seconds", 3)), b.get("after", ""))
                             for b in s.get("beats", [])),
-                      bool(s.get("camera_moves", False)), bool(s.get("proof", False)), s.get("model"))
+                      bool(s.get("camera_moves", False)), bool(s.get("proof", False)), s.get("model"),
+                      s.get("hold", ""))
                  for s in raw.get("shots", [])]
         spec = ProjectSpec(raw["slug"], raw["name"], raw["status"], float(raw["budget"]["cap_usd"]),
                            float(raw["budget"]["per_clip_max_usd"]), raw.get("concept"), dict(raw.get("bibles", {})),

@@ -22,10 +22,12 @@
     "proof_stills": [
       "cp01_still",
       "s01_mid1_still",
-      "cp02_still"
+      "cp02_still",
+      "s02_mid1_still"
     ],
     "model_overrides": {
-      "cp02_still": "fal-ai/nano-banana-2/edit"
+      "cp02_still": "fal-ai/nano-banana-2/edit",
+      "s02_mid1_still": "fal-ai/nano-banana-2/edit"
     },
     "frame_size": [
       768,
@@ -597,14 +599,15 @@
           "task": "shovels silt from the pipe floor into the wheelbarrow just inside the front opening",
           "location": "inside the front end",
           "duration_seconds": 3,
-          "after": "the first few metres inside the front opening are shoveled down to bare concrete, the silt further in untouched; the wheelbarrow at the opening is heaped with silt; a small new spoil pile beside the brush pile"
+          "after": "the dark silt on the pipe floor from the front rim back about one third of the visible interior is gone - clean grey concrete there; the dark silt deeper inside is untouched. The wheelbarrow stands just outside the front opening, heaped with dark silt. A small dark spoil pile of silt sits on the bare ground at the left, next to the brush pile and separate from the three stacked sawn lengths, which are unchanged. The rake lies on the bare strip beside the pipe and the bow saw stays visible; nothing approved disappears"
         },
         {
           "task": "wheels a loaded barrow out of the opening and tips it on the spoil pile",
           "location": "front opening to spoil pile",
           "duration_seconds": 3
         }
-      ]
+      ],
+      "hold": "CP02 shows the builder raking at the track-side flank, but s02_clip1 must start him shoveling silt at the opening - reassess after s02_mid1 is reviewed: a longer clip, or an extra intermediate still, before any paid video"
     },
     {
       "id": "s03",

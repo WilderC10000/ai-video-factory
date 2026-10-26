@@ -233,10 +233,13 @@ def test_a_proof_allowlist_blocks_every_other_still(project):
     assert not any("Proof in progress" in p for p in still_gen.plan(spec, manifest, "s01_mid1_still")["problems"])
 
 
-def test_project_3_still_proof_runs_through_cp02_under_a_one_dollar_cap():
+def test_project_3_still_proof_runs_through_s02_mid1_under_a_one_dollar_cap():
     spec = load_spec(TEMPLATE)
     assert spec.budget_cap_usd == 1.0
-    assert spec.stills_config.proof_stills == ("cp01_still", "s01_mid1_still", "cp02_still")
+    assert spec.stills_config.proof_stills == ("cp01_still", "s01_mid1_still", "cp02_still", "s02_mid1_still")
+    assert spec.stills_config.model_for("s02_mid1_still", False) == "fal-ai/nano-banana-2/edit"
+    assert spec.stills_config.model_for("cp03_still", False) == "fal-ai/nano-banana/edit"
+    assert next(s for s in spec.shots if s.id == "s02").hold
 
 
 # --- still doctrine: explicit end states, continuity checkpoints --------------------------------
@@ -347,3 +350,21 @@ def test_stills_are_scaled_to_the_project_frame_size_and_a_normalized_approval_c
     out = still_gen.generate(spec, manifest, "s01_mid1_still", execution_mode="mock", max_usd=0.05, confirmed=True,
                              replace=True)
     assert out["normalized_from"] == [576, 1024] and (out["width"], out["height"]) == (768, 1344)
+
+
+def test_a_shot_on_hold_blocks_its_clips_but_not_its_stills(project):
+    from app.forma.production import submit
+
+    spec, manifest = project
+    raw = json.loads(EXAMPLE.read_text())
+    raw["shots"][0]["hold"] = "check the start pose"
+    path = manifest.parent / "project.json"
+    path.write_text(json.dumps(raw))
+    spec = load_spec(path)
+    for i, s in enumerate(spec.stills()):
+        stills.upload(manifest, s.key, f"{s.key}.png", png(salt=bytes([i])))
+        stills.approve(manifest, s.key, "ok")
+    p = submit.plan(spec, manifest, "s01_clip1")
+    assert p["state"] == "blocked" and "on hold: check the start pose" in p["reasons"][0]
+    assert "on hold" not in " ".join(submit.plan(spec, manifest, "s02_clip1")["reasons"])
+    assert any(x.rule == "on hold" for x in rules.check(spec))

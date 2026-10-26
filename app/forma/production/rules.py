@@ -104,6 +104,10 @@ def check(spec: ProjectSpec) -> list[Problem]:
         if cfg.end_image_param_name is None:
             err(shot.id, "anchored clips", f"{route.model} cannot pin an end still")
 
+    for shot in spec.shots:
+        if shot.hold:
+            warn(shot.id, "on hold", f"clips blocked until resolved: {shot.hold}")
+
     # Still doctrine 1-2: end states are explicit final visual conditions; removals say what is gone and where it went.
     for shot in spec.shots:
         cp_to = spec.checkpoint(shot.to_cp)

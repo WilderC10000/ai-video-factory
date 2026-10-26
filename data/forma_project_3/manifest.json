@@ -37,7 +37,8 @@
   "still_generations": {
     "cp01_still": "cp01_still__gen2",
     "s01_mid1_still": "s01_mid1_still__gen2",
-    "cp02_still": "cp02_still__gen3"
+    "cp02_still": "cp02_still__gen3",
+    "s02_mid1_still": "s02_mid1_still__gen1"
   },
   "cp01_still__gen2": {
     "kind": "still_generation",
@@ -306,5 +307,54 @@
     "approval_note": "Approved by the user (chat, 2026-10-26): Nano Banana 2 edit - front of the opening and the strip beside the track cleared to bare soil, three sawn lengths kept, one brush pile at the left, wheelbarrow at the track-side flank; continuity holds (0.5% vs CP01). Leftover crossed sticks on the uncleared grass accepted as natural debris.",
     "archived_at": "2026-10-26T20:31:07.922525+00:00",
     "archive_reason": "replaced by a newer still"
+  },
+  "s02_mid1_still__gen1": {
+    "kind": "still_generation",
+    "still": "s02_mid1_still",
+    "provider": "fal:fal-ai/nano-banana-2/edit",
+    "model": "fal-ai/nano-banana-2/edit",
+    "mode": "edit",
+    "execution_mode": "live",
+    "prompt": "s02 intermediate still 1 of 1 (Mucking out the pipe), between CP02 and CP03. Vertical 9:16. Edit the attached approved still: same camera (the approved CP01 frame: raised about 6 m, front-left three-quarter view near the pipe's long axis, looking down the full pipe length from the front opening (lower right) to the rear end (upper middle); track and open ground left, wooded slope right - the same exact camera position and framing in every wide shot) with identical framing. Location: a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight; open bare-earth clearing left of the pipe, a dirt forest track entering at the left edge. Builder (always the same person): dark beard, olive beanie, rust-orange work jacket, grey canvas work pants, brown boots, work gloves - working, never posing. Structure: exactly one standalone precast concrete drainage pipe section, about 3 m inside diameter and 12 m long, on its side along the foot of the slope, never joined to other sections or continuing into the forest - front opening and rear end both visible; the same single pipe, size and position in every shot. The attached image is authoritative: keep its camera, framing, structure, environment, builder, lighting and geometry exactly; keep every pixel of the scene identical except the construction progress, the builder's position, tools and materials. Realistic documentary photograph, not an illustration. Nothing already built may disappear or regress; add nothing that is not described. Visible state: the dark silt on the pipe floor from the front rim back about one third of the visible interior is gone - clean grey concrete there; the dark silt deeper inside is untouched. The wheelbarrow stands just outside the front opening, heaped with dark silt. A small dark spoil pile of silt sits on the bare ground at the left, next to the brush pile and separate from the three stacked sawn lengths, which are unchanged. The rake lies on the bare strip beside the pipe and the bow saw stays visible; nothing approved disappears. Builder action: in position for the next step - wheels a loaded barrow out of the opening and tips it on the spoil pile (front opening to spoil pile), caught mid-work. The rest of the work toward CP03 is NOT done yet - must NOT appear yet: mucked-out pipe interior.",
+    "source_still": "cp02_still",
+    "source_path": "data\\forma_project_3\\stills\\cp02_still.png",
+    "source_sha256": "6c984212b434468b64cb90f89dd44032e2ee7315894c8852d1e487b45243d8d3",
+    "references": [],
+    "approved_usd": 0.1,
+    "estimated_cost_usd": 0.08,
+    "actual_cost_usd": 0.08,
+    "status": "complete",
+    "started_at": "2026-10-26T21:08:14.379865+00:00",
+    "completed_at": "2026-10-26T21:08:27.995743+00:00",
+    "output_path": "data\\forma_project_3\\stills\\s02_mid1_still.png",
+    "output_sha256": "11321babca2ea234056b2030c1ea295a7cf5b8b27d40c817519e089f27f73bab",
+    "width": 768,
+    "height": 1344,
+    "provider_meta": {
+      "description": ""
+    },
+    "replaced": null,
+    "normalized_from": [
+      768,
+      1376
+    ],
+    "review": {
+      "verdict": "rejected",
+      "rnd": true,
+      "at": "2026-10-26T21:17:47.451283+00:00",
+      "note": "Archived as R&D, not retried (user, 2026-10-26): Nano Banana 2 over-removed the silt (almost the whole floor clean, no frontier) and the bow saw and buckets vanished. s02 was then restructured into three clips; s02_mid1 is now a different still."
+    }
+  },
+  "still_archive": {
+    "s02_mid1_still": [
+      {
+        "sha256": "11321babca2ea234056b2030c1ea295a7cf5b8b27d40c817519e089f27f73bab",
+        "archived_to": [
+          "data\\forma_project_3\\stills\\_replaced\\s02_mid1_still__20261026T211747Z.png"
+        ],
+        "reason": "s02 restructured into three clips; this Nano Banana 2 attempt (over-removal, tools vanished) kept as R&D",
+        "at": "2026-10-26T21:17:47.451283+00:00"
+      }
+    ]
   }
 }

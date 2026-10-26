@@ -289,7 +289,7 @@ def test_project_3_plan_is_valid_and_priced():
     assert spec.budget_cap_usd == 1.0  # temporary cap for the CP01 -> s01_mid1 still proof (2026-10-26)
     manifest = TEMPLATE.parent / "manifest.json"
     total = sum(submit.plan(spec, manifest, c.key)["estimate_usd"] for c in spec.clips())
-    assert len(spec.clips()) == 30 and round(total, 3) == 9.878
+    assert len(spec.clips()) == 31 and round(total, 3) == 10.466  # s02 split into three clips (2026-10-26)
     cp09 = spec.checkpoint("cp09")
     assert "earth berm over the pipe" in spec.must_not_exist(cp09) and "concrete saddles" not in spec.must_not_exist(cp09)
     assert all(cp.action for cp in spec.checkpoints)

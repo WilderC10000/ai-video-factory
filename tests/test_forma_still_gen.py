@@ -239,7 +239,8 @@ def test_project_3_still_proof_runs_through_s02_mid1_under_a_one_dollar_cap():
     assert spec.stills_config.proof_stills == ("cp01_still", "s01_mid1_still", "cp02_still", "s02_mid1_still")
     assert spec.stills_config.model_for("s02_mid1_still", False) == "fal-ai/nano-banana-2/edit"
     assert spec.stills_config.model_for("cp03_still", False) == "fal-ai/nano-banana/edit"
-    assert next(s for s in spec.shots if s.id == "s02").hold
+    s02 = next(s for s in spec.shots if s.id == "s02")
+    assert s02.clip_count == 3 and not s02.hold and spec.stills_config.model_for("s02_mid2_still", False).endswith("2/edit")
 
 
 # --- still doctrine: explicit end states, continuity checkpoints --------------------------------
@@ -368,3 +369,15 @@ def test_a_shot_on_hold_blocks_its_clips_but_not_its_stills(project):
     assert p["state"] == "blocked" and "on hold: check the start pose" in p["reasons"][0]
     assert "on hold" not in " ".join(submit.plan(spec, manifest, "s02_clip1")["reasons"])
     assert any(x.rule == "on hold" for x in rules.check(spec))
+
+
+def test_archiving_a_failed_still_frees_its_key_but_never_an_approved_one(project):
+    spec, manifest = project
+    stills.upload(manifest, "cp01_still", "a.png", png())
+    out = stills.archive(manifest, "cp01_still", "failed attempt kept as R&D")
+    assert out["state"] == "missing" and Path(out["archived_to"][0]).is_file()
+    assert stills.state(manifest, "cp01_still")["state"] == "missing"
+    stills.upload(manifest, "cp01_still", "b.png", png(salt=b"b"))
+    stills.approve(manifest, "cp01_still", "ok")
+    with pytest.raises(stills.StillError, match="approved"):
+        stills.archive(manifest, "cp01_still", "x")

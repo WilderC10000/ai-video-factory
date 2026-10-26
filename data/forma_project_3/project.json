@@ -27,7 +27,8 @@
     ],
     "model_overrides": {
       "cp02_still": "fal-ai/nano-banana-2/edit",
-      "s02_mid1_still": "fal-ai/nano-banana-2/edit"
+      "s02_mid1_still": "fal-ai/nano-banana-2/edit",
+      "s02_mid2_still": "fal-ai/nano-banana-2/edit"
     },
     "frame_size": [
       768,
@@ -92,29 +93,31 @@
     },
     {
       "id": "cp03",
-      "title": "Pipe interior mucked out",
+      "title": "First load tipped - mucking out under way",
       "camera": "wide",
-      "state": "The silt and leaves inside the pipe are gone: the inside is bare grey concrete. A dark spoil pile of silt has formed beside the brush pile at the left; a wheelbarrow with a last load stands at the front opening.",
+      "state": "A small new dark spoil pile of silt sits on the bare ground at the left, next to the brush pile and separate from the three stacked sawn lengths; the emptied wheelbarrow stands tipped up beside it. Inside the pipe the floor is clean grey concrete from the front rim to about a quarter of the way in; dark silt still covers the floor behind that edge all the way to the rear. The shovel leans against the pipe rim; the buckets and bow saw lie on the bare strip by the rake.",
       "built": [
-        "cleared ground around the pipe",
-        "mucked-out pipe interior"
+        "cleared ground around the pipe"
       ],
-      "action": "wheels a final barrow of silt out of the front opening toward the spoil pile",
+      "action": "tips the last of the silt out of the wheelbarrow onto the new spoil pile",
       "tools_in_view": [
-        "shovel",
         "wheelbarrow",
-        "buckets"
+        "shovel",
+        "rake",
+        "buckets",
+        "bow saw"
       ],
-      "materials": {
-        "mucked-out pipe interior": "silt shoveled into the wheelbarrow and dumped on the spoil pile at the left"
-      },
-      "not_yet": []
+      "materials": {},
+      "not_yet": [
+        "clean pipe floor beyond the first quarter",
+        "flatbed trailer or any building materials"
+      ]
     },
     {
       "id": "cp04",
-      "title": "Materials delivered",
+      "title": "Pipe mucked out, materials delivered",
       "camera": "wide",
-      "state": "Time has passed: a flatbed trailer stands on the forest track at the left edge, and a material yard is laid out beside it - a lumber stack, a rebar bundle, cement bags on a pallet, a gravel heap, a drum concrete mixer, rolls of black waterproof membrane on a pallet, and a small tracked mini excavator parked beside the pipe.",
+      "state": "Time has passed: the pipe interior is mucked out to bare grey concrete all the way to the rear, and the dark spoil pile at the left beside the brush pile is now large. A flatbed trailer stands on the forest track at the left edge, and a material yard is laid out beside it - a lumber stack, a rebar bundle, cement bags on a pallet, a gravel heap, a drum concrete mixer, rolls of black waterproof membrane on a pallet, and a small tracked mini excavator parked beside the pipe.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
@@ -127,6 +130,7 @@
         "hand truck"
       ],
       "materials": {
+        "mucked-out pipe interior": "silt shoveled into the wheelbarrow and tipped on the spoil pile at the left",
         "material yard with mini excavator": "the flatbed trailer on the forest track at the left edge"
       },
       "not_yet": []
@@ -592,28 +596,33 @@
       "from": "cp02",
       "to": "cp03",
       "title": "Mucking out the pipe",
-      "complexity": "medium",
+      "complexity": "complex",
       "shot_class": "repetitive_labor",
       "beats": [
         {
-          "task": "shovels silt from the pipe floor into the wheelbarrow just inside the front opening",
-          "location": "inside the front end",
-          "duration_seconds": 3,
-          "after": "the dark silt on the pipe floor from the front rim back about one third of the visible interior is gone - clean grey concrete there; the dark silt deeper inside is untouched. The wheelbarrow stands just outside the front opening, heaped with dark silt. A small dark spoil pile of silt sits on the bare ground at the left, next to the brush pile and separate from the three stacked sawn lengths, which are unchanged. The rake lies on the bare strip beside the pipe and the bow saw stays visible; nothing approved disappears"
+          "task": "wheels the wheelbarrow to the front opening, sets the two buckets and the bow saw down on the bare strip, and shovels the first silt from just inside the rim into the barrow",
+          "location": "track-side flank to the front opening",
+          "duration_seconds": 5,
+          "after": "The wheelbarrow stands at the front opening, about half full of dark silt. A strip of the pipe floor about one metre deep just inside the front rim is shoveled to clean grey concrete; all the dark silt behind that strip is untouched. The builder stands in the opening with the shovel. The two buckets and the bow saw lie on the bare strip beside the pipe, near the rake. No spoil pile yet; the brush pile and the three stacked sawn lengths at the left are unchanged"
         },
         {
-          "task": "wheels a loaded barrow out of the opening and tips it on the spoil pile",
-          "location": "front opening to spoil pile",
-          "duration_seconds": 3
+          "task": "keeps shoveling silt from the floor just inside the opening into the barrow until it is heaped",
+          "location": "inside the front end",
+          "duration_seconds": 4,
+          "after": "The cleaned floor now reaches about a quarter of the way into the pipe: clean grey concrete from the front rim to a clear edge, and dark silt untouched behind that edge all the way to the rear. The wheelbarrow at the front opening is heaped with dark silt; the shovel leans against the pipe rim and the builder grips the barrow handles. The buckets and bow saw still lie on the bare strip by the rake. No spoil pile yet; the brush pile and the three stacked sawn lengths are unchanged"
+        },
+        {
+          "task": "wheels the heaped barrow out of the opening to the left and tips it out beside the brush pile, starting the spoil pile",
+          "location": "front opening to the left beside the brush pile",
+          "duration_seconds": 4
         }
-      ],
-      "hold": "CP02 shows the builder raking at the track-side flank, but s02_clip1 must start him shoveling silt at the opening - reassess after s02_mid1 is reviewed: a longer clip, or an extra intermediate still, before any paid video"
+      ]
     },
     {
       "id": "s03",
       "from": "cp03",
       "to": "cp04",
-      "title": "Materials delivered (time jump)",
+      "title": "Mucked out, materials delivered (time jump)",
       "complexity": "static",
       "shot_class": "time_jump",
       "beats": []

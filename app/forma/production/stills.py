@@ -228,6 +228,30 @@ def place(manifest_path: Path, key: str, data: bytes, *, original_filename: str,
     return record
 
 
+def archive(manifest_path: Path, key: str, reason: str) -> dict:
+    """Move an unapproved still out of the way (to stills/_replaced/, never deleted) so the key is missing
+    again - e.g. a failed attempt kept as R&D when the still is redefined. Refuses an approved still."""
+    if not reason.strip():
+        raise StillError("Say why the still is archived.")
+    manifest = _read(manifest_path)
+    st = state(manifest_path, key, manifest)
+    if st["state"] == "missing":
+        raise StillError(f"{key}: nothing to archive.", 409)
+    if st["state"] == "approved":
+        raise StillError(f"{key} is approved - replace it instead of archiving it.", 409)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    moved = []
+    for f in _files(manifest_path, key):
+        dest = stills_dir(manifest_path) / "_replaced" / f"{key}__{stamp}{f.suffix.lower()}"
+        dest.parent.mkdir(exist_ok=True)
+        os.replace(f, dest)
+        moved.append(str(dest))
+    rec = {"sha256": st.get("sha256"), "archived_to": moved, "reason": reason.strip(), "at": _now()}
+    manifest.setdefault("still_archive", {}).setdefault(key, []).append(rec)
+    _write(manifest_path, manifest)
+    return {"key": key, **rec, "state": "missing"}
+
+
 def approve(manifest_path: Path, key: str, note: str) -> dict:
     """Record the still currently in the folder as approved (a person looked at it). Free, local."""
     if not note.strip():

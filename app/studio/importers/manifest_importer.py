@@ -57,7 +57,7 @@ _OUTPUT_FIELDS = ("raw_video_path", "output_path", "final_visual_master_path", "
 _PREVIOUS_FRAME_FIELDS = ("start_frame_path", "source_frame_path")
 # Manifest entries that are pipeline bookkeeping, not stages.
 _META_KEYS = {"proof_gate", "still_uploads", "still_generations", "clip_budget", "continuity_checks",
-              "still_normalizations"}
+              "still_normalizations", "still_archive"}
 
 
 @dataclass

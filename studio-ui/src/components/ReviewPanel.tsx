@@ -21,17 +21,10 @@ interface Props {
   onSelectStage?: (s: Stage) => void;
 }
 
-/** After `approvedKey` is approved: the next still that still needs work, or the next clip whose two stills are approved. */
-function nextAfterApproval(stages: Stage[], current: Stage, approvedKey: string): Stage | null {
-  const approved = (k: string) => k === approvedKey || stages.find((s) => s.key === k)?.manual_still?.state === "approved";
+/** After `approvedKey` is approved: the next still in production order that is not approved yet. */
+function nextRequiredStill(stages: Stage[], current: Stage, approvedKey: string): Stage | null {
   const after = stages.filter((s) => s.order > current.order).sort((a, b) => a.order - b.order);
-  return (
-    after.find((s) =>
-      s.manual_still
-        ? !approved(s.key)
-        : !!s.clip_plan && s.clip_plan.state !== "accepted" && approved(s.clip_plan.start_still) && approved(s.clip_plan.end_still),
-    ) ?? null
-  );
+  return after.find((s) => s.manual_still && s.key !== approvedKey && s.manual_still.state !== "approved") ?? null;
 }
 
 type Panel = null | "continue" | "retry" | "reject" | "generate" | "recover";
@@ -293,7 +286,7 @@ export function ReviewPanel({ projectSlug, stage, stages, budget, execution, act
     // Still: generate (one confirmed call) or upload, then review / approve here.
     const goNext = onSelectStage
       ? () => {
-          const n = nextAfterApproval(stages, stage, stage.key);
+          const n = nextRequiredStill(stages, stage, stage.key);
           if (n) onSelectStage(n);
         }
       : undefined;

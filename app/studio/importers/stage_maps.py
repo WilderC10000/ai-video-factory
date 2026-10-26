@@ -181,7 +181,7 @@ def spec_project(slug: str, data_dir: Path | None = None) -> ProjectDef | None:
 
     def still_cost(key: str) -> float:
         if spec.stills_config.source != "generate":
-            return 0.0
+            return 0.0  # manual stills cost nothing; a fallback generation is priced when someone chooses it
         model = spec.stills_config.model_for(key, is_first=spec.edit_source(key) is None)
         return STILL_MODELS[model][0].price_per_image if model in STILL_MODELS else 0.0
 
@@ -207,7 +207,10 @@ def spec_project(slug: str, data_dir: Path | None = None) -> ProjectDef | None:
                           f"{spec.stills_config.edit_model} edits of the previous approved still for the rest), one "
                           "confirmed call each, and approved by you; Upload still is an optional override. "
                           if spec.stills_config.source == "generate" else
-                          "Stills are uploaded and approved in the studio. ")
+                          "Stills are made in ChatGPT from each still's brief (attach the previous approved still) and "
+                          "uploaded and approved in the studio"
+                          + ("; fal generation is an optional paid fallback. " if spec.stills_config.generation_fallback
+                             else ". "))
                           + "Every clip needs its own spend approval; nothing is retried or chained automatically."])
 
 

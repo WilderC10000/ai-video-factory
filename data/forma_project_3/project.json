@@ -13,12 +13,13 @@
     "note": "TEMPORARY cap for the still proof (CP01 text-to-image + s01_mid1 edit, about $0.08). Set back to 0 or to a production cap after the proof."
   },
   "stills": {
-    "source": "generate",
+    "source": "manual",
+    "generation_fallback": true,
     "generate_model": "fal-ai/nano-banana",
     "edit_model": "fal-ai/nano-banana/edit",
     "per_still_max_usd": 0.2,
     "first_still_references": [],
-    "note": "Default workflow: the Studio generates each still (one confirmed fal call), you review, Approve & Continue. CP01 is text-to-image; every later still is an edit of the previous approved still. Model policy (from the CP01-CP02 proof, 2026-10-26): fal-ai/nano-banana/edit ($0.0398) for simple, additive or local edits; fal-ai/nano-banana-2/edit ($0.08) as a per-still override for large-area removals or changes; fal-ai/nano-banana-pro/edit ($0.15) only if Nano Banana 2 fails. Every still is scaled to frame_size so clip start/end frames always match. Upload still is an optional override.",
+    "note": "Default workflow (from 2026-10-26): make each still in ChatGPT from its brief (Copy ChatGPT Brief; attach the previous approved still for every still after CP01), upload it on the still panel, review, approve - the Studio then opens the next still. fal generation is an optional paid fallback per still: fal-ai/nano-banana/edit ($0.0398) for simple edits, fal-ai/nano-banana-2/edit ($0.08) for large-area removals (model_overrides), Pro ($0.15) only if that fails. Every generated still is scaled to frame_size; a clip with mismatched frames is blocked.",
     "proof_stills": [
       "cp01_still",
       "s01_mid1_still",

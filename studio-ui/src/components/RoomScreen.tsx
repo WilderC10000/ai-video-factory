@@ -113,8 +113,12 @@ export function RoomScreen({ room, project, stages, budget, approvals, audio }: 
                 <span>{s.manual_still!.state === "approved" ? "✓" : s.manual_still!.state === "missing" ? "○" : "!"}</span>
                 <span className="screen__row-label">{s.key}</span>
                 <span className="screen__row-meta">
-                  {s.manual_still!.state}
-                  {s.manual_still!.generation?.estimate_usd != null && s.manual_still!.state !== "approved"
+                  {s.manual_still!.state === "missing" && s.manual_still!.generation?.source_mode !== "generate"
+                    ? "waiting for ChatGPT image"
+                    : s.manual_still!.state}
+                  {s.manual_still!.generation?.source_mode === "generate" &&
+                  s.manual_still!.generation.estimate_usd != null &&
+                  s.manual_still!.state !== "approved"
                     ? ` · ${s.manual_still!.generation.mode} $${s.manual_still!.generation.estimate_usd.toFixed(4)}`
                     : ""}
                 </span>

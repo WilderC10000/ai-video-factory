@@ -94,9 +94,10 @@ pixels are authoritative and errors carry forward. Established 2026-10-26 from t
 
 ## Provider policy (from Project #3)
 
-- Checkpoint stills: generated in the studio on fal (Nano Banana; CP01 text-to-image, every later still an
-  edit of the previous approved still), one confirmed call each, approved by a person. A manual upload
-  (e.g. ChatGPT) is an optional override; the stills folder is the source of truth.
+- Checkpoint stills: made in ChatGPT from each still's brief (attaching the previous approved still) and
+  uploaded and approved in the studio - the default again from 2026-10-26. fal generation (Nano Banana; CP01
+  text-to-image, every later still an edit of the previous approved still) stays available as an optional paid
+  fallback, one confirmed call each. The stills folder is the source of truth; a person approves every still.
 - Video: fal.ai, routed per shot by difficulty class (production lesson 11).
 - Higgsfield: retired from the active production path. The Clip 03 Seedance 2.5 / Kling O3 work
   is kept as R&D history (Project #2 manifest `clip03__attempt3`, `provider_tests/higgsfield_clip03/`);

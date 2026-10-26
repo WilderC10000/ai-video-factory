@@ -7,7 +7,7 @@ const ACCEPT = ".jpg,.jpeg,.png,.webp";
 const OK_EXT = /\.(jpe?g|png|webp)$/i;
 
 const STATE_TEXT: Record<ManualStill["state"], string> = {
-  missing: "Missing - upload it",
+  missing: "Waiting for ChatGPT image",
   placed: "Placed - review and approve",
   approved: "Approved",
   changed: "Changed since approval - review and approve",
@@ -28,8 +28,27 @@ interface Picked {
   height: number | null;
 }
 
-/** Generate (one confirmed fal call) or upload one still, then review and approve it. A person approves every still;
- * nothing is generated, approved or continued automatically. */
+/** Copy the ChatGPT brief, upload the image (or, as a fallback, generate it with one confirmed fal call), then review and
+ * approve it. A person approves every still; approval only opens the next still - nothing is generated automatically. */
+
+/** Copy text to the clipboard (falls back to a hidden textarea where the async clipboard API is unavailable). */
+async function copyText(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (!ok) throw new Error("Copy failed - select the brief below and copy it by hand.");
+  }
+}
+
 export function ManualStillPanel({
   projectSlug,
   still,
@@ -43,7 +62,7 @@ export function ManualStillPanel({
   execution?: Execution;
   frozen?: boolean;
   onChanged: () => void;
-  /** Approve & Continue: open the next still / clip (it does not generate or submit anything). */
+  /** Called after approval: opens the next required still (it never generates or submits anything). */
   onApprovedContinue?: () => void;
 }) {
   const [picked, setPicked] = useState<Picked | null>(null);
@@ -53,10 +72,22 @@ export function ManualStillPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [problems, setProblems] = useState<string[]>([]);
+  const [copied, setCopied] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
   const gen = still.generation;
+  /** Generation is the default workflow (otherwise ChatGPT upload is, and generation is an optional fallback). */
   const generated = !!gen && gen.source_mode === "generate";
+  const copyBrief = async () => {
+    if (!still.brief) return;
+    try {
+      await copyText(still.brief);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2500);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
 
   useEffect(() => {
     setPicked(null);
@@ -64,6 +95,7 @@ export function ManualStillPanel({
     setNote("");
     setError(null);
     setProblems([]);
+    setCopied(false);
   }, [still.key]);
   useEffect(
     () => () => {
@@ -182,6 +214,20 @@ export function ManualStillPanel({
         {still.origin && <span className="fineprint">{still.origin}</span>}
       </div>
 
+      {!generated && still.brief && still.state !== "approved" && (
+        <div className="mstill__chatgpt">
+          <button type="button" className="btn btn--primary mstill__copy" onClick={copyBrief}>
+            {copied ? "Copied ✓" : "Copy ChatGPT Brief"}
+          </button>
+          <span className="fineprint">
+            {gen?.source
+              ? `Paste it into ChatGPT and attach ${gen.source.key} (left)${gen.source.state === "approved" ? "" : ` - it is ${gen.source.state}, approve it first`}.`
+              : "Paste it into ChatGPT (text only - this is the first still)."}{" "}
+            Then upload the image below as <code>{still.key}</code>.
+          </span>
+        </div>
+      )}
+
       <div className="mstill__media">
         {gen?.source && (
           <figure>
@@ -193,7 +239,15 @@ export function ManualStillPanel({
               <div className="thumb thumb--empty">{gen.source.key}: {gen.source.state}</div>
             )}
             <figcaption>
-              Edits: {gen.source.key} ({gen.source.state})
+              {generated ? "Edits" : "Attach in ChatGPT"}: {gen.source.key} ({gen.source.state})
+              {!generated && gen.source.url ? (
+                <>
+                  {" · "}
+                  <a href={gen.source.url} download={`${gen.source.key}.png`}>
+                    download
+                  </a>
+                </>
+              ) : null}
             </figcaption>
           </figure>
         )}
@@ -231,16 +285,13 @@ export function ManualStillPanel({
             onChange={(e) => setNote(e.target.value)}
           />
           <div className="mstill__row">
-            {onApprovedContinue && (
-              <button type="button" className="btn btn--primary" disabled={busy || !note.trim()} onClick={() => approve(true)}>
-                Approve &amp; Continue
-              </button>
-            )}
-            <button type="button" className={`btn ${onApprovedContinue ? "" : "btn--primary"}`} disabled={busy || !note.trim()} onClick={() => approve(false)}>
-              Approve only
+            <button type="button" className="btn btn--primary" disabled={busy || !note.trim()} onClick={() => approve(true)}>
+              Approve still
             </button>
           </div>
-          <p className="fineprint">Continue only opens the next still or clip - it never generates or submits anything by itself.</p>
+          <p className="fineprint">
+            Approving opens the next still that still needs an image. It never generates or submits anything by itself.
+          </p>
         </div>
       )}
       {gen?.continuity.due && !picked && (
@@ -261,7 +312,23 @@ export function ManualStillPanel({
           {uploadBox}
         </details>
       ) : (
-        uploadBox
+        <>
+          {uploadBox}
+          {gen && !picked && still.state !== "approved" && (
+            <details className="intent">
+              <summary>Optional fallback: generate this still with fal instead (paid, {money(gen.estimate_usd)})</summary>
+              <GeneratePanel
+                projectSlug={projectSlug}
+                still={still}
+                gen={gen}
+                execution={execution}
+                frozen={frozen}
+                busy={busy}
+                run={run}
+              />
+            </details>
+          )}
+        </>
       )}
 
       <dl className="review__facts">

@@ -28,8 +28,14 @@ nothing can be spent until a person sets a cap.
 
 1. **Plan** - write checkpoints and shots in `project.json`. The studio re-reads it on every import and
    shows doctrine errors; errors block every clip.
-2. **Stills (Continuity Office / Production flow)** - open the next still, check the spend amount, tick the
-   confirmation and click **Generate still**: ONE fal call. CP01 is text-to-image from its brief; every later
+2. **Stills (Continuity Office / Production flow)** - the default (`"stills": {"source": "manual"}`, from
+   2026-10-26) is ChatGPT: open the next still (status **Waiting for ChatGPT image**), click **Copy ChatGPT Brief**,
+   paste it into ChatGPT and attach the previous approved still shown on the panel (CP01 is text only), then drop
+   the image on the panel. It is saved as `<key>.<ext>`, placed, never auto-approved. Write what you checked and
+   **Approve still** - the studio opens the next still that needs an image. Generation is an optional paid
+   fallback on each panel ("Optional fallback: generate this still with fal"); `generation_fallback: false` turns
+   it off. With `"source": "generate"` the roles swap, as follows. Open the next still, check the spend amount,
+   tick the confirmation and click **Generate still**: ONE fal call. CP01 is text-to-image from its brief; every later
    still is an **image edit of the previous approved still** (its exact file and hash), so the previous pixels
    are authoritative - camera, structure, environment, builder, lighting and geometry carry over and only that
    step's progress changes. This covers intermediates, static time jumps and camera changes. The result is

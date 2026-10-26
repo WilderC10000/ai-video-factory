@@ -165,9 +165,13 @@ def test_the_project_cap_and_manual_source_block_generation(project, tmp_path):
     path = manifest.parent / "project.json"
     path.write_text(json.dumps(raw))
     assert any("would exceed" in p for p in still_gen.plan(load_spec(path), manifest, "cp01_still")["problems"])
-    raw["stills"] = {"source": "manual"}
+    raw["stills"] = {"source": "manual"}  # manual default: generation stays available as a fallback
     path.write_text(json.dumps(raw))
-    assert any("manual stills" in p for p in still_gen.plan(load_spec(path), manifest, "cp01_still")["problems"])
+    fallback = still_gen.plan(load_spec(path), manifest, "cp01_still")
+    assert fallback["fallback"] is True and not any("manual stills" in p for p in fallback["problems"])
+    raw["stills"] = {"source": "manual", "generation_fallback": False}
+    path.write_text(json.dumps(raw))
+    assert any("manual stills only" in p for p in still_gen.plan(load_spec(path), manifest, "cp01_still")["problems"])
 
 
 def test_mock_mode_generates_for_free_without_a_network_call(project, monkeypatch):
@@ -212,10 +216,11 @@ def test_studio_generate_endpoint_is_gated_and_never_approves(client, tmp_path, 
     assert r.status_code == 200 and stills.info(manifest, "cp01_still", label="x", dependents=[])["origin"] == "uploaded"
 
 
-def test_project_3_template_generates_stills_by_default_with_the_cheap_tier():
+def test_project_3_uses_manual_chatgpt_stills_with_generation_as_a_cheap_fallback():
     spec = load_spec(TEMPLATE)
     sc = spec.stills_config
-    assert (sc.source, sc.generate_model, sc.edit_model) == ("generate", "fal-ai/nano-banana", "fal-ai/nano-banana/edit")
+    assert (sc.source, sc.generation_fallback, sc.can_generate) == ("manual", True, True)
+    assert (sc.generate_model, sc.edit_model) == ("fal-ai/nano-banana", "fal-ai/nano-banana/edit")
     assert rules.errors(spec) == []
     assert spec.edit_source("cp02_still") == "s01_mid1_still" and spec.edit_source("cp04_still") == "cp03_still"
     assert "The attached image is authoritative" in next(s.brief for s in spec.stills() if s.key == "cp10_still")
@@ -381,3 +386,35 @@ def test_archiving_a_failed_still_frees_its_key_but_never_an_approved_one(projec
     stills.approve(manifest, "cp01_still", "ok")
     with pytest.raises(stills.StillError, match="approved"):
         stills.archive(manifest, "cp01_still", "x")
+
+
+def test_a_manual_upload_cannot_be_approved_past_a_due_continuity_check(client, tmp_path, monkeypatch, project):
+    from app.config import settings
+    from app.db import SessionLocal
+    from app.forma.production import continuity
+    from app.studio.importers.manifest_importer import import_all
+
+    spec, manifest = project
+    raw = json.loads(EXAMPLE.read_text())
+    raw["stills"] = {"source": "manual"}
+    (manifest.parent / "project.json").write_text(json.dumps(raw))
+    spec = load_spec(manifest.parent / "project.json")
+    monkeypatch.setattr(type(settings), "studio_data_path", property(lambda self: tmp_path))
+    with SessionLocal() as db:
+        import_all(db, tmp_path, slugs=["forma_project_3"])
+    keys = [s.key for s in spec.stills()]
+    base = "/studio/projects/forma_project_3/stills"
+    for i, key in enumerate(keys[:6]):  # keys[5] is chained edit 5: due a continuity check
+        assert client.post(f"{base}/{key}/upload?filename=x.png", content=png(salt=bytes([i]))).status_code == 200
+        assert client.post(f"{base}/{key}/approve", json={"note": "ok"}).status_code == 200
+    nxt = keys[6]
+    assert client.post(f"{base}/{nxt}/upload?filename=x.png", content=png(salt=b"n")).status_code == 200
+    r = client.post(f"{base}/{nxt}/approve", json={"note": "ok"})
+    assert r.status_code == 409 and "Continuity checkpoint" in r.json()["detail"]
+    r = client.post(f"{base}/{keys[5]}/continuity", json={"verdict": "pass", "note": "holds",
+                                                         "dimensions": {d: True for d in continuity.DIMENSIONS}})
+    assert r.status_code == 200
+    assert client.post(f"{base}/{nxt}/approve", json={"note": "ok"}).status_code == 200
+    snap = client.get("/studio/snapshot?project=forma_project_3").json()
+    gen = next(s for s in snap["stages"] if s["key"] == keys[7])["manual_still"]["generation"]
+    assert gen["source_mode"] == "manual" and gen["fallback"] is True

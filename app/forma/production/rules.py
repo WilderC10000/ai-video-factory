@@ -122,7 +122,7 @@ def check(spec: ProjectSpec) -> list[Problem]:
                      "removal task: say exactly what is gone and where the removed material ends up")
 
     sc = spec.stills_config
-    if sc.source == "generate":
+    if sc.can_generate:
         from app.forma.production.still_gen import STILL_MODELS
 
         for role, model in (("generate_model", sc.generate_model), ("edit_model", sc.edit_model)):

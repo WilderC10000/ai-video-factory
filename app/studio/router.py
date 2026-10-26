@@ -200,12 +200,31 @@ def record_continuity(slug: str, key: str, body: ContinuityIn, db: Session = Dep
     return result
 
 
+def _continuity_gate(slug: str, manifest_path: Path, key: str) -> str | None:
+    """Still doctrine 3 for every workflow (generated or uploaded): a still cannot be approved while the still
+    before it is due a continuity check that has not passed."""
+    pdef = PROJECTS_BY_SLUG.get(slug)
+    if pdef is None or not pdef.spec_driven:
+        return None
+    try:
+        spec = load_spec(manifest_path.parent / "project.json")
+    except SpecError:
+        return None
+    source = spec.edit_source(key)
+    if source is None:
+        return None
+    return continuity.required_problem(spec, manifest_path, source, json.loads(manifest_path.read_text()))
+
+
 @router.post("/projects/{slug}/stills/{key}/approve")
 def approve_still(slug: str, key: str, body: NoteIn, db: Session = Depends(get_session)):
     """A person looked at the still: record its exact hash as approved (local, free)."""
     manifest_path = _manifest_path(db, slug)
     if key not in manual_stills.catalog(slug, manifest_path):
         raise HTTPException(status_code=404, detail=f"{key} is not a manual still of {slug}")
+    gate = _continuity_gate(slug, manifest_path, key)
+    if gate:
+        raise HTTPException(status_code=409, detail=gate)
     try:
         result = still_store.approve(manifest_path, key, body.note)
     except still_store.StillError as e:

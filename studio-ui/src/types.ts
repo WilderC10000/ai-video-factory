@@ -126,7 +126,10 @@ export interface ManualStill {
 
 export interface StillGeneration {
   key: string;
+  /** The project's default still workflow. */
   source_mode: "generate" | "manual";
+  /** True when generation is only an optional fallback (manual ChatGPT upload is the default). */
+  fallback: boolean;
   /** generate = text-to-image (the first still); edit = an edit of the previous approved still. */
   mode: "generate" | "edit";
   model: string;

@@ -103,8 +103,8 @@ def plan(spec: ProjectSpec, manifest_path: Path, key: str, manifest: dict | None
     known = STILL_MODELS.get(model)
     estimate = round(known[0].price_per_image, 4) if known else None
     problems: list[str] = []
-    if cfg_s.source != "generate":
-        problems.append(f"{spec.slug} uses manual stills (stills.source = {cfg_s.source!r}) - upload instead.")
+    if not cfg_s.can_generate:
+        problems.append(f"{spec.slug} uses manual stills only (stills.generation_fallback is false) - upload instead.")
     if spec.status == "frozen":
         problems.append(f"{spec.name} is frozen - nothing new is generated.")
     if known is None:
@@ -142,7 +142,8 @@ def plan(spec: ProjectSpec, manifest_path: Path, key: str, manifest: dict | None
     stale_source = bool(latest and source and latest.get("output_sha256") == current.get("sha256")
                         and latest.get("source_sha256") not in (None, source.get("sha256")))
     still = next(s for s in spec.stills() if s.key == key)
-    return {"key": key, "source_mode": cfg_s.source, "mode": mode, "model": model,
+    return {"key": key, "source_mode": cfg_s.source, "fallback": cfg_s.source != "generate", "mode": mode,
+            "model": model,
             "model_status": known[1] if known else "unknown", "estimate_usd": estimate,
             "model_override": key in cfg_s.model_overrides,
             "per_still_max_usd": cfg_s.per_still_max_usd, "source": source, "references": [str(r) for r in refs],

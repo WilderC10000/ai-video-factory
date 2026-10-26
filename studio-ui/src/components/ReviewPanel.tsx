@@ -17,6 +17,21 @@ interface Props {
   onChanged: () => void;
   /** R&D project: shown, never launched or submitted. */
   frozen?: boolean;
+  /** Opens another stage in the inspector (Approve & Continue on a still). */
+  onSelectStage?: (s: Stage) => void;
+}
+
+/** After `approvedKey` is approved: the next still that still needs work, or the next clip whose two stills are approved. */
+function nextAfterApproval(stages: Stage[], current: Stage, approvedKey: string): Stage | null {
+  const approved = (k: string) => k === approvedKey || stages.find((s) => s.key === k)?.manual_still?.state === "approved";
+  const after = stages.filter((s) => s.order > current.order).sort((a, b) => a.order - b.order);
+  return (
+    after.find((s) =>
+      s.manual_still
+        ? !approved(s.key)
+        : !!s.clip_plan && s.clip_plan.state !== "accepted" && approved(s.clip_plan.start_still) && approved(s.clip_plan.end_still),
+    ) ?? null
+  );
 }
 
 type Panel = null | "continue" | "retry" | "reject" | "generate" | "recover";
@@ -230,7 +245,7 @@ function LaunchConfirm({
   );
 }
 
-export function ReviewPanel({ projectSlug, stage, stages, budget, execution, activeJob, onChanged, frozen = false }: Props) {
+export function ReviewPanel({ projectSlug, stage, stages, budget, execution, activeJob, onChanged, frozen = false, onSelectStage }: Props) {
   const [panel, setPanel] = useState<Panel>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -275,13 +290,26 @@ export function ReviewPanel({ projectSlug, stage, stages, budget, execution, act
     ) : null;
 
   if (stage.manual_still) {
-    // Manual (ChatGPT) still: upload / review / approve here. Nothing is generated.
+    // Still: generate (one confirmed call) or upload, then review / approve here.
+    const goNext = onSelectStage
+      ? () => {
+          const n = nextAfterApproval(stages, stage, stage.key);
+          if (n) onSelectStage(n);
+        }
+      : undefined;
     return (
       <section className="review">
         <div className="review__title">
           <h3>{stage.label}</h3>
         </div>
-        <ManualStillPanel projectSlug={projectSlug} still={stage.manual_still} onChanged={onChanged} />
+        <ManualStillPanel
+          projectSlug={projectSlug}
+          still={stage.manual_still}
+          execution={execution}
+          frozen={frozen}
+          onChanged={onChanged}
+          onApprovedContinue={goNext}
+        />
       </section>
     );
   }

@@ -216,6 +216,7 @@ export function Inspector({
               activeJob={activeJob}
               onChanged={onChanged}
               frozen={frozen}
+              onSelectStage={onSelectStage}
             />
           </>
         )}

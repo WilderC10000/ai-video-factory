@@ -1,6 +1,7 @@
-"""Manual stills: made in ChatGPT, uploaded through the studio (or dropped in the folder), approved by a person.
+"""The stills folder and its approvals - for generated stills (the default, see still_gen.py) and for manual
+overrides (a ChatGPT image uploaded through the studio, or dropped in the folder). A person approves every still.
 
-Entirely local - no API calls, nothing generated. The stills folder is the source of truth:
+This module is local only - no API calls. The stills folder is the source of truth:
 
     <project>/stills/<key>.<jpg|png|webp>      exactly one file per key
     <project>/stills/_replaced/<key>__<utc>.<ext>   every file an upload replaced (never deleted)
@@ -12,8 +13,9 @@ State (the same rules the train-car CLI uses):
     changed   the file is not the approved one (replaced after approval) - re-approve before any clip uses it
     ambiguous several files for one key
 
-Uploads are recorded in manifest["still_uploads"][key]; approvals in manifest[key] (output_path,
-approved_sha256, approved_via "manual") - the same shape the importer and the train-car tools read.
+Uploads are recorded in manifest["still_uploads"][key], generations in manifest["still_generations"][key]
+(the latest <key>__genN attempt); approvals in manifest[key] (output_path, approved_sha256, approved_via
+"manual" = a person approved it) - the same shape the importer and the train-car tools read.
 """
 import hashlib
 import json
@@ -116,9 +118,21 @@ def state(manifest_path: Path, key: str, manifest: dict | None = None) -> dict:
     return {"state": st, "path": str(path), "sha256": digest}
 
 
+def origin(manifest: dict, key: str, sha256: str | None) -> str | None:
+    """Where the file now in the folder came from: generated | uploaded | folder (dropped in by hand)."""
+    if sha256 is None:
+        return None
+    gen = manifest.get((manifest.get("still_generations") or {}).get(key) or "")
+    if isinstance(gen, dict) and gen.get("output_sha256") == sha256:
+        return "generated"
+    if ((manifest.get("still_uploads") or {}).get(key) or {}).get("sha256") == sha256:
+        return "uploaded"
+    return "folder"
+
+
 def info(manifest_path: Path, key: str, *, label: str, dependents: list[str], manifest: dict | None = None,
          brief: str | None = None, media_url=None) -> dict:
-    """Everything the studio shows for one manual still (local reads only)."""
+    """Everything the studio shows for one still (local reads only)."""
     manifest = manifest if manifest is not None else _read(manifest_path)
     st = state(manifest_path, key, manifest)
     entry = manifest.get(key) if isinstance(manifest.get(key), dict) else {}
@@ -126,7 +140,8 @@ def info(manifest_path: Path, key: str, *, label: str, dependents: list[str], ma
            "expected_dir": str(stills_dir(manifest_path)), "path": st.get("path"), "sha256": st.get("sha256"),
            "approved_sha256": entry.get("approved_sha256"), "approved_at": entry.get("approved_at"),
            "approval_note": entry.get("approval_note"), "brief": brief,
-           "upload": (manifest.get("still_uploads") or {}).get(key), "width": None, "height": None,
+           "upload": (manifest.get("still_uploads") or {}).get(key), "origin": origin(manifest, key, st.get("sha256")),
+           "width": None, "height": None,
            "file_type": None, "size_bytes": None, "url": None}
     if st.get("path"):
         path = Path(st["path"])
@@ -166,15 +181,32 @@ def upload(manifest_path: Path, key: str, filename: str, data: bytes, *, replace
         raise StillError(f"File is larger than {MAX_UPLOAD_BYTES // (1024 * 1024)} MB.", 413)
     if Path(filename).suffix.lower() not in STILL_EXTENSIONS:
         raise StillError(f"Accepted formats: {', '.join(STILL_EXTENSIONS)}.", 415)
+    sniff(data)
+    check_replace(manifest_path, key, replace)
+    record = place(manifest_path, key, data, original_filename=Path(filename).name, source="studio upload")
+    manifest = _read(manifest_path)  # re-read right before writing
+    manifest.setdefault("still_uploads", {})[key] = record
+    _write(manifest_path, manifest)
+    return {"key": key, **record, "state": state(manifest_path, key)["state"]}
+
+
+def check_replace(manifest_path: Path, key: str, replace: bool) -> None:
+    """Refuse to put a new file over an existing one unless the person confirmed the replacement."""
+    existing = _files(manifest_path, key)
+    if existing and not replace:
+        before = state(manifest_path, key)
+        raise StillError(f"{key} already has a still ({before['state']}: {existing[0].name}). Confirm replacement "
+                         "to put a new one over it - the current file is kept in stills/_replaced/.", 409)
+
+
+def place(manifest_path: Path, key: str, data: bytes, *, original_filename: str, source: str) -> dict:
+    """Write image bytes as <key>.<ext> (archiving any current file to stills/_replaced/). Never approves.
+    Returns the record describing the new file; the caller stores it in the manifest."""
     kind, width, height = sniff(data)
     d = stills_dir(manifest_path)
     d.mkdir(parents=True, exist_ok=True)
     existing = _files(manifest_path, key)
-    manifest = _read(manifest_path)
-    before = state(manifest_path, key, manifest) if existing else {"state": "missing"}
-    if existing and not replace:
-        raise StillError(f"{key} already has a still ({before['state']}: {existing[0].name}). Confirm replacement "
-                         "to upload over it - the current file is kept in stills/_replaced/.", 409)
+    before = state(manifest_path, key) if existing else {"state": "missing"}
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     archived = []
     for old in existing:
@@ -187,16 +219,13 @@ def upload(manifest_path: Path, key: str, filename: str, data: bytes, *, replace
     tmp.write_bytes(data)
     os.replace(tmp, target)
     digest = file_sha256(target)
-    record = {"sha256": digest, "stored_as": str(target), "original_filename": Path(filename).name,
+    record = {"sha256": digest, "stored_as": str(target), "original_filename": original_filename,
               "file_type": kind, "width": width, "height": height, "size_bytes": len(data), "uploaded_at": _now(),
-              "source": "studio upload"}
+              "source": source}
     if archived:
         record["replaced"] = {"previous_state": before["state"], "previous_sha256": before.get("sha256"),
                               "archived_to": archived}
-    manifest = _read(manifest_path)  # re-read right before writing
-    manifest.setdefault("still_uploads", {})[key] = record
-    _write(manifest_path, manifest)
-    return {"key": key, **record, "state": state(manifest_path, key)["state"]}
+    return record
 
 
 def approve(manifest_path: Path, key: str, note: str) -> dict:
@@ -215,7 +244,8 @@ def approve(manifest_path: Path, key: str, note: str) -> dict:
             n += 1
         manifest[f"{key}__attempt{n}"] = entry | {"archived_at": now, "archive_reason": "replaced by a newer still"}
         entry = None
-    entry = entry or {"source": "manual", "actual_cost_usd": 0.0}
+    entry = entry or {"actual_cost_usd": 0.0}  # a generation's cost stays on its <key>__genN attempt
+    entry["source"] = origin(manifest, key, st["sha256"]) or "manual"
     entry.update(output_path=st["path"], completed_at=now, approved_sha256=st["sha256"], approved_at=now,
                  approved_via="manual", approval_note=note.strip())
     manifest[key] = entry

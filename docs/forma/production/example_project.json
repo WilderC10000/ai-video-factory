@@ -4,6 +4,7 @@
   "status": "planning",
   "concept": {"summary": "Illustrative only: a small timber cabin on concrete pads, one builder."},
   "budget": {"cap_usd": 15.0, "per_clip_max_usd": 1.30},
+  "stills": {"source": "generate", "generate_model": "fal-ai/nano-banana", "edit_model": "fal-ai/nano-banana/edit", "per_still_max_usd": 0.20},
   "bibles": {
     "location": "a grassy clearing ringed by birch trees under soft overcast light",
     "structure": "a 3 x 4 m timber cabin on six concrete pads",

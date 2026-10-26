@@ -65,6 +65,12 @@ export const api = {
     }
     return res.json() as Promise<{ state: string; sha256: string }>;
   },
+  /** PAID in live mode ($0 mock in mock mode): ONE image call for this still. Places it; never approves. */
+  generateStill: (slug: string, key: string, max_usd: number, replace: boolean) =>
+    request<{ state: string; generation: string }>(`/studio/projects/${slug}/stills/${key}/generate`, {
+      method: "POST",
+      body: JSON.stringify({ max_usd, replace, confirmed: true }),
+    }),
   approveStill: (slug: string, key: string, note: string) =>
     request<{ state: string }>(`/studio/projects/${slug}/stills/${key}/approve`, {
       method: "POST",

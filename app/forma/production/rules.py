@@ -98,6 +98,20 @@ def check(spec: ProjectSpec) -> list[Problem]:
                     f"{route.model} takes {list(cfg.allowed_durations)} s, not {beat.duration_seconds}")
         if cfg.end_image_param_name is None:
             err(shot.id, "anchored clips", f"{route.model} cannot pin an end still")
+
+    sc = spec.stills_config
+    if sc.source == "generate":
+        from app.forma.production.still_gen import STILL_MODELS
+
+        for role, model in (("generate_model", sc.generate_model), ("edit_model", sc.edit_model)):
+            if model not in STILL_MODELS:
+                err("stills", "still models", f"stills.{role} {model!r} is not a known still model")
+            elif STILL_MODELS[model][1] != "proven":
+                warn("stills", "proof before scaling",
+                     f"{model} is unproven for checkpoint stills here: review the first stills closely "
+                     "(identity, geometry, lighting) before trusting the chain")
+        if sc.edit_model in STILL_MODELS and not sc.edit_model.endswith("/edit"):
+            err("stills", "still models", f"stills.edit_model {sc.edit_model!r} is not an edit endpoint")
     return out
 
 

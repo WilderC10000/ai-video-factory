@@ -24,6 +24,7 @@ from app.studio.attempt_status import (
 )
 from app.studio.execution import execution_info
 from app.forma.production import budget as production_budget
+from app.forma.production import still_gen
 from app.forma.production import stills as still_store
 from app.forma.production import submit as production_submit
 from app.forma.production.spec import SpecError, load_spec
@@ -36,7 +37,8 @@ from app.studio.service import build_snapshot, job_out, media_url
 
 router = APIRouter(prefix="/studio", tags=["studio"])
 
-_MEDIA_TYPES = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".mp4": "video/mp4"}
+_MEDIA_TYPES = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp",
+                ".mp4": "video/mp4"}
 
 
 class DecisionIn(BaseModel):
@@ -127,10 +129,16 @@ def _resync(db: Session, slug: str) -> None:
         db.commit()
 
 
-# --- manual stills (local only: no provider calls, nothing generated) --------------------------------
+# --- stills: generated (one confirmed call each) or uploaded (local), always approved by a person ----
 
 class NoteIn(BaseModel):
     note: str
+
+
+class GenerateStillIn(BaseModel):
+    max_usd: float
+    confirmed: bool = False
+    replace: bool = False
 
 
 @router.get("/projects/{slug}/stills")
@@ -150,6 +158,24 @@ async def upload_still(slug: str, key: str, request: Request, filename: str = Qu
         result = still_store.upload(manifest_path, key, filename, await request.body(), replace=replace)
     except still_store.StillError as e:
         raise HTTPException(status_code=e.status, detail=str(e))
+    _resync(db, slug)
+    return result
+
+
+@router.post("/projects/{slug}/stills/{key}/generate")
+def generate_still(slug: str, key: str, body: GenerateStillIn, db: Session = Depends(get_session)):
+    """PAID in live mode ($0 mock provider in mock mode): ONE fal image call for this still - text-to-image for
+    the first still, an edit of the previous approved still for every other. Places the result for review;
+    never approves it, never retries, never starts the next still or clip."""
+    spec, manifest_path = _spec(db, slug)
+    info = execution_info()
+    if not info["launch_enabled"]:
+        return JSONResponse(status_code=409, content={"detail": "Generation is not enabled.", "problems": info["problems"]})
+    try:
+        result = still_gen.generate(spec, manifest_path, key, execution_mode=info["mode"], max_usd=body.max_usd,
+                                    confirmed=body.confirmed, replace=body.replace)
+    except still_gen.StillGenError as e:
+        return JSONResponse(status_code=e.status, content={"detail": str(e), "problems": e.problems})
     _resync(db, slug)
     return result
 

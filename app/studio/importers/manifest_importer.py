@@ -56,7 +56,7 @@ def default_data_dir() -> Path:
 _OUTPUT_FIELDS = ("raw_video_path", "output_path", "final_visual_master_path", "rough_assembly_path")
 _PREVIOUS_FRAME_FIELDS = ("start_frame_path", "source_frame_path")
 # Manifest entries that are pipeline bookkeeping, not stages.
-_META_KEYS = {"proof_gate"}
+_META_KEYS = {"proof_gate", "still_uploads", "still_generations", "clip_budget"}
 
 
 @dataclass
@@ -258,6 +258,15 @@ def import_project(db: Session, pdef: ProjectDef, data_dir: Path | None = None) 
                           occurred_at=_parse_ts(value.get("completed_at") or value.get("submitted_at")),
                           message=f"Provider attempt {attempt} of '{base_key}' on {model} ({done}){spend} - "
                                   "shown under the stage's Provider attempts.")
+            continue
+        still_key, _, gen = key.partition("__gen")
+        if isinstance(value, dict) and gen and value.get("kind") == "still_generation" and still_key in known:
+            cost = _cost(value.get("actual_cost_usd"))
+            spend = f" (${cost:.4f}, counted in spend)" if cost else ""
+            rec.event(f"still_gen:{key}:{value.get('status')}", type="note", room_id="continuity_office",
+                      occurred_at=_parse_ts(value.get("completed_at") or value.get("started_at")),
+                      message=f"Still generation {gen} of '{still_key}' on {value.get('model')} "
+                              f"({value.get('status')}){spend}.")
             continue
         if isinstance(value, dict) and key not in known and key not in _META_KEYS:
             rec.event(f"untracked:{key}", type="warning", severity=Severity.LOW, room_id="command_deck",

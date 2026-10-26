@@ -177,7 +177,15 @@ def spec_project(slug: str, data_dir: Path | None = None) -> ProjectDef | None:
         spec = load_spec(path)
     except SpecError:
         return None
-    defs = [StageDef(still.key, still.label, StageKind.IMAGE_EDIT, "continuity_office", None, 0.0)
+    from app.forma.production.still_gen import STILL_MODELS
+
+    def still_cost(key: str) -> float:
+        if spec.stills_config.source != "generate":
+            return 0.0
+        model = spec.stills_config.edit_model if spec.edit_source(key) else spec.stills_config.generate_model
+        return STILL_MODELS[model][0].price_per_image if model in STILL_MODELS else 0.0
+
+    defs = [StageDef(still.key, still.label, StageKind.IMAGE_EDIT, "continuity_office", None, still_cost(still.key))
             for still in spec.stills()]
     order = {s.key: i for i, s in enumerate(spec.stills())}
     for clip in spec.clips():
@@ -194,8 +202,13 @@ def spec_project(slug: str, data_dir: Path | None = None) -> ProjectDef | None:
     defs.sort(key=lambda d: rank.get(d.key, order.get(d.key, 0)))
     return ProjectDef(slug=spec.slug, name=spec.name, cap_usd=spec.budget_cap_usd, cap_source="project.json budget.cap_usd",
                       stages=defs, spec_driven=True, frozen=spec.status == "frozen",
-                      notes=[f"Project status: {spec.status}. Stills are uploaded and approved in the studio; every "
-                             "clip needs its own spend approval; nothing is retried automatically."])
+                      notes=[f"Project status: {spec.status}. " + (
+                          f"Stills are generated in the studio ({spec.stills_config.generate_model} for the first, "
+                          f"{spec.stills_config.edit_model} edits of the previous approved still for the rest), one "
+                          "confirmed call each, and approved by you; Upload still is an optional override. "
+                          if spec.stills_config.source == "generate" else
+                          "Stills are uploaded and approved in the studio. ")
+                          + "Every clip needs its own spend approval; nothing is retried or chained automatically."])
 
 
 PROJECTS: list[ProjectDef] = [ALPINE_VIDEO_2, CLIFFSIDE_VIDEO_1, TRAIN_CAR_VIDEO_2]

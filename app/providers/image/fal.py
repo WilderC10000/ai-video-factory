@@ -40,6 +40,12 @@ uses_aspect_ratio` selects which payload shape `generate_image()` builds,
 the same per-model-differences pattern already used for video (Kling's
 `image_param_name`, `supports_resolution_param`). We only ever request
 "1K" resolution here, which keeps the flat rate at $0.15 (4K is $0.30).
+
+NANO_BANANA_GENERATE / NANO_BANANA_EDIT (`fal-ai/nano-banana`, Gemini 2.5 Flash Image) are the
+cheap tier of the same family: $0.0398/image flat per fal's model page (2026-10), same request
+shapes as Nano Banana Pro except that the text-to-image endpoint has no `resolution` field
+(`supports_resolution=False`). NANO_BANANA_2_* ($0.08/image at 1K) sit between the two tiers.
+These are the Project #3 still models (app/forma/production/still_gen.py).
 """
 import math
 from dataclasses import dataclass
@@ -74,6 +80,8 @@ class FalImageModelConfig:
     # Banana Pro's generation endpoint). Selects the payload shape
     # generate_image() builds - see module docstring.
     uses_aspect_ratio: bool = False
+    # False for aspect-ratio models without a `resolution` field (Nano Banana, not Pro / 2).
+    supports_resolution: bool = True
 
 
 # Cheapest credible text-to-image on fal.ai; supports 9:16 via width/height.
@@ -100,6 +108,19 @@ NANO_BANANA_PRO_EDIT = FalImageModelConfig(model_id="fal-ai/nano-banana-pro/edit
 NANO_BANANA_PRO_GENERATE = FalImageModelConfig(
     model_id="fal-ai/nano-banana-pro", price_per_image=0.15, uses_aspect_ratio=True
 )
+
+
+# Cheap tier (Gemini 2.5 Flash Image): $0.0398/image flat for text-to-image and edit alike.
+NANO_BANANA_GENERATE = FalImageModelConfig(
+    model_id="fal-ai/nano-banana", price_per_image=0.0398, uses_aspect_ratio=True, supports_resolution=False
+)
+NANO_BANANA_EDIT = FalImageModelConfig(model_id="fal-ai/nano-banana/edit", price_per_image=0.0398)
+
+# Middle tier: $0.08/image at 1K (the only resolution requested here).
+NANO_BANANA_2_GENERATE = FalImageModelConfig(
+    model_id="fal-ai/nano-banana-2", price_per_image=0.08, uses_aspect_ratio=True
+)
+NANO_BANANA_2_EDIT = FalImageModelConfig(model_id="fal-ai/nano-banana-2/edit", price_per_image=0.08)
 
 
 class FalImageProvider(ImageProvider):
@@ -136,10 +157,13 @@ class FalImageProvider(ImageProvider):
             payload = {
                 "prompt": request.prompt,
                 "aspect_ratio": request.extra_params.get("aspect_ratio", "9:16"),
-                "resolution": request.extra_params.get("resolution", "1K"),
                 "num_images": 1,
                 "limit_generations": True,  # defensive: never let prompt text imply >1 image
             }
+            if self.model_config.supports_resolution:
+                payload["resolution"] = request.extra_params.get("resolution", "1K")
+            if "output_format" in request.extra_params:
+                payload["output_format"] = request.extra_params["output_format"]
         else:
             payload = {
                 "prompt": request.prompt,
@@ -150,7 +174,7 @@ class FalImageProvider(ImageProvider):
             f"{FAL_SYNC_BASE}/{self.model_config.model_id}", headers=self._headers(), json=payload
         )
         if resp.status_code >= 400:
-            raise ImageProviderError(f"fal.ai image generation failed: {resp.status_code} {resp.text}")
+            raise ImageProviderError(f"fal.ai image generation failed: {resp.status_code} {resp.text}", charged=False)
         data = resp.json()
         images = data.get("images") or []
         if not images:
@@ -190,20 +214,22 @@ class FalImageProvider(ImageProvider):
         upload URL, PUT the file bytes to it, then use the returned public
         file URL as one of edit_image()'s image_urls."""
         path = Path(local_path)
-        content_type = "image/jpeg" if path.suffix.lower() in (".jpg", ".jpeg") else "image/png"
+        content_type = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}.get(
+            path.suffix.lower(), "image/png")
 
         initiate_url = f"{FAL_STORAGE_BASE}/storage/upload/initiate"
         initiate = self._client.post(
             initiate_url, headers=self._headers(), json={"content_type": content_type, "file_name": path.name}
         )
         if initiate.status_code >= 400:
-            raise ImageProviderError(f"fal.ai upload initiate failed: {initiate.status_code} {initiate.text}")
+            raise ImageProviderError(f"fal.ai upload initiate failed: {initiate.status_code} {initiate.text}",
+                                     charged=False)
         data = initiate.json()
         upload_url, file_url = data["upload_url"], data["file_url"]
 
         put_resp = self._client.put(upload_url, content=path.read_bytes(), headers={"Content-Type": content_type})
         if put_resp.status_code >= 400:
-            raise ImageProviderError(f"fal.ai image upload failed: {put_resp.status_code}")
+            raise ImageProviderError(f"fal.ai image upload failed: {put_resp.status_code}", charged=False)
         return file_url
 
     def edit_image(self, request: ImageEditRequest, destination_path: str) -> ImageResult:
@@ -215,7 +241,7 @@ class FalImageProvider(ImageProvider):
             f"{FAL_SYNC_BASE}/{self.model_config.model_id}", headers=self._headers(), json=payload
         )
         if resp.status_code >= 400:
-            raise ImageProviderError(f"fal.ai image edit failed: {resp.status_code} {resp.text}")
+            raise ImageProviderError(f"fal.ai image edit failed: {resp.status_code} {resp.text}", charged=False)
         data = resp.json()
         images = data.get("images") or []
         if not images:

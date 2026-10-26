@@ -3,7 +3,9 @@
     spec.py     project.json -> ProjectSpec (checkpoints, shots, derived stills and clips)
     rules.py    doctrine checks on a spec: clip counts, construction order, material flow, camera rules
     state.py    still and clip state machines, derived only from persisted files + the manifest
-    stills.py   manual ChatGPT stills: upload (local only), hash, approve, replace -> changed
+    stills.py   the stills folder: place (generated or uploaded), hash, approve, replace -> changed
+    still_gen.py  generated stills (default): one confirmed fal call each; CP01 text-to-image, later stills
+                  edits of the previous approved still
     budget.py   per-clip spend approval, caps, one approval = one submission
     submit.py   the only paid step: one clip -> one fal job, recorded before anything else
 

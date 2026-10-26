@@ -117,7 +117,31 @@ export interface ManualStill {
   size_bytes: number | null;
   brief: string | null;
   upload: { original_filename: string; uploaded_at: string; replaced?: { previous_state: string } } | null;
+  /** Where the file in the folder came from. */
+  origin: "generated" | "uploaded" | "folder" | null;
   used_by: { clip: string; generated: boolean; stale: boolean }[];
+  /** Project #3 generated stills (null when the project's stills are manual-only). */
+  generation: StillGeneration | null;
+}
+
+export interface StillGeneration {
+  key: string;
+  source_mode: "generate" | "manual";
+  /** generate = text-to-image (the first still); edit = an edit of the previous approved still. */
+  mode: "generate" | "edit";
+  model: string;
+  model_status: string;
+  estimate_usd: number | null;
+  per_still_max_usd: number;
+  source: { key: string; state: StillState; path: string | null; sha256: string | null; url: string | null } | null;
+  references: string[];
+  prompt: string;
+  exists: boolean;
+  /** The current file was generated from an older version of its source still. */
+  stale_source: boolean;
+  problems: string[];
+  budget: { cap_usd: number; spent_usd: number; reserved_usd: number; remaining_usd: number };
+  attempts: { key: string; status: string; model: string; cost_usd: number | null; started_at: string; error: string | null }[];
 }
 
 export type ClipState =

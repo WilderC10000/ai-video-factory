@@ -175,7 +175,14 @@ class VideoProvider(ABC):
 
 
 class ImageProviderError(Exception):
-    """Raised by an ImageProvider implementation for any provider-side failure."""
+    """Raised by an ImageProvider implementation for any provider-side failure.
+
+    `charged` is False only when the provider refused the request outright (nothing was generated, so
+    nothing was billed); any later failure (e.g. the download of a finished image) may have been billed."""
+
+    def __init__(self, message: str = "", charged: bool = True) -> None:
+        super().__init__(message)
+        self.charged = charged
 
 
 @dataclass

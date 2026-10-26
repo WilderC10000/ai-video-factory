@@ -182,7 +182,7 @@ def spec_project(slug: str, data_dir: Path | None = None) -> ProjectDef | None:
     def still_cost(key: str) -> float:
         if spec.stills_config.source != "generate":
             return 0.0
-        model = spec.stills_config.edit_model if spec.edit_source(key) else spec.stills_config.generate_model
+        model = spec.stills_config.model_for(key, is_first=spec.edit_source(key) is None)
         return STILL_MODELS[model][0].price_per_image if model in STILL_MODELS else 0.0
 
     defs = [StageDef(still.key, still.label, StageKind.IMAGE_EDIT, "continuity_office", None, still_cost(still.key))

@@ -114,7 +114,7 @@ NANO_BANANA_PRO_GENERATE = FalImageModelConfig(
 NANO_BANANA_GENERATE = FalImageModelConfig(
     model_id="fal-ai/nano-banana", price_per_image=0.0398, uses_aspect_ratio=True, supports_resolution=False
 )
-NANO_BANANA_EDIT = FalImageModelConfig(model_id="fal-ai/nano-banana/edit", price_per_image=0.0398)
+NANO_BANANA_EDIT = FalImageModelConfig(model_id="fal-ai/nano-banana/edit", price_per_image=0.0398, supports_resolution=False)
 
 # Middle tier: $0.08/image at 1K (the only resolution requested here).
 NANO_BANANA_2_GENERATE = FalImageModelConfig(

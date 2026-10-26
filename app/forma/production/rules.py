@@ -128,6 +128,13 @@ def check(spec: ProjectSpec) -> list[Problem]:
                 warn("stills", "proof before scaling",
                      f"{model} is unproven for checkpoint stills here: review the first stills closely "
                      "(identity, geometry, lighting) before trusting the chain")
+        for key, model in sc.model_overrides.items():
+            if key not in spec.still_keys():
+                err("stills", "still models", f"stills.model_overrides names {key!r}, which is not a still")
+            elif model not in STILL_MODELS:
+                err("stills", "still models", f"stills.model_overrides[{key!r}] {model!r} is not a known still model")
+            elif spec.edit_source(key) is not None and not model.endswith("/edit"):
+                err("stills", "still models", f"stills.model_overrides[{key!r}] must be an edit endpoint")
         if sc.edit_model in STILL_MODELS and not sc.edit_model.endswith("/edit"):
             err("stills", "still models", f"stills.edit_model {sc.edit_model!r} is not an edit endpoint")
     return out

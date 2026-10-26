@@ -23,7 +23,10 @@
       "cp01_still",
       "s01_mid1_still",
       "cp02_still"
-    ]
+    ],
+    "model_overrides": {
+      "cp02_still": "fal-ai/nano-banana-2/edit"
+    }
   },
   "bibles": {
     "location": "a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight; open bare-earth clearing left of the pipe, a dirt forest track entering at the left edge",
@@ -61,22 +64,24 @@
       "id": "cp02",
       "title": "Site and pipe mouth cleared",
       "camera": "wide",
-      "state": "All leaf litter, brush and loose sticks are gone from around the pipe and from in front of its opening: that ground is raked down to bare brown forest soil. Everything raked up now sits in one low brush pile of leaves and sticks on the open ground at the left beside the forest track, next to the three stacked sawn branch lengths, which stay exactly where they were. Dark silt still fills the bottom of the pipe; the pipe interior is untouched.",
+      "state": "The brown leaf litter and the crossed sticks in the lower foreground directly in front of the pipe opening are completely gone. The entire strip of ground between the pipe and the forest track is visibly cleared to bare brown soil. The three sawn branch lengths stay stacked at the left beside the track. One low brush pile at the left beside the track holds only the removed litter and sticks. The wheelbarrow still stands at the pipe's track-side flank where it stood before, with the bow saw visible in it beside the buckets. The pipe interior and the dark silt in its bottom are untouched.",
       "built": [
         "cleared ground around the pipe"
       ],
-      "action": "rakes the last strip of leaf litter along the pipe's track-side flank toward the brush pile",
+      "action": "rakes the last few leaves off the bare strip toward the brush pile",
       "tools_in_view": [
         "rake",
-        "bow saw",
-        "wheelbarrow"
+        "bow saw (in the wheelbarrow)",
+        "wheelbarrow at the track-side flank"
       ],
       "materials": {
         "cleared ground around the pipe": "debris raked and wheeled to the brush pile at the left edge"
       },
       "not_yet": [
         "silt removed from the pipe",
-        "flatbed trailer or any building materials"
+        "flatbed trailer",
+        "excavator",
+        "any construction materials or later-stage work"
       ]
     },
     {

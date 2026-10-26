@@ -96,9 +96,8 @@ def plan(spec: ProjectSpec, manifest_path: Path, key: str, manifest: dict | None
     source_key = spec.edit_source(key)
     refs = _references(spec, manifest_path) if source_key is None else []
     mode = "generate" if source_key is None and not refs else "edit"
-    model = cfg_s.edit_model if source_key is not None else cfg_s.generate_model
-    if source_key is None and refs:
-        model = cfg_s.edit_model  # the first still edits its reference images
+    # The first still is text-to-image unless it edits reference images; everything else is an edit.
+    model = cfg_s.model_for(key, is_first=source_key is None and not refs)
     known = STILL_MODELS.get(model)
     estimate = round(known[0].price_per_image, 4) if known else None
     problems: list[str] = []
@@ -143,6 +142,7 @@ def plan(spec: ProjectSpec, manifest_path: Path, key: str, manifest: dict | None
     still = next(s for s in spec.stills() if s.key == key)
     return {"key": key, "source_mode": cfg_s.source, "mode": mode, "model": model,
             "model_status": known[1] if known else "unknown", "estimate_usd": estimate,
+            "model_override": key in cfg_s.model_overrides,
             "per_still_max_usd": cfg_s.per_still_max_usd, "source": source, "references": [str(r) for r in refs],
             "prompt": still.brief, "exists": current["state"] != "missing", "stale_source": stale_source,
             "problems": problems, "budget": budget.spend(manifest, spec),
@@ -207,6 +207,8 @@ def generate(spec: ProjectSpec, manifest_path: Path, key: str, *, execution_mode
     try:
         if info["mode"] == "edit":
             params = EDIT_PARAMS if info["source"] else {**EDIT_PARAMS, "aspect_ratio": "9:16"}
+            if cfg.supports_resolution:
+                params = {**params, "resolution": "1K"}  # pins the flat 1K price
             result = provider.edit_image(ImageEditRequest(info["prompt"], [p for p, _ in inputs], dict(params)), str(out))
         else:
             result = provider.generate_image(ImageGenerationRequest(info["prompt"], 768, 1344, dict(GENERATE_PARAMS)),

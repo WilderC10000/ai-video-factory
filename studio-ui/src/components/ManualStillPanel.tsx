@@ -463,7 +463,8 @@ function GeneratePanel({
           </>
         ) : (
           <>
-            <strong>Image edit of {gen.source?.key}</strong> - its exact approved pixels - on <code>{gen.model}</code>. Camera,
+            <strong>Image edit of {gen.source?.key}</strong> - its exact approved pixels - on <code>{gen.model}</code>
+            {gen.model_override ? " (per-still override)" : ""}. Camera,
             structure, environment, builder and lighting are kept; only this step's progress changes.
           </>
         )}

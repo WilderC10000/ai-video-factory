@@ -285,3 +285,31 @@ def test_drift_metrics_find_the_frame_offset_between_cp01_and_s01_mid1():
     m = continuity.measure(d / "cp01_still.png", d / "s01_mid1_still.png")
     assert abs(m["offset_px"][0]) <= 12 and m["offset_pct"] < continuity.FLAG_SHIFT_PCT
     assert m["band_psnr_aligned_db"] > m["band_psnr_db"] - 0.01 and m["flags"] == []
+
+
+def test_a_per_still_override_uses_another_tier_for_that_still_only(project):
+    from app.providers.image.fal import NANO_BANANA_2_EDIT
+
+    spec, manifest = project
+    raw = json.loads(EXAMPLE.read_text())
+    raw["stills"] = {"model_overrides": {"cp02_still": "fal-ai/nano-banana-2/edit"}}
+    path = manifest.parent / "project.json"
+    path.write_text(json.dumps(raw))
+    spec = load_spec(path)
+    assert rules.errors(spec) == []
+    assert still_gen.plan(spec, manifest, "s01_mid1_still")["model"] == "fal-ai/nano-banana/edit"
+    p = still_gen.plan(spec, manifest, "cp02_still")
+    assert (p["model"], p["estimate_usd"], p["model_override"]) == ("fal-ai/nano-banana-2/edit", 0.08, True)
+    fake = FakeFalImage()
+    for key, cfg in (("cp01_still", NANO_BANANA_GENERATE), ("s01_mid1_still", NANO_BANANA_EDIT)):
+        still_gen.generate(spec, manifest, key, execution_mode="live", max_usd=0.1, confirmed=True, provider=fal(cfg, fake))
+        stills.approve(manifest, key, "ok")
+    out = still_gen.generate(spec, manifest, "cp02_still", execution_mode="live", max_usd=0.1, confirmed=True,
+                             provider=fal(NANO_BANANA_2_EDIT, fake))
+    url, payload = fake.model_posts()[-1]
+    assert url == "https://fal.run/fal-ai/nano-banana-2/edit" and payload["resolution"] == "1K"
+    assert "resolution" not in fake.model_posts()[1][1]  # the cheap edit endpoint has no resolution field
+    assert out["actual_cost_usd"] == 0.08 and out["model"] == "fal-ai/nano-banana-2/edit"
+    raw["stills"] = {"model_overrides": {"cp02_still": "fal-ai/nano-banana-2"}}
+    path.write_text(json.dumps(raw))
+    assert any("edit endpoint" in p.message for p in rules.errors(load_spec(path)))

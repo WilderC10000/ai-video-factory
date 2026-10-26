@@ -131,6 +131,8 @@ export interface StillGeneration {
   mode: "generate" | "edit";
   model: string;
   model_status: string;
+  /** This still uses a per-still model instead of the project default. */
+  model_override: boolean;
   estimate_usd: number | null;
   per_still_max_usd: number;
   source: { key: string; state: StillState; path: string | null; sha256: string | null; url: string | null } | null;

@@ -141,7 +141,8 @@ def test_regenerating_needs_replace_and_marks_the_next_still_as_made_from_old_pi
         gen("cp01_still", NANO_BANANA_GENERATE)
     assert any("Confirm replacement" in p for p in e.value.problems)
     gen("cp01_still", NANO_BANANA_GENERATE, replace=True)
-    assert stills.state(manifest, "cp01_still")["state"] == "changed"
+    assert stills.state(manifest, "cp01_still")["state"] == "placed"  # the old approval is retired, not deleted
+    assert json.loads(manifest.read_text())["cp01_still__attempt1"]["archive_reason"].startswith("replaced by generation")
     stills.approve(manifest, "cp01_still", "new version ok")
     assert still_gen.plan(spec, manifest, "s01_mid1_still")["stale_source"] is True
     assert budget.spend(json.loads(manifest.read_text()), spec)["spent_usd"] == round(3 * 0.0398, 4)
@@ -245,7 +246,9 @@ def test_project_3_restart_is_paused_with_no_paid_path_and_a_fresh_chain():
     assert spec.stills_config.proof_stills == () and spec.stills_config.model_overrides == {}
     m = json.loads(manifest.read_text())
     assert m["rnd_spend"]["actual_cost_usd"] == 0.6388 and budget.spend(m, spec)["spent_usd"] == 0.6388
-    assert all(stills.state(manifest, s.key, m)["state"] == "missing" for s in spec.stills())
+    rnd = {stills.file_sha256(f) for f in (TEMPLATE.parent / "rnd" / "2026-10-26_pipe_3m" / "stills").rglob("*.png")}
+    active = [stills.state(manifest, s.key, m).get("sha256") for s in spec.stills()]
+    assert rnd and not rnd.intersection(active)  # no active still reuses old 3 m pixels
     problems = still_gen.plan(spec, manifest, "cp01_still", m)["problems"]
     assert any("paused" in p for p in problems) and any("would exceed" in p for p in problems)
     s02 = next(s for s in spec.shots if s.id == "s02")
@@ -443,3 +446,67 @@ def test_a_manual_upload_cannot_be_approved_past_a_due_continuity_check(client, 
     snap = client.get("/studio/snapshot?project=forma_project_3").json()
     gen = next(s for s in snap["stages"] if s["key"] == keys[7])["manual_still"]["generation"]
     assert gen["source_mode"] == "manual" and gen["fallback"] is True
+
+
+# --- replace flow: new active file, fresh preview URL, downstream stale ---------------------------
+
+def test_replacing_cp01_in_the_studio_makes_the_new_file_active_with_a_fresh_preview_url(client, tmp_path, monkeypatch, project):
+    import time
+
+    from app.config import settings
+    from app.db import SessionLocal
+    from app.forma.production import submit
+    from app.studio.importers.manifest_importer import import_all
+
+    spec, manifest = project
+    monkeypatch.setattr(type(settings), "studio_data_path", property(lambda self: tmp_path))
+    with SessionLocal() as db:
+        import_all(db, tmp_path, slugs=["forma_project_3"])
+    base = "/studio/projects/forma_project_3/stills"
+
+    def panel(key):
+        snap = client.get("/studio/snapshot?project=forma_project_3").json()
+        return next(s for s in snap["stages"] if s["key"] == key)["manual_still"]
+
+    assert client.post(f"{base}/cp01_still/upload?filename=old.png", content=png(salt=b"old")).status_code == 200
+    assert client.post(f"{base}/cp01_still/approve", json={"note": "old ok"}).status_code == 200
+    assert client.post(f"{base}/s01_mid1_still/upload?filename=m.png", content=png(salt=b"m")).status_code == 200
+    assert client.post(f"{base}/s01_mid1_still/approve", json={"note": "mid ok"}).status_code == 200
+    old = panel("cp01_still")
+    time.sleep(0.02)  # a different mtime for the new file
+
+    # Replacing needs explicit confirmation; then the new file is the active, placed (unapproved) cp01_still.
+    assert client.post(f"{base}/cp01_still/upload?filename=new.png", content=png(salt=b"new")).status_code == 409
+    r = client.post(f"{base}/cp01_still/upload?filename=new.png&replace=true", content=png(salt=b"new"))
+    assert r.status_code == 200 and r.json()["state"] == "placed"
+    assert Path(r.json()["replaced"]["archived_to"][0]).read_bytes() == png(salt=b"old")  # kept, not deleted
+    new = panel("cp01_still")
+    assert new["state"] == "placed" and new["sha256"] != old["sha256"] and new["upload"]["original_filename"] == "new.png"
+    assert new["url"] != old["url"] and new["url"].split("&v=")[0] == old["url"].split("&v=")[0]  # same path, new version
+    assert client.get(new["url"]).content == png(salt=b"new")
+
+    # Everything made from the old cp01 is invalidated until redone from the new approved one.
+    mid = panel("s01_mid1_still")
+    assert mid["state"] == "stale"
+    assert submit.plan(spec, manifest, "s01_clip1")["state"] == "blocked"
+    assert client.post(f"{base}/s01_mid1_still/approve", json={"note": "x"}).status_code == 409  # stale: redo it
+    assert client.post(f"{base}/cp01_still/approve", json={"note": "new ok"}).status_code == 200
+    assert panel("s01_mid1_still")["state"] == "stale"  # approving the new cp01 does not revive the old mid
+    assert client.post(f"{base}/s01_mid1_still/upload?filename=m2.png&replace=true", content=png(salt=b"m2")).status_code == 200
+    assert client.post(f"{base}/s01_mid1_still/approve", json={"note": "redone from new cp01"}).status_code == 200
+    assert panel("s01_mid1_still")["state"] == "approved"
+
+
+def test_a_still_cannot_be_approved_before_its_source(project):
+    spec, manifest = project
+    stills.upload(manifest, "s01_mid1_still", "m.png", png())
+    with pytest.raises(stills.StillError, match="approve cp01_still first"):
+        stills.approve(manifest, "s01_mid1_still", "ok", source_key="cp01_still")
+
+
+def test_media_urls_are_versioned_by_the_file():
+    from app.studio.service import media_url
+
+    p = TEMPLATE  # any existing file
+    url = media_url(str(p), True)
+    assert "&v=" in url and media_url(str(p), False) is None

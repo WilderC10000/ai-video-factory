@@ -200,6 +200,17 @@ def record_continuity(slug: str, key: str, body: ContinuityIn, db: Session = Dep
     return result
 
 
+def _edit_source(slug: str, manifest_path: Path, key: str) -> str | None:
+    """The still `key` is made from (spec-driven projects): its approval is tied to that exact image."""
+    pdef = PROJECTS_BY_SLUG.get(slug)
+    if pdef is None or not pdef.spec_driven:
+        return None
+    try:
+        return load_spec(manifest_path.parent / "project.json").edit_source(key)
+    except SpecError:
+        return None
+
+
 def _continuity_gate(slug: str, manifest_path: Path, key: str) -> str | None:
     """Still doctrine 3 for every workflow (generated or uploaded): a still cannot be approved while the still
     before it is due a continuity check that has not passed."""
@@ -226,7 +237,7 @@ def approve_still(slug: str, key: str, body: NoteIn, db: Session = Depends(get_s
     if gate:
         raise HTTPException(status_code=409, detail=gate)
     try:
-        result = still_store.approve(manifest_path, key, body.note)
+        result = still_store.approve(manifest_path, key, body.note, source_key=_edit_source(slug, manifest_path, key))
     except still_store.StillError as e:
         raise HTTPException(status_code=e.status, detail=str(e))
     _resync(db, slug)
@@ -341,4 +352,5 @@ def media(path: str = Query(...)):
         raise HTTPException(status_code=403, detail="Not a studio media file")
     if not target.is_file():
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(target, media_type=_MEDIA_TYPES[target.suffix.lower()])
+    # URLs are versioned (service.media_url); still make the browser revalidate an unversioned one.
+    return FileResponse(target, media_type=_MEDIA_TYPES[target.suffix.lower()], headers={"Cache-Control": "no-cache"})

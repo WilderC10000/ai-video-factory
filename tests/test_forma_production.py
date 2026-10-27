@@ -104,7 +104,7 @@ def test_upload_refuses_non_images_and_unconfirmed_replacement(project):
     assert e.value.status == 409
 
 
-def test_replacing_an_approved_still_marks_it_changed_and_its_clips_stale(project):
+def test_replacing_an_approved_still_places_the_new_file_and_marks_its_clips_stale(project):
     spec, manifest = project
     stills.upload(manifest, "cp01_still", "a.png", png())
     stills.approve(manifest, "cp01_still", "matches the camera bible")
@@ -114,7 +114,7 @@ def test_replacing_an_approved_still_marks_it_changed_and_its_clips_stale(projec
     data["s01_clip1__attempt1"] = {"provider_job_id": "j", "start_still": "cp01_still", "start_frame_sha256": first_sha}
     manifest.write_text(json.dumps(data))
     out = stills.upload(manifest, "cp01_still", "b.jpg", jpeg(), replace=True)
-    assert out["state"] == "changed" and out["replaced"]["previous_state"] == "approved"
+    assert out["state"] == "placed" and out["replaced"]["previous_state"] == "approved"
     assert Path(out["replaced"]["archived_to"][0]).is_file()  # the old file is kept, never deleted
     info = stills.info(manifest, "cp01_still", label="x", dependents=spec.dependents("cp01_still"))
     assert info["used_by"] == [{"clip": "s01_clip1", "generated": True, "stale": True}]
@@ -242,6 +242,9 @@ def test_studio_upload_and_approve_endpoints_are_local(client, tmp_path, monkeyp
         raise AssertionError("no provider call allowed")
     monkeypatch.setattr(httpx.HTTPTransport, "handle_request", refuse_network)  # the real network, not TestClient
 
+    root = "/studio/projects/forma_project_3/stills/cp01_still"  # s01_mid1 is made from cp01: approve it first
+    assert client.post(f"{root}/upload?filename=C.png", content=png(salt=b"c")).status_code == 200
+    assert client.post(f"{root}/approve", json={"note": "cp01 ok"}).status_code == 200
     url = "/studio/projects/forma_project_3/stills/s01_mid1_still"
     r = client.post(f"{url}/upload?filename=A.png", content=png())
     assert r.status_code == 200 and r.json()["state"] == "placed"
@@ -256,7 +259,8 @@ def test_studio_upload_and_approve_endpoints_are_local(client, tmp_path, monkeyp
     assert ms["state"] == "approved" and ms["file_type"] == "png" and (ms["width"], ms["height"]) == (768, 1376)
     assert [u["clip"] for u in ms["used_by"]] == ["s01_clip1", "s01_clip2"] and stage["room_id"] == "continuity_office"
     clip = next(s for s in snap["stages"] if s["key"] == "s01_clip1")
-    assert clip["clip_plan"]["state"] == "blocked" and clip["clip_plan"]["route"]["status"] == "candidate_unproven"
+    # both anchor stills approved: the proof clip can be priced (route still unproven)
+    assert clip["clip_plan"]["state"] == "ready" and clip["clip_plan"]["route"]["status"] == "candidate_unproven"
 
 
 def test_the_train_car_is_frozen_but_its_stills_are_still_manual_and_uploadable():

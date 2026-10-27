@@ -11,6 +11,7 @@ const STATE_TEXT: Record<ManualStill["state"], string> = {
   placed: "Placed - review and approve",
   approved: "Approved",
   changed: "Changed since approval - review and approve",
+  stale: "Stale - the still it was made from was replaced; redo it from the new approved source",
   ambiguous: "Several files for one still - keep one",
 };
 const GEN_STATE_TEXT: Partial<Record<ManualStill["state"], string>> = {
@@ -185,15 +186,19 @@ export function ManualStillPanel({
             </figcaption>
           </figure>
           {exists && (
-            <label className="mstill__replace">
+            <label className="mstill__replace mstill__replace--warn">
               <input type="checkbox" checked={confirmReplace} onChange={(e) => setConfirmReplace(e.target.checked)} />
-              Replace the current {still.state} file for {still.key}
-              {still.state === "approved" ? " - it becomes “changed” and every clip that uses it is blocked until you approve the new image" : ""}.
-              The old file is kept in stills/_replaced/.
+              <span>
+                <strong>Replace current still.</strong> The current {still.state} {still.key} moves to stills/_replaced/ (kept,
+                never deleted) and the new image becomes the active {still.key}, placed for your review.
+                {still.state === "approved" || still.state === "stale"
+                  ? " Every later still made from it becomes stale and every clip that uses it is blocked until redone and approved."
+                  : ""}
+              </span>
             </label>
           )}
           <button type="button" className="btn btn--primary" disabled={busy || (exists && !confirmReplace)} onClick={upload}>
-            {busy ? "Uploading…" : "Upload still"}
+            {busy ? "Uploading…" : exists ? "Replace current still" : "Upload still"}
           </button>
           <button type="button" className="btn btn--ghost-inline" disabled={busy} onClick={() => setPicked(null)}>
             Cancel

@@ -67,7 +67,16 @@ def _is_file(path: str | None) -> bool:
 
 
 def media_url(path: str | None, exists: bool | None) -> str | None:
-    return f"/studio/media?path={quote(path)}" if path and exists else None
+    """The studio URL of a file, versioned by its mtime and size: a file replaced at the same path (e.g. a new
+    cp01_still.png) gets a new URL, so the browser never shows a cached copy of the old image."""
+    if not (path and exists):
+        return None
+    try:
+        st = Path(path).stat()
+        version = f"&v={st.st_mtime_ns:x}-{st.st_size:x}"
+    except OSError:
+        version = ""
+    return f"/studio/media?path={quote(path)}{version}"
 
 
 def job_out(job: StudioJob, full_log: bool = False) -> dict:

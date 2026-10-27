@@ -218,6 +218,8 @@ def generate(spec: ProjectSpec, manifest_path: Path, key: str, *, execution_mode
                                              str(out))
         data, normalized_from = _to_frame_size(Path(result.file_path), spec.stills_config.frame_size)
         record = stills.place(manifest_path, key, data, original_filename=out.name, source=f"generated ({cfg.model_id})")
+        if record.get("replaced"):
+            stills.retire_approval(manifest_path, key, f"replaced by generation {gen_key}")
     except (ImageProviderError, stills.StillError, OSError, subprocess.CalledProcessError) as e:
         manifest = _read(manifest_path)
         charged = getattr(e, "charged", True) and execution_mode == "live"

@@ -351,11 +351,16 @@ def import_project(db: Session, pdef: ProjectDef, data_dir: Path | None = None) 
         if stage.key not in manual:
             continue
         st = still_store.state(manifest_path, stage.key, manifest)
-        if st["state"] in ("placed", "changed"):
+        if st["state"] in ("placed", "changed", "stale"):
             stage.latest_output_path, stage.latest_output_exists = st["path"], True
             stage.approval_state, stage.requires_human_review = ApprovalStatus.PENDING, True
             if st["state"] == "placed":
                 stage.status = StageStatus.PENDING
+            elif st["state"] == "stale":
+                rec.event(f"{stage.key}:still_stale:{st['sha256']}", type="warning", severity=Severity.MEDIUM,
+                          stage=stage, requires_human_review=True,
+                          message=f"{stage.label}: the still it was made from was replaced - redo it from the new "
+                                  "approved source before any clip uses it.")
             else:
                 rec.event(f"{stage.key}:still_changed:{st['sha256']}", type="warning", severity=Severity.MEDIUM,
                           stage=stage, requires_human_review=True,

@@ -97,7 +97,7 @@ export interface Stage {
   clip_plan: ClipPlan | null;
 }
 
-export type StillState = "missing" | "placed" | "approved" | "changed" | "ambiguous";
+export type StillState = "missing" | "placed" | "approved" | "changed" | "stale" | "ambiguous";
 
 export interface ManualStill {
   key: string;

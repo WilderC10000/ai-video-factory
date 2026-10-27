@@ -11,6 +11,7 @@ State (the same rules the train-car CLI uses):
     placed    a file exists, never approved
     approved  the file's sha256 is the approved one
     changed   the file is not the approved one (replaced after approval) - re-approve before any clip uses it
+    stale     approved, but made from a source still that has since been replaced - redo it from the approved source
     ambiguous several files for one key
 
 Uploads are recorded in manifest["still_uploads"][key], generations in manifest["still_generations"][key]
@@ -110,7 +111,7 @@ def _same_file(recorded: str | None, path: Path) -> bool:
         return rec.name == path.name
 
 
-def state(manifest_path: Path, key: str, manifest: dict | None = None) -> dict:
+def state(manifest_path: Path, key: str, manifest: dict | None = None, _seen: frozenset = frozenset()) -> dict:
     manifest = manifest if manifest is not None else _read(manifest_path)
     files = _files(manifest_path, key)
     entry = manifest.get(key) if isinstance(manifest.get(key), dict) else {}
@@ -123,10 +124,19 @@ def state(manifest_path: Path, key: str, manifest: dict | None = None) -> dict:
     if approved is None:
         st = "placed"
     elif approved == digest and _same_file(entry.get("output_path"), path):
-        st = "approved"
+        st = "stale" if _source_moved(manifest_path, entry, manifest, _seen) else "approved"
     else:
         st = "changed"
     return {"state": st, "path": str(path), "sha256": digest}
+
+
+def _source_moved(manifest_path: Path, entry: dict, manifest: dict, seen: frozenset) -> bool:
+    """This approval was made from a source still that is no longer that exact approved image."""
+    src, src_sha = entry.get("source_still"), entry.get("source_sha256")
+    if not src or not src_sha or src in seen:
+        return False
+    cur = state(manifest_path, src, manifest, _seen=seen | {src})
+    return cur["state"] != "approved" or cur.get("sha256") != src_sha
 
 
 def origin(manifest: dict, key: str, sha256: str | None) -> str | None:
@@ -187,7 +197,8 @@ def upload(manifest_path: Path, key: str, filename: str, data: bytes, *, replace
     """Save an uploaded still as <key>.<ext> in the project's stills folder. Never approves it.
 
     If a file for the key exists, `replace=True` is required; the old file is moved to stills/_replaced/
-    (never deleted). A replaced approved still becomes `changed` until approved again."""
+    (never deleted) and its approval is retired to <key>__attemptN, so the new file is `placed` - the active still,
+    awaiting review - and every clip or later still made from the old one is stale."""
     if len(data) > MAX_UPLOAD_BYTES:
         raise StillError(f"File is larger than {MAX_UPLOAD_BYTES // (1024 * 1024)} MB.", 413)
     if Path(filename).suffix.lower() not in STILL_EXTENSIONS:
@@ -195,10 +206,27 @@ def upload(manifest_path: Path, key: str, filename: str, data: bytes, *, replace
     sniff(data)
     check_replace(manifest_path, key, replace)
     record = place(manifest_path, key, data, original_filename=Path(filename).name, source="studio upload")
+    if record.get("replaced"):
+        retire_approval(manifest_path, key, "replaced by a studio upload")
     manifest = _read(manifest_path)  # re-read right before writing
     manifest.setdefault("still_uploads", {})[key] = record
     _write(manifest_path, manifest)
     return {"key": key, **record, "state": state(manifest_path, key)["state"]}
+
+
+def retire_approval(manifest_path: Path, key: str, reason: str) -> None:
+    """Move the key's approval record to <key>__attemptN (kept as history) so the file now in the folder is a new,
+    unapproved still. Nothing is deleted."""
+    manifest = _read(manifest_path)
+    entry = manifest.get(key)
+    if not isinstance(entry, dict) or not entry.get("approved_sha256"):
+        return
+    n = 1
+    while f"{key}__attempt{n}" in manifest:
+        n += 1
+    manifest[f"{key}__attempt{n}"] = entry | {"archived_at": _now(), "archive_reason": reason}
+    del manifest[key]
+    _write(manifest_path, manifest)
 
 
 def check_replace(manifest_path: Path, key: str, replace: bool) -> None:
@@ -263,14 +291,23 @@ def archive(manifest_path: Path, key: str, reason: str) -> dict:
     return {"key": key, **rec, "state": "missing"}
 
 
-def approve(manifest_path: Path, key: str, note: str) -> dict:
-    """Record the still currently in the folder as approved (a person looked at it). Free, local."""
+def approve(manifest_path: Path, key: str, note: str, source_key: str | None = None) -> dict:
+    """Record the still currently in the folder as approved (a person looked at it). Free, local.
+
+    `source_key` is the still this one was made from (the previous still in the chain): it must be approved, and
+    its exact hash is recorded, so replacing it later marks this still (and everything after it) stale."""
     if not note.strip():
         raise StillError("Say what you checked (a short note) when approving a still.")
     manifest = _read(manifest_path)
     st = state(manifest_path, key, manifest)
     if st["state"] in ("missing", "ambiguous"):
         raise StillError(f"{key}: nothing to approve ({st['state']}).", 409)
+    source = None
+    if source_key:
+        source = state(manifest_path, source_key, manifest)
+        if source["state"] != "approved":
+            raise StillError(f"{key} is made from {source_key}, which is {source['state']} - approve {source_key} "
+                             "first.", 409)
     now = _now()
     entry = manifest.get(key) if isinstance(manifest.get(key), dict) else None
     if entry is not None and entry.get("approved_sha256") not in (None, st["sha256"]):
@@ -282,7 +319,8 @@ def approve(manifest_path: Path, key: str, note: str) -> dict:
     entry = entry or {"actual_cost_usd": 0.0}  # a generation's cost stays on its <key>__genN attempt
     entry["source"] = origin(manifest, key, st["sha256"]) or "manual"
     entry.update(output_path=st["path"], completed_at=now, approved_sha256=st["sha256"], approved_at=now,
-                 approved_via="manual", approval_note=note.strip())
+                 approved_via="manual", approval_note=note.strip(),
+                 source_still=source_key, source_sha256=source["sha256"] if source else None)
     manifest[key] = entry
     _write(manifest_path, manifest)
     return {"key": key, **entry, "state": "approved"}

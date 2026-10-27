@@ -510,3 +510,32 @@ def test_media_urls_are_versioned_by_the_file():
     p = TEMPLATE  # any existing file
     url = media_url(str(p), True)
     assert "&v=" in url and media_url(str(p), False) is None
+
+
+def test_stages_dropped_by_a_replan_leave_the_studio_and_every_still_uses_the_still_panel(client, tmp_path, monkeypatch, project):
+    from app.config import settings
+    from app.db import SessionLocal
+    from app.studio.importers.manifest_importer import import_all
+
+    spec, manifest = project
+    monkeypatch.setattr(type(settings), "studio_data_path", property(lambda self: tmp_path))
+    with SessionLocal() as db:
+        import_all(db, tmp_path, slugs=["forma_project_3"])
+    keys = {s["key"] for s in client.get("/studio/snapshot?project=forma_project_3").json()["stages"]}
+    assert "s02_mid2_still" in keys and "s02_clip3" in keys
+
+    raw = json.loads(EXAMPLE.read_text())  # replan: s02 goes from 3 clips to 2
+    raw["shots"][1]["complexity"] = "medium"
+    raw["shots"][1]["beats"] = raw["shots"][1]["beats"][:2]
+    (manifest.parent / "project.json").write_text(json.dumps(raw))
+    with SessionLocal() as db:
+        import_all(db, tmp_path, slugs=["forma_project_3"])
+    snap = client.get("/studio/snapshot?project=forma_project_3").json()
+    keys = {s["key"] for s in snap["stages"]}
+    assert "s02_mid2_still" not in keys and "s02_clip3" not in keys
+    plan = load_spec(manifest.parent / "project.json")
+    assert keys == plan.still_keys() | {c.key for c in plan.clips()}
+    for s in snap["stages"]:  # every still renders with the still panel, every clip with the clip panel
+        assert (s["manual_still"] is not None) == (s["key"] in plan.still_keys())
+        assert (s["clip_plan"] is not None) == (s["key"] not in plan.still_keys())
+    assert any("no longer in the plan" in e["message"] for e in snap["events"])

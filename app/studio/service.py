@@ -484,6 +484,8 @@ def build_snapshot(db: Session, slug: str | None = None) -> dict:
                                           media_url=lambda p: media_url(p, True))
         if pdef and pdef.spec_driven:
             clip_plans, spec_problems = _spec_views(manifest_path)
+            # Only stages the current plan defines - never a leftover rendered with the generic stage UI.
+            stages = [s for s in stages if s.key in still_infos or s.key in clip_plans]
     stage_keys = {s.id: s.key for s in stages}
     approvals = db.scalars(select(StudioApproval).where(StudioApproval.project_id == project.id)).all()
     events = db.scalars(select(StudioEvent).where(StudioEvent.project_id == project.id)).all()

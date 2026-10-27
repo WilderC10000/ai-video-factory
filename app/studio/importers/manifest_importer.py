@@ -179,6 +179,19 @@ def import_project(db: Session, pdef: ProjectDef, data_dir: Path | None = None) 
     rec = _Recorder(db, project, result)
 
     # --- stages -------------------------------------------------------------
+    # A stage the plan no longer defines (e.g. after a spec-driven project is replanned) is retired from the studio
+    # mirror: otherwise it lingers with the generic stage UI. Its approval rows go with it; its events stay as
+    # history (detached). Plan files, stills and the manifest are never touched here.
+    planned = {d.key for d in pdef.stages}
+    for stale in [s for s in project.stages if s.key not in planned]:
+        for ev in db.scalars(select(StudioEvent).where(StudioEvent.stage_id == stale.id)).all():
+            ev.stage_id = None
+        for ap in db.scalars(select(StudioApproval).where(StudioApproval.stage_id == stale.id)).all():
+            db.delete(ap)
+        rec.event(f"stage_retired:{stale.key}", type="note", room_id="command_deck",
+                  message=f"'{stale.label}' ({stale.key}) is no longer in the plan - removed from the studio view.")
+        project.stages.remove(stale)
+    db.flush()
     existing = {s.key: s for s in project.stages}
     stages: list[StudioStage] = []
     for order, sdef in enumerate(pdef.stages):

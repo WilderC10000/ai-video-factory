@@ -30,12 +30,12 @@
   },
   "bibles": {
     "location": "a pine and fern forest at the foot of a wooded slope, soft overcast daylight; open bare-earth ground to the left of the pipe, a dirt forest track entering at the left edge",
-    "structure": "exactly one standalone precast concrete drainage pipe section, about 4 m inside diameter and about 13 m long, on its side along the foot of the slope - big enough to become a small luxury home; never joined to other sections or continuing into the forest; front opening and rear rim both visible; the builder reaches only about 40-45% of the opening height; the same pipe, size and position in every shot",
+    "structure": "exactly ONE standalone precast concrete pipe section, about 4 m inside diameter and about 13 m long - only about three times as long as it is wide; a smooth unbroken shell with no joint rings, bands or flanges anywhere; nothing attached and nothing beyond its rear end, which is a clean open rim with forest floor behind it; the builder reaches only about 40-45% of the opening height; the same pipe, size and position in every shot",
     "builder": "dark beard, olive beanie, rust-orange work jacket, grey canvas work pants, brown boots, work gloves - working, never posing",
     "materials": "everything arrives on the flatbed trailer on the forest track and waits in the material yard on the open ground at the left until it is used; removed debris and soil go to piles at the left"
   },
   "cameras": {
-    "wide": "raised about 7-8 m, high three-quarter view from the front-left (track side) with strong depth: the whole pipe from its front opening (nearest, lower right, facing the camera) to its rear end's circular rim (upper middle); track and open ground left, wooded slope right - the same camera position and framing in every wide shot",
+    "wide": "raised about 7-8 m, high three-quarter view from the front-left (track side), far enough back that the whole pipe fits in frame with ground beyond its rear end: the front opening nearest, lower right, facing the camera; the rear rim upper middle; track and open ground left, wooded slope right - the same camera position and framing in every wide shot",
     "interior": "inside the pipe just behind the front opening, chest height, looking along its whole length to the rear end",
     "front": "ground level straight on to the front opening from about 8 m, the full 4 m circle in frame",
     "reveal": "farther back down the forest track at about 35 m, low, the bermed hillside and the glowing glass front in the trees"
@@ -46,9 +46,9 @@
       "stage": 1,
       "title": "Abandoned pipe discovered",
       "camera": "wide",
-      "state": "Exactly one standalone giant precast concrete drainage pipe section - about 4 m inside diameter, about 13 m long, weathered grey with moss streaks and a chipped rim - lies abandoned on its side along the foot of the wooded slope. Its front opening faces the camera and its rear end's circular rim is visible at the far end; no other sections, nothing continuing into the forest. Leaf litter and brush lie around the pipe, a long fallen branch lies on the ground in front of the opening among natural loose sticks, and dark silt covers the pipe floor. The builder, beside the front opening, reaches only about 40-45% of its height. To the left the open bare ground and the forest track are untouched.",
+      "state": "Exactly ONE standalone giant precast concrete pipe section - about 4 m inside diameter and about 13 m long, only about three times as long as it is wide, weathered grey with moss streaks and a chipped rim, with a smooth unbroken shell and no joint rings - lies abandoned on its side along the foot of the wooded slope. Its front opening faces the camera and towers like a room-sized shell; the pipe clearly ends at its rear rim, with forest floor and ferns visible beyond it and nothing attached. The builder stands right beside the front rim, his head at only about 40-45% of the opening height. Leaf litter and brush lie around the pipe, a long fallen branch lies on the ground in front of the opening among natural loose sticks, and dark silt covers the pipe floor. To the left the open bare ground and the forest track are untouched.",
       "built": [],
-      "action": "has just pushed the wheelbarrow in from the track, set it down at the pipe's track-side flank near the front, and looks up at the opening",
+      "action": "has just pushed the wheelbarrow in from the track and set it down at the pipe's track-side flank near the front, and stands beside the front rim looking up into the opening",
       "tools_in_view": [
         "wheelbarrow at the track-side flank holding a rake, a bow saw and a shovel"
       ],
@@ -56,6 +56,7 @@
       "not_yet": [
         "any cleared ground",
         "any sawn branch lengths",
+        "a second pipe section or any joint ring",
         "flatbed trailer or material yard",
         "mini excavator",
         "any construction work or building materials"

@@ -283,16 +283,19 @@ def test_a_non_proof_shot_on_an_unproven_route_is_planned_but_blocked(project):
 
 def test_project_3_plan_is_valid_and_priced():
     spec = load_spec(TEMPLATE)
-    assert spec.status == "planning" and spec.concept["title"].startswith("Giant Concrete Drainage Pipe")
-    assert len(spec.checkpoints) == 20 and rules.errors(spec) == []
-    assert {s.id for s in spec.shots if s.proof} == {"s01", "s15", "s17"}
-    assert spec.budget_cap_usd == 1.0  # temporary cap for the CP01 -> s01_mid1 still proof (2026-10-26)
+    # Restarted 2026-10-27: 4 m pipe, 10 stages, paused with a $0 cap until the new CP01 and plan are approved.
+    assert spec.status == "paused" and spec.concept["title"].startswith("Giant Concrete Drainage Pipe")
+    assert len(spec.checkpoints) == 25 and rules.errors(spec) == []
+    assert "about 4 m inside diameter" in spec.bibles["structure"]
+    assert {s.id for s in spec.shots if s.proof} == {"s01", "s13", "s21"}
+    assert spec.budget_cap_usd == 0.0
     manifest = TEMPLATE.parent / "manifest.json"
     total = sum(submit.plan(spec, manifest, c.key)["estimate_usd"] for c in spec.clips())
-    assert len(spec.clips()) == 31 and round(total, 3) == 10.466  # s02 split into three clips (2026-10-26)
-    cp09 = spec.checkpoint("cp09")
-    assert "earth berm over the pipe" in spec.must_not_exist(cp09) and "concrete saddles" not in spec.must_not_exist(cp09)
+    assert len(spec.clips()) == 42 and round(total, 3) == 19.278
+    cp07 = spec.checkpoint("cp07")
+    assert "earth berm over the pipe" in spec.must_not_exist(cp07) and "concrete saddles" not in spec.must_not_exist(cp07)
     assert all(cp.action for cp in spec.checkpoints)
+    assert not [p for p in rules.check(spec) if p.rule == "explicit end state"]
 
 
 def test_project_3_briefs_are_first_edit_or_new_camera_and_name_only_the_next_steps():
@@ -300,7 +303,7 @@ def test_project_3_briefs_are_first_edit_or_new_camera_and_name_only_the_next_st
     briefs = {s.key: s.brief for s in spec.stills()}
     assert briefs["cp01_still"].startswith("CP01") and "Create a vertical 9:16" in briefs["cp01_still"]
     assert "Edit the attached approved still" in briefs["cp02_still"]
-    assert "from a new camera" in briefs["cp10_still"] and "from a new camera" in briefs["cp15_still"]
+    assert all("from a new camera" in briefs[k] for k in ("cp08_still", "cp13_still", "cp16_still", "cp20_still"))
     assert "kitchenette" not in briefs["cp01_still"]  # only the next few steps are named, not the whole future
     assert "material yard" not in spec.cameras["wide"]
     assert all(b.after for s in spec.shots for b in s.beats[:-1])  # every intermediate still has a concrete state

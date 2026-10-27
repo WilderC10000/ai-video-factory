@@ -116,8 +116,8 @@ def submit(spec: ProjectSpec, manifest_path: Path, clip_key: str, *, execution_m
     """PAID: exactly one fal job for this clip. Returns the recorded attempt entry."""
     if execution_mode != "live":
         raise SubmitError(f"Execution mode is {execution_mode!r} - paid submissions need STUDIO_EXECUTION_MODE=live.")
-    if spec.status == "frozen":
-        raise SubmitError(f"{spec.name} is frozen - no new submissions.")
+    if spec.status in ("frozen", "paused"):
+        raise SubmitError(f"{spec.name} is {spec.status} - no new submissions.")
     info = plan(spec, manifest_path, clip_key)
     problems = list(info["spec_errors"]) + list(info["money_problems"])
     if info["state"] != "budget_approved":

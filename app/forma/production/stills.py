@@ -99,6 +99,17 @@ def _write(manifest_path: Path, manifest: dict) -> None:
     os.replace(tmp, manifest_path)
 
 
+def _same_file(recorded: str | None, path: Path) -> bool:
+    """The recorded approval path names this file - whether it was written relative (CLI) or absolute (studio)."""
+    if not recorded:
+        return False
+    rec = Path(recorded)
+    try:
+        return rec.resolve() == path.resolve() or (rec.name == path.name and rec.parent.name == path.parent.name)
+    except OSError:
+        return rec.name == path.name
+
+
 def state(manifest_path: Path, key: str, manifest: dict | None = None) -> dict:
     manifest = manifest if manifest is not None else _read(manifest_path)
     files = _files(manifest_path, key)
@@ -111,7 +122,7 @@ def state(manifest_path: Path, key: str, manifest: dict | None = None) -> dict:
     approved = entry.get("approved_sha256")
     if approved is None:
         st = "placed"
-    elif approved == digest and Path(entry.get("output_path", "")) == path:
+    elif approved == digest and _same_file(entry.get("output_path"), path):
         st = "approved"
     else:
         st = "changed"

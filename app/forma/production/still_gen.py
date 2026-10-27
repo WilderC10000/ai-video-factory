@@ -105,8 +105,8 @@ def plan(spec: ProjectSpec, manifest_path: Path, key: str, manifest: dict | None
     problems: list[str] = []
     if not cfg_s.can_generate:
         problems.append(f"{spec.slug} uses manual stills only (stills.generation_fallback is false) - upload instead.")
-    if spec.status == "frozen":
-        problems.append(f"{spec.name} is frozen - nothing new is generated.")
+    if spec.status in ("frozen", "paused"):
+        problems.append(f"{spec.name} is {spec.status} - no paid generation (set status back to planning to resume).")
     if known is None:
         problems.append(f"{model} is not a known still model ({', '.join(STILL_MODELS)}).")
     if cfg_s.proof_stills and key not in cfg_s.proof_stills:

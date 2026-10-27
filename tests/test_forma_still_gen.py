@@ -238,14 +238,39 @@ def test_a_proof_allowlist_blocks_every_other_still(project):
     assert not any("Proof in progress" in p for p in still_gen.plan(spec, manifest, "s01_mid1_still")["problems"])
 
 
-def test_project_3_still_proof_runs_through_s02_mid1_under_a_one_dollar_cap():
+def test_project_3_restart_is_paused_with_no_paid_path_and_a_fresh_chain():
     spec = load_spec(TEMPLATE)
-    assert spec.budget_cap_usd == 1.0
-    assert spec.stills_config.proof_stills == ("cp01_still", "s01_mid1_still", "cp02_still", "s02_mid1_still")
-    assert spec.stills_config.model_for("s02_mid1_still", False) == "fal-ai/nano-banana-2/edit"
-    assert spec.stills_config.model_for("cp03_still", False) == "fal-ai/nano-banana/edit"
+    manifest = TEMPLATE.parent / "manifest.json"
+    assert spec.status == "paused" and spec.budget_cap_usd == 0.0
+    assert spec.stills_config.proof_stills == () and spec.stills_config.model_overrides == {}
+    m = json.loads(manifest.read_text())
+    assert m["rnd_spend"]["actual_cost_usd"] == 0.6388 and budget.spend(m, spec)["spent_usd"] == 0.6388
+    assert all(stills.state(manifest, s.key, m)["state"] == "missing" for s in spec.stills())
+    problems = still_gen.plan(spec, manifest, "cp01_still", m)["problems"]
+    assert any("paused" in p for p in problems) and any("would exceed" in p for p in problems)
     s02 = next(s for s in spec.shots if s.id == "s02")
-    assert s02.clip_count == 3 and not s02.hold and spec.stills_config.model_for("s02_mid2_still", False).endswith("2/edit")
+    assert s02.clip_count == 3 and not s02.hold
+
+
+def test_a_paused_project_refuses_paid_submits(project):
+    raw = json.loads(EXAMPLE.read_text())
+    raw["status"] = "paused"
+    path = project[1].parent / "project.json"
+    path.write_text(json.dumps(raw))
+    from app.forma.production import submit
+
+    with pytest.raises(submit.SubmitError, match="paused"):
+        submit.submit(load_spec(path), project[1], "s01_clip1", execution_mode="live")
+
+
+def test_an_approval_recorded_with_a_relative_path_stays_approved_from_an_absolute_one(project, monkeypatch):
+    spec, manifest = project
+    monkeypatch.chdir(manifest.parent.parent)
+    rel = Path(manifest.parent.name) / "manifest.json"
+    stills.upload(rel, "cp01_still", "a.png", png())
+    stills.approve(rel, "cp01_still", "ok")  # stored as a relative path (like the CLI)
+    assert stills.state(manifest.resolve(), "cp01_still")["state"] == "approved"
+    assert stills.state(rel, "cp01_still")["state"] == "approved"
 
 
 # --- still doctrine: explicit end states, continuity checkpoints --------------------------------
@@ -290,7 +315,7 @@ def test_every_fifth_chained_edit_blocks_the_chain_until_a_continuity_check_pass
 def test_drift_metrics_find_the_frame_offset_between_cp01_and_s01_mid1():
     from app.forma.production import continuity
 
-    d = TEMPLATE.parent / "stills"
+    d = TEMPLATE.parent / "rnd" / "2026-10-26_pipe_3m" / "stills"  # the archived 3 m chain
     m = continuity.measure(d / "cp01_still.png", d / "s01_mid1_still.png")
     assert abs(m["offset_px"][0]) <= 12 and m["offset_pct"] < continuity.FLAG_SHIFT_PCT
     assert m["band_psnr_aligned_db"] > m["band_psnr_db"] - 0.01 and m["flags"] == []

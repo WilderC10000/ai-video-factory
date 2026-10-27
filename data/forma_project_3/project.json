@@ -1,16 +1,17 @@
 {
   "slug": "forma_project_3",
   "name": "FORMA Project #3 - Drainage Pipe to Hidden Forest Home",
-  "status": "planning",
+  "status": "paused",
   "concept": {
     "title": "Giant Concrete Drainage Pipe -> Hidden Luxury Forest Home",
-    "summary": "One builder turns an abandoned 3 m precast concrete drainage pipe into a hidden forest home: clear and muck out, pour concrete saddles, waterproof, build the interior, glaze the front, then bury the pipe under an earth berm planted with moss so only the glowing round glass front shows.",
-    "planned": "2026-09-28"
+    "summary": "One builder turns an abandoned 4 m precast concrete drainage pipe into a hidden forest home: clear the site and muck out the pipe, lay a utility line, waterproof it, build a level floor, frame and insulate the interior, glaze the front, finish the interior, add an entrance deck, then berm it into the hillside so only the glass front, deck and a band of concrete rim show.",
+    "planned": "2026-09-28",
+    "restarted": "2026-10-27: 4 m pipe, 10 stages; the 3 m chain is R&D in rnd/2026-10-26_pipe_3m/"
   },
   "budget": {
-    "cap_usd": 1.0,
+    "cap_usd": 0.0,
     "per_clip_max_usd": 1.3,
-    "note": "TEMPORARY cap for the still proof (CP01 text-to-image + s01_mid1 edit, about $0.08). Set back to 0 or to a production cap after the proof."
+    "note": "Reset to $0 at the 2026-10-27 restart: nothing paid until the new CP01 and plan are approved and a production budget is set deliberately. $0.6388 of 3 m still R&D is carried in the manifest."
   },
   "stills": {
     "source": "manual",
@@ -19,84 +20,78 @@
     "edit_model": "fal-ai/nano-banana/edit",
     "per_still_max_usd": 0.2,
     "first_still_references": [],
-    "note": "Default workflow (from 2026-10-26): make each still in ChatGPT from its brief (Copy ChatGPT Brief; attach the previous approved still for every still after CP01), upload it on the still panel, review, approve - the Studio then opens the next still. fal generation is an optional paid fallback per still: fal-ai/nano-banana/edit ($0.0398) for simple edits, fal-ai/nano-banana-2/edit ($0.08) for large-area removals (model_overrides), Pro ($0.15) only if that fails. Every generated still is scaled to frame_size; a clip with mismatched frames is blocked.",
-    "proof_stills": [
-      "cp01_still",
-      "s01_mid1_still",
-      "cp02_still",
-      "s02_mid1_still"
-    ],
-    "model_overrides": {
-      "cp02_still": "fal-ai/nano-banana-2/edit",
-      "s02_mid1_still": "fal-ai/nano-banana-2/edit",
-      "s02_mid2_still": "fal-ai/nano-banana-2/edit"
-    },
+    "proof_stills": [],
+    "model_overrides": {},
     "frame_size": [
       768,
       1344
-    ]
+    ],
+    "note": "Default workflow: make each still in ChatGPT from its brief (Copy ChatGPT Brief; attach the previous approved still for every still after CP01), upload it on the still panel, review, approve - the Studio opens the next still. fal generation is an optional paid fallback per still (cheap Nano Banana Edit for simple edits, Nano Banana 2 Edit via model_overrides for large-area removals, Pro only if that fails); it is blocked while the project is paused or the cap is $0."
   },
   "bibles": {
-    "location": "a pine and fern forest clearing at the foot of a wooded slope, soft overcast daylight; open bare-earth clearing left of the pipe, a dirt forest track entering at the left edge",
-    "structure": "exactly one standalone precast concrete drainage pipe section, about 3 m inside diameter and 12 m long, on its side along the foot of the slope, never joined to other sections or continuing into the forest - front opening and rear end both visible; the same single pipe, size and position in every shot",
+    "location": "a pine and fern forest at the foot of a wooded slope, soft overcast daylight; open bare-earth ground to the left of the pipe, a dirt forest track entering at the left edge",
+    "structure": "exactly one standalone precast concrete drainage pipe section, about 4 m inside diameter and about 13 m long, on its side along the foot of the slope - big enough to become a small luxury home; never joined to other sections or continuing into the forest; front opening and rear rim both visible; the builder reaches only about 40-45% of the opening height; the same pipe, size and position in every shot",
     "builder": "dark beard, olive beanie, rust-orange work jacket, grey canvas work pants, brown boots, work gloves - working, never posing",
-    "materials": "everything arrives on the flatbed trailer on the forest track and waits in the material yard at the left until it is used; removed debris and soil go to piles at the left"
+    "materials": "everything arrives on the flatbed trailer on the forest track and waits in the material yard on the open ground at the left until it is used; removed debris and soil go to piles at the left"
   },
   "cameras": {
-    "wide": "the approved CP01 frame: raised about 6 m, front-left three-quarter view near the pipe's long axis, looking down the full pipe length from the front opening (lower right) to the rear end (upper middle); track and open ground left, wooded slope right - the same exact camera position and framing in every wide shot",
-    "interior": "inside the pipe at the front end, chest height, looking along its length to the rear end",
-    "front": "ground level straight on to the front opening from about 6 m, the full circle in frame",
-    "reveal": "farther back down the forest track at about 30 m, low, the mound and glass front in the trees"
+    "wide": "raised about 7-8 m, high three-quarter view from the front-left (track side) with strong depth: the whole pipe from its front opening (nearest, lower right, facing the camera) to its rear end's circular rim (upper middle); track and open ground left, wooded slope right - the same camera position and framing in every wide shot",
+    "interior": "inside the pipe just behind the front opening, chest height, looking along its whole length to the rear end",
+    "front": "ground level straight on to the front opening from about 8 m, the full 4 m circle in frame",
+    "reveal": "farther back down the forest track at about 35 m, low, the bermed hillside and the glowing glass front in the trees"
   },
   "checkpoints": [
     {
       "id": "cp01",
+      "stage": 1,
       "title": "Abandoned pipe discovered",
       "camera": "wide",
-      "state": "Exactly one standalone giant precast concrete drainage pipe section - about 3 m inside diameter, about 12 m long, weathered grey with moss streaks and a chipped rim - lies abandoned on its side along the foot of the wooded slope, its front opening facing the camera and its rear end visible at the far end; no other pipe sections, nothing continuing into the forest. Leaf litter and brush lie around the pipe, a fallen branch lies on the ground in front of the opening among natural loose sticks, and dark silt fills the bottom of the pipe. To the left the open ground and the forest track are untouched.",
+      "state": "Exactly one standalone giant precast concrete drainage pipe section - about 4 m inside diameter, about 13 m long, weathered grey with moss streaks and a chipped rim - lies abandoned on its side along the foot of the wooded slope. Its front opening faces the camera and its rear end's circular rim is visible at the far end; no other sections, nothing continuing into the forest. Leaf litter and brush lie around the pipe, a long fallen branch lies on the ground in front of the opening among natural loose sticks, and dark silt covers the pipe floor. The builder, beside the front opening, reaches only about 40-45% of its height. To the left the open bare ground and the forest track are untouched.",
       "built": [],
-      "action": "pushes a wheelbarrow in from the forest track at the left edge, loaded with a rake, a bow saw, a shovel and two buckets, looking at the pipe",
+      "action": "has just pushed the wheelbarrow in from the track, set it down at the pipe's track-side flank near the front, and looks up at the opening",
       "tools_in_view": [
-        "wheelbarrow with rake, bow saw, shovel and buckets"
+        "wheelbarrow at the track-side flank holding a rake, a bow saw and a shovel"
       ],
       "materials": {},
       "not_yet": [
         "any cleared ground",
-        "any sawn branch lengths or stacks",
-        "flatbed trailer",
+        "any sawn branch lengths",
+        "flatbed trailer or material yard",
         "mini excavator",
         "any construction work or building materials"
       ]
     },
     {
       "id": "cp02",
-      "title": "Site and pipe mouth cleared",
+      "stage": 2,
+      "title": "Front and flank cleared",
       "camera": "wide",
-      "state": "The brown leaf litter and the crossed sticks in the lower foreground directly in front of the pipe opening are completely gone. The entire strip of ground between the pipe and the forest track is visibly cleared to bare brown soil. The three sawn branch lengths stay stacked at the left beside the track. One low brush pile at the left beside the track holds only the removed litter and sticks. The wheelbarrow still stands at the pipe's track-side flank where it stood before, with the bow saw visible in it beside the buckets. The pipe interior and the dark silt in its bottom are untouched.",
+      "state": "The fallen branch, the leaf litter and the brush are gone from in front of the opening and from the strip between the pipe and the track: that ground is raked to bare brown soil. The branch now lies as three sawn lengths stacked on the bare ground at the left beside the track, the bow saw on top of them; everything raked up sits in one low brush pile next to the stack. The wheelbarrow, with the shovel in it, still stands in its CP01 place at the track-side flank; the rake leans against the pipe. Dark silt still covers the pipe floor.",
       "built": [
         "cleared ground around the pipe"
       ],
-      "action": "rakes the last few leaves off the bare strip toward the brush pile",
+      "action": "rakes the last leaves off the bare strip toward the brush pile",
       "tools_in_view": [
         "rake",
-        "bow saw (in the wheelbarrow)",
-        "wheelbarrow at the track-side flank"
+        "bow saw on the stacked lengths",
+        "wheelbarrow with the shovel"
       ],
       "materials": {
-        "cleared ground around the pipe": "debris raked and wheeled to the brush pile at the left edge"
+        "cleared ground around the pipe": "litter and brush raked to the brush pile at the left beside the track; the branch sawn and stacked there"
       },
       "not_yet": [
         "silt removed from the pipe",
-        "flatbed trailer",
-        "excavator",
-        "any construction materials or later-stage work"
+        "flatbed trailer or material yard",
+        "mini excavator",
+        "any construction work or building materials"
       ]
     },
     {
       "id": "cp03",
+      "stage": 3,
       "title": "First load tipped - mucking out under way",
       "camera": "wide",
-      "state": "A small new dark spoil pile of silt sits on the bare ground at the left, next to the brush pile and separate from the three stacked sawn lengths; the emptied wheelbarrow stands tipped up beside it, the two buckets and the bow saw set down on the ground next to it. Inside the pipe the silt patch is exactly as in the previous still: clean grey concrete nearest the rim, the rest of the dark patch untouched. The shovel leans against the pipe rim; the rake lies on the bare strip.",
+      "state": "A small new dark spoil pile of silt sits on the bare ground at the left, next to the brush pile and separate from the three stacked sawn lengths; the emptied wheelbarrow stands tipped up beside it. Inside the pipe the silt patch keeps its shape but is shorter at the front: clean grey concrete nearest the rim, the rest of the dark silt untouched. The shovel leans against the pipe rim; the rake leans against the pipe.",
       "built": [
         "cleared ground around the pipe"
       ],
@@ -104,466 +99,620 @@
       "tools_in_view": [
         "wheelbarrow",
         "shovel",
-        "rake",
-        "buckets",
-        "bow saw"
+        "rake"
       ],
       "materials": {},
       "not_yet": [
         "silt removed from the rest of the pipe floor",
-        "flatbed trailer or any building materials"
+        "flatbed trailer or material yard",
+        "mini excavator",
+        "any construction work or building materials"
       ]
     },
     {
       "id": "cp04",
+      "stage": 4,
       "title": "Pipe mucked out, materials delivered",
       "camera": "wide",
-      "state": "Time has passed: the pipe interior is mucked out to bare grey concrete all the way to the rear, and the dark spoil pile at the left beside the brush pile is now large. A flatbed trailer stands on the forest track at the left edge, and a material yard is laid out beside it - a lumber stack, a rebar bundle, cement bags on a pallet, a gravel heap, a drum concrete mixer, rolls of black waterproof membrane on a pallet, and a small tracked mini excavator parked beside the pipe.",
+      "state": "Time has passed: the pipe interior is mucked out to bare grey concrete all the way to the rear, and the dark spoil pile at the left beside the brush pile is now large. A flatbed trailer stands on the forest track at the left edge, and a material yard is laid out on the open ground beside it: a lumber stack, plywood sheets, insulation bundles, rolls of black waterproof membrane on a pallet, a coil of orange utility conduit, a gravel heap, and a small tracked mini excavator parked beside the track.",
       "built": [
         "cleared ground around the pipe",
-        "mucked-out pipe interior",
-        "material yard with mini excavator"
+        "mucked-out pipe interior"
       ],
-      "action": "stacks the last cement bags from the trailer onto the pallet",
+      "action": "carries the last plywood sheet from the trailer onto the stack",
       "tools_in_view": [
         "mini excavator",
-        "concrete mixer",
-        "hand truck"
+        "wheelbarrow",
+        "shovel"
       ],
       "materials": {
-        "mucked-out pipe interior": "silt shoveled into the wheelbarrow and tipped on the spoil pile at the left",
-        "material yard with mini excavator": "the flatbed trailer on the forest track at the left edge"
+        "mucked-out pipe interior": "silt shoveled into the wheelbarrow and tipped on the spoil pile at the left"
       },
-      "not_yet": []
+      "not_yet": [
+        "any trench",
+        "any membrane on the pipe"
+      ]
     },
     {
       "id": "cp05",
-      "title": "Saddle trenches dug",
+      "stage": 5,
+      "title": "Utility trench dug",
       "camera": "wide",
-      "state": "Two shallow footing trenches run along both flanks of the pipe, about 40 cm deep, dug with the mini excavator; the excavated soil has been added to the spoil pile at the left, which is clearly larger.",
+      "state": "A straight, narrow utility trench now runs across the bare ground from the material yard to the pipe's track-side flank near the front; its soil lies in a low spoil ridge beside the trench. The mini excavator, bucket lowered, stands at the pipe end of the trench. Everything else is as before.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks"
+        "utility trench line"
       ],
-      "action": "sits in the mini excavator cab, bucket lifting the last scoop of soil out of the far trench",
+      "action": "guides the excavator bucket as it lifts the last soil from the trench end at the pipe",
       "tools_in_view": [
-        "mini excavator"
+        "mini excavator",
+        "shovel"
       ],
       "materials": {
-        "footing trenches along both flanks": "soil lifted by the excavator bucket onto the spoil pile at the left"
+        "utility trench line": "dug by the mini excavator; its soil in a ridge beside the trench"
       },
-      "not_yet": []
+      "not_yet": [
+        "conduit in the trench"
+      ]
     },
     {
       "id": "cp06",
-      "title": "Saddle forms and rebar set",
+      "stage": 5,
+      "title": "Conduit laid and backfilled",
       "camera": "wide",
-      "state": "Timber form boxes stand in both trenches against the pipe's flanks at three points per side, staked and braced, each with a tied rebar cage inside; the lumber stack and rebar bundle in the yard are visibly smaller.",
+      "state": "The trench is no longer open: orange utility conduit was laid in it and the soil of the ridge beside it is back in the trench, leaving a flat, slightly darker strip of earth from the yard to the pipe; the ridge is gone. The conduit's capped end pokes out of the ground and enters the pipe through a small hole low on the track-side flank. The conduit coil in the yard is smaller.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages"
+        "utility trench line",
+        "buried utility conduit into the pipe"
       ],
-      "action": "kneels in the near trench tying the last rebar cage with wire",
+      "action": "tamps the backfilled strip flat with the back of the shovel",
       "tools_in_view": [
-        "hammer",
-        "rebar tie tool",
-        "saw",
-        "level"
+        "shovel",
+        "mini excavator"
       ],
       "materials": {
-        "saddle formwork with rebar cages": "boards from the lumber stack and bars from the rebar bundle in the yard"
+        "buried utility conduit into the pipe": "the orange conduit coil in the material yard"
       },
       "not_yet": []
     },
     {
       "id": "cp07",
-      "title": "Concrete saddles poured",
+      "stage": 5,
+      "title": "Waterproof membrane on",
       "camera": "wide",
-      "state": "All six form boxes are filled with fresh wet concrete, screeded flat against the pipe; the mixer drum is wet, the cement pallet is half empty and the gravel heap smaller.",
+      "state": "Overlapping strips of black waterproof membrane now cover the top and both sides of the pipe from the front rim to the rear rim, down to the ground; the two end rims stay bare concrete. The membrane pallet in the yard is nearly empty.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles"
+        "utility trench line",
+        "buried utility conduit into the pipe",
+        "waterproof membrane over the pipe"
       ],
-      "action": "screeds the top of the last filled form with a board while the mixer turns",
+      "action": "presses the last membrane strip flat along the rear rim",
       "tools_in_view": [
-        "concrete mixer",
-        "wheelbarrow",
-        "shovel",
-        "screed board"
+        "membrane roller",
+        "utility knife"
       ],
       "materials": {
-        "concrete saddles": "cement bags and gravel mixed in the drum mixer and wheeled to the forms"
+        "waterproof membrane over the pipe": "the membrane rolls on the pallet in the material yard"
       },
       "not_yet": []
     },
     {
       "id": "cp08",
-      "title": "Saddles cured, forms stripped",
-      "camera": "wide",
-      "state": "Time has passed: the concrete saddles are hard and pale grey, the timber forms are stripped and stacked back in the yard, and the trenches are backfilled level around the saddles.",
+      "stage": 5,
+      "title": "Inside the pipe (camera change)",
+      "camera": "interior",
+      "state": "The same build seen from inside: the bare, mucked-out curved concrete floor runs to the open rear end, the conduit stub enters low on the left wall near the front, and a stack of timber sleepers and a stack of plywood sheets, carried in from the yard, lie just inside the front opening.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles"
+        "utility trench line",
+        "buried utility conduit into the pipe",
+        "waterproof membrane over the pipe"
       ],
-      "action": "carries the last stripped form boards back to the yard stack",
+      "action": "sets the last sleeper down on the stack just inside the opening",
       "tools_in_view": [
-        "pry bar",
-        "hammer"
+        "tape measure",
+        "spirit level"
       ],
       "materials": {},
       "not_yet": []
     },
     {
       "id": "cp09",
-      "title": "Waterproof membrane on",
-      "camera": "wide",
-      "state": "Overlapping strips of black peel-and-stick waterproof membrane cover the top and both sides of the pipe down to the saddles; the two end rims stay bare concrete; the membrane pallet in the yard is nearly empty.",
+      "stage": 5,
+      "title": "Level floor base",
+      "camera": "interior",
+      "state": "Timber sleepers now lie across the curved floor at regular spacing from the front to the rear, packed level so their tops form one flat plane about a third of the way up the curve; the sleeper stack inside the opening is gone - every sleeper is laid.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles",
-        "waterproof membrane over the pipe"
+        "utility trench line",
+        "buried utility conduit into the pipe",
+        "waterproof membrane over the pipe",
+        "level timber floor base"
       ],
-      "action": "presses the last membrane strip down over the top with a roller",
+      "action": "checks the last sleeper at the rear with the spirit level",
       "tools_in_view": [
-        "membrane roller",
-        "utility knife",
-        "ladder"
+        "spirit level",
+        "mallet"
       ],
       "materials": {
-        "waterproof membrane over the pipe": "membrane rolls from the pallet in the material yard"
+        "level timber floor base": "the sleeper stack just inside the opening"
       },
       "not_yet": []
     },
     {
       "id": "cp10",
-      "title": "Inside the pipe (camera change)",
+      "stage": 5,
+      "title": "Plywood floor deck",
       "camera": "interior",
-      "state": "The same moment from inside: the bare mucked-out concrete tube runs away from the camera to a round opening of daylight and forest at the rear end; daylight also floods in from the front behind the camera.",
+      "state": "A flat plywood floor deck now covers the sleepers from the front to the rear; the conduit stub ends in a floor box set into the deck near the front left. The plywood stack inside the opening is gone.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles",
-        "waterproof membrane over the pipe"
+        "utility trench line",
+        "buried utility conduit into the pipe",
+        "waterproof membrane over the pipe",
+        "level timber floor base",
+        "plywood floor deck"
       ],
-      "action": "stands inside near the rear opening measuring the diameter with a tape",
+      "action": "drives the last screws into the rear deck sheet",
       "tools_in_view": [
-        "tape measure",
-        "work light"
+        "screw gun"
       ],
-      "materials": {},
+      "materials": {
+        "plywood floor deck": "the plywood stack just inside the opening"
+      },
       "not_yet": []
     },
     {
       "id": "cp11",
-      "title": "Timber floor platform",
+      "stage": 6,
+      "title": "Wall ribs and rear wall framed",
       "camera": "interior",
-      "state": "A level timber floor platform now runs the full length of the pipe on short joists resting across the lower curve, decked with plywood sheets; a few offcuts lie near the front.",
+      "state": "Curved timber ribs now stand on the deck along both walls and over the ceiling at even spacing from the front to the rear, and a timber stud frame closes the rear end with a round window opening in its centre; a lumber offcut pile lies by the front opening.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles",
+        "utility trench line",
+        "buried utility conduit into the pipe",
         "waterproof membrane over the pipe",
-        "timber floor platform"
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame"
       ],
-      "action": "screws down the last plywood sheet near the rear opening",
+      "action": "fixes the last stud of the rear wall frame around the round window opening",
       "tools_in_view": [
         "drill",
-        "circular saw",
-        "level"
+        "saw"
       ],
       "materials": {
-        "timber floor platform": "joists and plywood from the lumber stack in the yard, carried in through the front"
+        "timber wall ribs and rear wall frame": "lumber carried in from the stack in the material yard"
       },
       "not_yet": []
     },
     {
       "id": "cp12",
-      "title": "Rear end wall framed and closed",
+      "stage": 6,
+      "title": "Walls insulated, rear wall closed",
       "camera": "interior",
-      "state": "The rear opening is closed by a timber stud wall sheathed in plywood, with one small round window in its centre showing the forest behind.",
+      "state": "Insulation batts now fill every bay between the ribs on both walls and the ceiling, and the rear frame is sheathed in plywood around the round window, which is covered with temporary clear plastic. The insulation bundles carried in are used up.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles",
+        "utility trench line",
+        "buried utility conduit into the pipe",
         "waterproof membrane over the pipe",
-        "timber floor platform",
-        "rear end wall with round window"
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall"
       ],
-      "action": "fits the round window frame into the sheathed rear wall",
+      "action": "staples the plastic sheet over the round rear window",
       "tools_in_view": [
-        "drill",
-        "jigsaw",
-        "caulk gun"
+        "staple gun",
+        "utility knife"
       ],
       "materials": {
-        "rear end wall with round window": "studs and plywood carried in from the yard; the window from its box"
+        "insulated walls and closed rear wall": "insulation bundles and plywood carried in from the material yard"
       },
       "not_yet": []
     },
     {
       "id": "cp13",
-      "title": "Insulated cedar lining",
-      "camera": "interior",
-      "state": "The curved concrete inner walls and ceiling are fully lined: insulation behind thin cedar slats bent along the curve, running from the floor platform over the top to the other side, all the way to the rear wall.",
+      "stage": 7,
+      "title": "Front opening (camera change), glazing delivered",
+      "camera": "front",
+      "state": "The same build seen from the ground in front: the full 4 m circle of the front opening, the membrane over the pipe beyond it, and the framed and insulated interior visible inside; a crate of curved glass panels and a black steel frame kit stand on the bare ground in front of the opening.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles",
+        "utility trench line",
+        "buried utility conduit into the pipe",
         "waterproof membrane over the pipe",
-        "timber floor platform",
-        "rear end wall with round window",
-        "insulated cedar lining"
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall"
       ],
-      "action": "nails the last cedar slat into place overhead from a step ladder",
+      "action": "unbolts the lid of the glazing crate",
       "tools_in_view": [
-        "nail gun",
-        "step ladder",
-        "slat bundle"
+        "socket wrench",
+        "ladder"
       ],
-      "materials": {
-        "insulated cedar lining": "insulation bales and cedar slat bundles stacked on the floor platform"
-      },
+      "materials": {},
       "not_yet": []
     },
     {
       "id": "cp14",
-      "title": "Interior fitted out",
-      "camera": "interior",
-      "state": "Time has passed: a compact kitchenette counter with a sink along the left side, a bed platform with linen at the rear under the round window, warm pendant lights along the ceiling and a wood stove near the front; empty boxes are stacked by the front opening.",
+      "stage": 7,
+      "title": "Steel front frame and door frame set",
+      "camera": "front",
+      "state": "A black steel ring frame now lines the full rim of the front opening, divided by slim mullions, with an upright door frame set in its lower right; the frame kit beside the crate is used up.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles",
+        "utility trench line",
+        "buried utility conduit into the pipe",
         "waterproof membrane over the pipe",
-        "timber floor platform",
-        "rear end wall with round window",
-        "insulated cedar lining",
-        "kitchenette, bed platform, stove and lighting"
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall",
+        "steel front frame and entrance door frame"
       ],
-      "action": "sets a kettle on the stove",
+      "action": "tightens the last bolt of the door frame",
       "tools_in_view": [
-        "toolbox"
+        "socket wrench",
+        "ladder"
       ],
       "materials": {
-        "kitchenette, bed platform, stove and lighting": "flat-pack boxes from a second delivery, emptied and stacked by the front opening"
+        "steel front frame and entrance door frame": "the steel frame kit beside the glazing crate"
       },
       "not_yet": []
     },
     {
       "id": "cp15",
-      "title": "Front opening (camera change)",
+      "stage": 7,
+      "title": "Glass front and door installed",
       "camera": "front",
-      "state": "The same moment from outside: the open circular front end of the membrane-wrapped pipe, seen straight on from ground level at about 6 m; the fitted interior glows inside. A padded crate of curved glass panels and a black steel frame ring lie on the cleared ground in front.",
+      "state": "Every bay of the steel frame is now glazed with curved glass and a tall glass door hangs in the door frame; the glazing crate is empty.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles",
+        "utility trench line",
+        "buried utility conduit into the pipe",
         "waterproof membrane over the pipe",
-        "timber floor platform",
-        "rear end wall with round window",
-        "insulated cedar lining",
-        "kitchenette, bed platform, stove and lighting",
-        "glass crate and steel frame on site"
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall",
+        "steel front frame and entrance door frame",
+        "glass front wall with glass door"
       ],
-      "action": "unbolts the lid of the glass crate",
+      "action": "wipes the last glass panel clean",
       "tools_in_view": [
-        "socket wrench",
-        "suction lifter"
+        "suction lifters",
+        "squeegee"
       ],
       "materials": {
-        "glass crate and steel frame on site": "delivered on the trailer and set down in front of the opening"
+        "glass front wall with glass door": "the curved glass panels from the glazing crate"
       },
       "not_yet": []
     },
     {
       "id": "cp16",
-      "title": "Glass front wall installed",
-      "camera": "front",
-      "state": "The whole circular front opening is filled by a black steel frame holding curved glass panels, with a tall glass door on the right side of the circle; the crate is empty.",
+      "stage": 8,
+      "title": "Inside again (camera change), finishes delivered",
+      "camera": "interior",
+      "state": "The same build from inside, now with daylight through the glass front behind the camera: insulated walls, the deck floor, and stacked by the glass door bundles of cedar boards, bundles of oak floorboards and flat-pack cartons.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles",
+        "utility trench line",
+        "buried utility conduit into the pipe",
         "waterproof membrane over the pipe",
-        "timber floor platform",
-        "rear end wall with round window",
-        "insulated cedar lining",
-        "kitchenette, bed platform, stove and lighting",
-        "glass crate and steel frame on site",
-        "glass front wall with door"
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall",
+        "steel front frame and entrance door frame",
+        "glass front wall with glass door"
       ],
-      "action": "seals the last glass panel edge with a caulk gun",
+      "action": "sets the last carton down on the stack by the door",
       "tools_in_view": [
-        "suction lifter",
-        "caulk gun",
-        "level"
+        "drill",
+        "saw"
       ],
-      "materials": {
-        "glass front wall with door": "panels lifted from the padded crate with the suction lifter"
-      },
+      "materials": {},
       "not_yet": []
     },
     {
       "id": "cp17",
-      "title": "Wide view, topsoil delivered (camera change)",
-      "camera": "wide",
-      "state": "The same site from the wide view: the pipe wrapped in black membrane with its new glass front; a large heap of topsoil delivered next to the spoil pile, pallets of moss mats and potted ferns, and a stack of flat stones in the yard.",
+      "stage": 8,
+      "title": "Cedar lining",
+      "camera": "interior",
+      "state": "Warm cedar boards now line both walls and the ceiling from the front to the rear, around the round rear window; the cedar bundles by the door are used up.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles",
+        "utility trench line",
+        "buried utility conduit into the pipe",
         "waterproof membrane over the pipe",
-        "timber floor platform",
-        "rear end wall with round window",
-        "insulated cedar lining",
-        "kitchenette, bed platform, stove and lighting",
-        "glass crate and steel frame on site",
-        "glass front wall with door",
-        "topsoil, moss, fern and stone delivery"
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall",
+        "steel front frame and entrance door frame",
+        "glass front wall with glass door",
+        "cedar wall and ceiling lining"
       ],
-      "action": "climbs into the mini excavator cab",
+      "action": "nails the last cedar board above the round rear window",
       "tools_in_view": [
-        "mini excavator"
+        "nail gun",
+        "saw"
       ],
       "materials": {
-        "topsoil, moss, fern and stone delivery": "the flatbed trailer on the forest track at the left edge"
+        "cedar wall and ceiling lining": "the cedar board bundles stacked by the glass door"
       },
       "not_yet": []
     },
     {
       "id": "cp18",
-      "title": "Earth berm covers the pipe",
-      "camera": "wide",
-      "state": "The spoil pile and topsoil heap are gone: their soil now covers the whole membrane-wrapped pipe in a smooth earth berm blending into the slope behind, so only the glass front and a thin concrete rim remain visible.",
+      "stage": 8,
+      "title": "Oak floor",
+      "camera": "interior",
+      "state": "Oak floorboards now cover the deck from the glass door to the rear wall; the oak bundles by the door are used up.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles",
+        "utility trench line",
+        "buried utility conduit into the pipe",
         "waterproof membrane over the pipe",
-        "timber floor platform",
-        "rear end wall with round window",
-        "insulated cedar lining",
-        "kitchenette, bed platform, stove and lighting",
-        "glass crate and steel frame on site",
-        "glass front wall with door",
-        "topsoil, moss, fern and stone delivery",
-        "earth berm over the pipe"
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall",
+        "steel front frame and entrance door frame",
+        "glass front wall with glass door",
+        "cedar wall and ceiling lining",
+        "oak floor"
       ],
-      "action": "smooths the last bucket of soil over the berm top with the excavator",
+      "action": "taps the last oak board into place at the rear",
       "tools_in_view": [
-        "mini excavator",
-        "rake"
+        "mallet",
+        "pull bar"
       ],
       "materials": {
-        "earth berm over the pipe": "soil moved by the excavator bucket from the spoil pile and topsoil heap"
+        "oak floor": "the oak floorboard bundles stacked by the glass door"
       },
       "not_yet": []
     },
     {
       "id": "cp19",
-      "title": "Moss, ferns and stone path",
-      "camera": "wide",
-      "state": "The berm is covered in green moss mats with clumps of ferns, a flagstone path leads from the forest track to the glass door, and two low path lights stand beside it; the pallets are empty.",
+      "stage": 8,
+      "title": "Interior fitted out",
+      "camera": "interior",
+      "state": "A slim kitchenette now runs along the left wall near the front, a raised bed platform fills the rear under the round window, and warm pendant lights hang along the ceiling; the flat-pack cartons are gone - every unit is built.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles",
+        "utility trench line",
+        "buried utility conduit into the pipe",
         "waterproof membrane over the pipe",
-        "timber floor platform",
-        "rear end wall with round window",
-        "insulated cedar lining",
-        "kitchenette, bed platform, stove and lighting",
-        "glass crate and steel frame on site",
-        "glass front wall with door",
-        "topsoil, moss, fern and stone delivery",
-        "earth berm over the pipe",
-        "moss and fern planting",
-        "flagstone path with lights"
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall",
+        "steel front frame and entrance door frame",
+        "glass front wall with glass door",
+        "cedar wall and ceiling lining",
+        "oak floor",
+        "kitchenette, bed platform and lights"
       ],
-      "action": "sets the last flagstone by the glass door",
+      "action": "switches on the pendant lights",
       "tools_in_view": [
-        "trowel",
-        "rubber mallet",
-        "wheelbarrow"
+        "drill"
       ],
       "materials": {
-        "moss and fern planting": "moss mats and potted ferns from the pallets in the yard",
-        "flagstone path with lights": "flat stones from the yard stack; lights from their boxes"
+        "kitchenette, bed platform and lights": "the flat-pack cartons stacked by the glass door"
       },
       "not_yet": []
     },
     {
       "id": "cp20",
-      "title": "Dusk reveal",
-      "camera": "reveal",
-      "state": "Dusk: the hidden home is a mossy mound in the forest with a glowing round glass front, warm light spilling onto the flagstone path; the yard is cleared away.",
+      "stage": 9,
+      "title": "Wide again (camera change), topsoil and deck timber delivered",
+      "camera": "wide",
+      "state": "The same build from the wide camera: the glass front at the near end, the membrane-covered pipe, the yard at the left - now with a large topsoil heap, a deck timber stack, rolls of moss turf, potted ferns and a pallet of flagstones beside the trailer; the mini excavator stands by the topsoil heap.",
       "built": [
         "cleared ground around the pipe",
         "mucked-out pipe interior",
-        "material yard with mini excavator",
-        "footing trenches along both flanks",
-        "saddle formwork with rebar cages",
-        "concrete saddles",
+        "utility trench line",
+        "buried utility conduit into the pipe",
         "waterproof membrane over the pipe",
-        "timber floor platform",
-        "rear end wall with round window",
-        "insulated cedar lining",
-        "kitchenette, bed platform, stove and lighting",
-        "glass crate and steel frame on site",
-        "glass front wall with door",
-        "topsoil, moss, fern and stone delivery",
-        "earth berm over the pipe",
-        "moss and fern planting",
-        "flagstone path with lights"
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall",
+        "steel front frame and entrance door frame",
+        "glass front wall with glass door",
+        "cedar wall and ceiling lining",
+        "oak floor",
+        "kitchenette, bed platform and lights"
       ],
-      "action": "stands at the glass door looking back at the forest",
+      "action": "unloads the last flagstone pallet from the trailer",
+      "tools_in_view": [
+        "mini excavator",
+        "wheelbarrow"
+      ],
+      "materials": {},
+      "not_yet": []
+    },
+    {
+      "id": "cp21",
+      "stage": 9,
+      "title": "Entrance deck built",
+      "camera": "wide",
+      "state": "A low timber entrance deck now stands in front of the glass front, its boards running from the glass door toward the track; the deck timber stack in the yard is used up.",
+      "built": [
+        "cleared ground around the pipe",
+        "mucked-out pipe interior",
+        "utility trench line",
+        "buried utility conduit into the pipe",
+        "waterproof membrane over the pipe",
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall",
+        "steel front frame and entrance door frame",
+        "glass front wall with glass door",
+        "cedar wall and ceiling lining",
+        "oak floor",
+        "kitchenette, bed platform and lights",
+        "entrance deck"
+      ],
+      "action": "screws down the last deck board",
+      "tools_in_view": [
+        "screw gun",
+        "saw"
+      ],
+      "materials": {
+        "entrance deck": "the deck timber stack in the material yard"
+      },
+      "not_yet": []
+    },
+    {
+      "id": "cp22",
+      "stage": 9,
+      "title": "Earth berm covers the pipe",
+      "camera": "wide",
+      "state": "Earth now covers the pipe: the topsoil heap and the spoil piles are gone, pushed by the excavator into a berm over the top and both sides that blends into the wooded slope behind; only the glass front, the deck and a narrow band of the concrete front rim stay visible.",
+      "built": [
+        "cleared ground around the pipe",
+        "mucked-out pipe interior",
+        "utility trench line",
+        "buried utility conduit into the pipe",
+        "waterproof membrane over the pipe",
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall",
+        "steel front frame and entrance door frame",
+        "glass front wall with glass door",
+        "cedar wall and ceiling lining",
+        "oak floor",
+        "kitchenette, bed platform and lights",
+        "entrance deck",
+        "earth berm over the pipe"
+      ],
+      "action": "smooths the last of the berm crest with the excavator blade",
+      "tools_in_view": [
+        "mini excavator"
+      ],
+      "materials": {
+        "earth berm over the pipe": "the topsoil heap and the spoil piles, pushed by the mini excavator"
+      },
+      "not_yet": []
+    },
+    {
+      "id": "cp23",
+      "stage": 9,
+      "title": "Moss, ferns and stone path",
+      "camera": "wide",
+      "state": "Moss turf now covers the berm, ferns are planted along its edges, and a flagstone path leads from the track to the deck; the moss rolls, fern pots and flagstone pallet in the yard are used up.",
+      "built": [
+        "cleared ground around the pipe",
+        "mucked-out pipe interior",
+        "utility trench line",
+        "buried utility conduit into the pipe",
+        "waterproof membrane over the pipe",
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall",
+        "steel front frame and entrance door frame",
+        "glass front wall with glass door",
+        "cedar wall and ceiling lining",
+        "oak floor",
+        "kitchenette, bed platform and lights",
+        "entrance deck",
+        "earth berm over the pipe",
+        "moss, ferns and stone path"
+      ],
+      "action": "sets the last flagstone at the foot of the deck",
+      "tools_in_view": [
+        "rubber mallet",
+        "wheelbarrow"
+      ],
+      "materials": {
+        "moss, ferns and stone path": "the moss turf rolls, potted ferns and flagstones in the material yard"
+      },
+      "not_yet": []
+    },
+    {
+      "id": "cp24",
+      "stage": 10,
+      "title": "Time has passed - yard gone",
+      "camera": "wide",
+      "state": "Time has passed: the trailer, the excavator and every leftover in the yard are gone; the open ground at the left is grassed over and the moss on the berm has grown in, so the home reads as part of the hillside, only its glass front, deck and a band of concrete rim showing.",
+      "built": [
+        "cleared ground around the pipe",
+        "mucked-out pipe interior",
+        "utility trench line",
+        "buried utility conduit into the pipe",
+        "waterproof membrane over the pipe",
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall",
+        "steel front frame and entrance door frame",
+        "glass front wall with glass door",
+        "cedar wall and ceiling lining",
+        "oak floor",
+        "kitchenette, bed platform and lights",
+        "entrance deck",
+        "earth berm over the pipe",
+        "moss, ferns and stone path"
+      ],
+      "action": "sweeps the deck with a broom",
+      "tools_in_view": [
+        "broom"
+      ],
+      "materials": {},
+      "not_yet": []
+    },
+    {
+      "id": "cp25",
+      "stage": 10,
+      "title": "Dusk reveal",
+      "camera": "reveal",
+      "state": "Dusk: the hidden home is a mossy fold of the forest hillside with a glowing round glass front and a warm-lit deck; the flagstone path catches the light.",
+      "built": [
+        "cleared ground around the pipe",
+        "mucked-out pipe interior",
+        "utility trench line",
+        "buried utility conduit into the pipe",
+        "waterproof membrane over the pipe",
+        "level timber floor base",
+        "plywood floor deck",
+        "timber wall ribs and rear wall frame",
+        "insulated walls and closed rear wall",
+        "steel front frame and entrance door frame",
+        "glass front wall with glass door",
+        "cedar wall and ceiling lining",
+        "oak floor",
+        "kitchenette, bed platform and lights",
+        "entrance deck",
+        "earth berm over the pipe",
+        "moss, ferns and stone path"
+      ],
+      "action": "stands on the deck with a mug, looking at the forest (small in frame)",
       "tools_in_view": [],
       "materials": {},
       "not_yet": []
@@ -579,15 +728,15 @@
       "shot_class": "repetitive_labor",
       "beats": [
         {
-          "task": "cuts the fallen branch in front of the opening with the bow saw and carries the lengths to a stack",
-          "location": "front opening",
-          "duration_seconds": 3,
-          "after": "the long fallen branch that lay in front of the pipe opening is completely gone from the opening; that same branch has been visibly sawn into exactly three short lengths, all three stacked together on the bare ground at the left beside the forest track; there is no brush pile yet; the leaf litter is otherwise largely untouched; the wheelbarrow stays at the pipe's track-side flank; no later clearing and no materials"
+          "task": "takes the bow saw from the wheelbarrow and cuts the fallen branch in front of the opening into three lengths, carrying them to a stack at the left beside the track",
+          "location": "in front of the opening to the left beside the track",
+          "duration_seconds": 5,
+          "after": "The fallen branch is gone from in front of the opening: it lies as exactly three sawn lengths stacked on the bare ground at the left beside the track, the bow saw on top. The leaf litter and brush are otherwise untouched; the wheelbarrow with the rake and shovel still stands at the track-side flank; no brush pile yet"
         },
         {
-          "task": "rakes leaf litter along the pipe's track-side flank into the wheelbarrow, to be wheeled to the left edge of the clearing",
-          "location": "track-side flank",
-          "duration_seconds": 3
+          "task": "takes the rake and rakes the leaf litter and brush from in front of the opening and along the track-side strip into a pile at the left beside the stacked lengths",
+          "location": "front of the opening and the track-side strip",
+          "duration_seconds": 5
         }
       ],
       "proof": true
@@ -601,16 +750,16 @@
       "shot_class": "repetitive_labor",
       "beats": [
         {
-          "task": "shovels silt from just inside the front rim into the wheelbarrow where it already stands at the track-side flank",
+          "task": "lifts the shovel from the wheelbarrow and shovels silt from just inside the front rim into the wheelbarrow where it stands",
           "location": "just inside the front opening, track-side edge",
           "duration_seconds": 5,
-          "after": "There is exactly one wheelbarrow, still in its exact CP02 position at the track-side flank, with the two buckets and the bow saw still in it and now a low layer of dark silt in its tray. The dark silt patch on the pipe floor keeps exactly its CP02 shape, size and position; only the silt right at the front rim is removed, so the patch is slightly smaller at its very front edge. The builder stands at the front rim on the track side with the shovel, a shovelful of silt on the blade, turning toward the barrow. No spoil pile yet; no new objects; the rake, the brush pile and the three stacked sawn lengths are unchanged"
+          "after": "Exactly one wheelbarrow, still in its place at the track-side flank, now holds a low layer of dark silt. The silt patch on the pipe floor keeps its CP02 shape and position; only the silt right at the front rim is removed, so the patch is slightly smaller at its very front edge. The builder stands at the front rim with a shovelful. No spoil pile yet; no new objects"
         },
         {
-          "task": "keeps shoveling silt from the floor just inside the opening into the barrow until it is heaped",
+          "task": "keeps shoveling silt from the floor just inside the opening into the wheelbarrow until it is heaped",
           "location": "inside the front end",
           "duration_seconds": 4,
-          "after": "The dark silt patch on the pipe floor keeps its CP02 shape and position but is now visibly shorter at the front: the silt is removed from the floor nearest the rim, which shows clean grey concrete there, and the rest of the patch is untouched. The wheelbarrow, still in the same track-side flank position, is heaped with dark silt around the two buckets and the bow saw; the shovel leans against the pipe rim and the builder grips the barrow handles. No spoil pile yet; the rake, the brush pile and the three stacked sawn lengths are unchanged"
+          "after": "The silt patch keeps its shape and position but is visibly shorter at the front: the silt is removed from the floor nearest the rim, which is clean grey concrete there, and the rest of the patch is untouched. The wheelbarrow, still in the same place, is heaped with dark silt; the shovel leans against the rim and the builder grips the barrow handles. No spoil pile yet"
         },
         {
           "task": "wheels the heaped barrow from the flank to the left and tips the silt out beside the brush pile, starting the spoil pile",
@@ -632,20 +781,20 @@
       "id": "s04",
       "from": "cp04",
       "to": "cp05",
-      "title": "Digging the saddle trenches",
+      "title": "Digging the utility trench",
       "complexity": "medium",
-      "shot_class": "precision",
+      "shot_class": "repetitive_labor",
       "beats": [
         {
-          "task": "operates the mini excavator: bucket digs the near trench and swings the soil to the spoil pile",
-          "location": "near flank",
-          "duration_seconds": 4,
-          "after": "the trench along the near flank is dug its full length; the far flank is untouched; the spoil pile is larger; the excavator has turned toward the far side"
+          "task": "guides the mini excavator as its bucket digs the first half of a narrow trench from the yard toward the pipe, dumping the soil beside it",
+          "location": "material yard toward the pipe",
+          "duration_seconds": 5,
+          "after": "A narrow trench is dug from the material yard halfway to the pipe; its soil lies in a low spoil ridge beside the trench; the other half of the route to the pipe is untouched ground; the excavator stands at the trench end"
         },
         {
-          "task": "bucket lifts the last scoop from the far trench onto the spoil pile",
-          "location": "far flank",
-          "duration_seconds": 4
+          "task": "guides the excavator as it digs the rest of the trench to the pipe's track-side flank, dumping the soil beside it",
+          "location": "halfway point to the pipe flank",
+          "duration_seconds": 5
         }
       ]
     },
@@ -653,26 +802,20 @@
       "id": "s05",
       "from": "cp05",
       "to": "cp06",
-      "title": "Forms and rebar",
-      "complexity": "complex",
+      "title": "Conduit and backfill",
+      "complexity": "medium",
       "shot_class": "repetitive_labor",
       "beats": [
         {
-          "task": "carries boards from the lumber stack and nails the first form box against the pipe",
-          "location": "near trench, front",
-          "duration_seconds": 3,
-          "after": "two form boxes stand braced in the near trench at the front; no rebar yet; the lumber stack slightly smaller"
+          "task": "unrolls orange conduit from the coil into the trench and feeds its end through a hole low in the pipe's track-side flank",
+          "location": "along the trench to the pipe flank",
+          "duration_seconds": 5,
+          "after": "Orange conduit now lies along the whole trench bottom and its capped end enters the pipe through a small hole low on the track-side flank; the soil ridge beside the trench is untouched; the coil in the yard is smaller"
         },
         {
-          "task": "stakes and braces a form box further along",
-          "location": "near trench, middle",
-          "duration_seconds": 3,
-          "after": "all six form boxes stand braced in both trenches; the first two hold tied rebar cages, the rest are empty"
-        },
-        {
-          "task": "lowers a rebar cage into the last form and ties it",
-          "location": "near trench, rear",
-          "duration_seconds": 3
+          "task": "shovels the soil from the ridge back into the trench over the conduit",
+          "location": "along the trench",
+          "duration_seconds": 5
         }
       ]
     },
@@ -680,20 +823,26 @@
       "id": "s06",
       "from": "cp06",
       "to": "cp07",
-      "title": "Pouring the saddles",
-      "complexity": "medium",
+      "title": "Waterproofing",
+      "complexity": "complex",
       "shot_class": "repetitive_labor",
       "beats": [
         {
-          "task": "tips cement and gravel into the turning mixer and fills the wheelbarrow from the drum",
-          "location": "mixer in the yard",
-          "duration_seconds": 3,
-          "after": "the two front form boxes are filled with wet concrete, the other four still empty; the mixer drum wet and the cement pallet lower"
+          "task": "unrolls the first membrane strip over the top of the pipe from the front rim and presses it down both sides",
+          "location": "front third of the pipe",
+          "duration_seconds": 4,
+          "after": "Black membrane covers the front third of the pipe over the top and both sides down to the ground; the rest of the pipe is bare concrete; the membrane pallet is a little lower"
         },
         {
-          "task": "wheels concrete to a form, tips it in and screeds it flat",
-          "location": "near trench",
-          "duration_seconds": 3
+          "task": "lays and overlaps the next strips over the middle of the pipe",
+          "location": "middle third of the pipe",
+          "duration_seconds": 4,
+          "after": "Membrane covers the front two thirds of the pipe; the rear third is bare concrete; the membrane pallet is visibly lower"
+        },
+        {
+          "task": "lays the last strips over the rear third and presses them along the rear rim",
+          "location": "rear third of the pipe",
+          "duration_seconds": 4
         }
       ]
     },
@@ -701,7 +850,7 @@
       "id": "s07",
       "from": "cp07",
       "to": "cp08",
-      "title": "Cured and stripped (time jump)",
+      "title": "Cut inside (camera change)",
       "complexity": "static",
       "shot_class": "time_jump",
       "beats": []
@@ -710,26 +859,26 @@
       "id": "s08",
       "from": "cp08",
       "to": "cp09",
-      "title": "Waterproofing",
+      "title": "Setting the floor base",
       "complexity": "complex",
       "shot_class": "repetitive_labor",
       "beats": [
         {
-          "task": "peels the backing and unrolls the first membrane strip over the top from the front rim",
-          "location": "front third of the pipe",
-          "duration_seconds": 3,
-          "after": "black membrane covers the front third of the pipe over the top and both sides; the rest is bare concrete"
+          "task": "carries sleepers from the stack and sets them level across the front third of the floor",
+          "location": "front third of the floor",
+          "duration_seconds": 4,
+          "after": "Sleepers lie level across the front third of the curved floor; the middle and rear are bare concrete; the sleeper stack inside the opening is smaller"
         },
         {
-          "task": "lays an overlapping strip down the near side and rolls it flat",
-          "location": "middle third",
-          "duration_seconds": 3,
-          "after": "membrane covers the front two thirds; the rear third is bare concrete; the membrane pallet is visibly lower"
+          "task": "sets the next sleepers level across the middle of the floor",
+          "location": "middle third of the floor",
+          "duration_seconds": 4,
+          "after": "Sleepers lie level across the front two thirds of the floor; the rear third is bare concrete; the sleeper stack is almost gone"
         },
         {
-          "task": "rolls the last strip over the top at the rear",
-          "location": "rear third",
-          "duration_seconds": 3
+          "task": "sets the last sleepers across the rear third and checks them with the level",
+          "location": "rear third of the floor",
+          "duration_seconds": 4
         }
       ]
     },
@@ -737,35 +886,47 @@
       "id": "s09",
       "from": "cp09",
       "to": "cp10",
-      "title": "Cut inside (camera change)",
-      "complexity": "static",
-      "shot_class": "time_jump",
-      "beats": []
+      "title": "Plywood floor deck",
+      "complexity": "medium",
+      "shot_class": "repetitive_labor",
+      "beats": [
+        {
+          "task": "lays plywood sheets over the front half of the sleepers and screws them down, fitting a floor box over the conduit stub",
+          "location": "front half of the floor",
+          "duration_seconds": 5,
+          "after": "Plywood deck covers the front half of the floor with a floor box over the conduit stub; the rear half still shows bare sleepers; the plywood stack inside the opening is half its size"
+        },
+        {
+          "task": "lays and screws down the plywood sheets over the rear half",
+          "location": "rear half of the floor",
+          "duration_seconds": 5
+        }
+      ]
     },
     {
       "id": "s10",
       "from": "cp10",
       "to": "cp11",
-      "title": "Floor platform",
+      "title": "Wall ribs and rear frame",
       "complexity": "complex",
       "shot_class": "repetitive_labor",
       "beats": [
         {
-          "task": "carries joists in and sets them across the curve near the front",
-          "location": "front third",
-          "duration_seconds": 3,
-          "after": "joists and plywood decking cover the front third of the pipe floor; the rest is bare curved concrete"
+          "task": "stands curved timber ribs along both walls and over the ceiling in the front half",
+          "location": "front half",
+          "duration_seconds": 5,
+          "after": "Curved timber ribs stand along both walls and over the ceiling in the front half; the rear half is bare concrete above the deck; a few offcuts lie by the opening"
         },
         {
-          "task": "lays and screws plywood sheets over the joists",
-          "location": "middle third",
-          "duration_seconds": 3,
-          "after": "the deck covers the front two thirds; joists without decking in the rear third"
+          "task": "stands the rest of the ribs along the rear half",
+          "location": "rear half",
+          "duration_seconds": 5,
+          "after": "Ribs stand at even spacing along the whole length; the rear end is still open to the forest"
         },
         {
-          "task": "screws down the last sheet at the rear",
-          "location": "rear third",
-          "duration_seconds": 3
+          "task": "frames the rear end with studs around a round window opening",
+          "location": "rear end",
+          "duration_seconds": 5
         }
       ]
     },
@@ -773,20 +934,20 @@
       "id": "s11",
       "from": "cp11",
       "to": "cp12",
-      "title": "Rear wall",
+      "title": "Insulation and rear wall",
       "complexity": "medium",
       "shot_class": "repetitive_labor",
       "beats": [
         {
-          "task": "stands studs in the rear opening and screws them to a top and bottom plate",
-          "location": "rear opening",
-          "duration_seconds": 3,
-          "after": "the rear opening is filled with bare timber studs on top and bottom plates, forest visible between them; no plywood yet"
+          "task": "presses insulation batts into the bays between the ribs along both walls and the ceiling",
+          "location": "whole length",
+          "duration_seconds": 5,
+          "after": "Insulation batts fill every bay between the ribs; the rear stud frame is still open around the round window opening; the insulation bundles are used up"
         },
         {
-          "task": "screws plywood over the studs and cuts the round window hole",
-          "location": "rear wall",
-          "duration_seconds": 3
+          "task": "screws plywood over the rear stud frame around the round window opening and covers the window with plastic",
+          "location": "rear end",
+          "duration_seconds": 5
         }
       ]
     },
@@ -794,124 +955,135 @@
       "id": "s12",
       "from": "cp12",
       "to": "cp13",
-      "title": "Insulation and cedar lining",
-      "complexity": "complex",
-      "shot_class": "repetitive_labor",
-      "beats": [
-        {
-          "task": "presses insulation against the curved wall and nails cedar slats over it",
-          "location": "front third",
-          "duration_seconds": 3,
-          "after": "the front third of the curved walls and ceiling is lined with cedar slats; bare concrete beyond"
-        },
-        {
-          "task": "bends and nails slats over the ceiling curve from the step ladder",
-          "location": "middle third",
-          "duration_seconds": 3,
-          "after": "cedar lining covers the front two thirds; insulation partly fitted in the rear third"
-        },
-        {
-          "task": "nails the last slats at the rear wall",
-          "location": "rear third",
-          "duration_seconds": 3
-        }
-      ]
+      "title": "Cut outside to the front (camera change), glazing delivered",
+      "complexity": "static",
+      "shot_class": "time_jump",
+      "beats": []
     },
     {
       "id": "s13",
       "from": "cp13",
       "to": "cp14",
-      "title": "Fit-out (time jump)",
-      "complexity": "static",
-      "shot_class": "time_jump",
-      "beats": []
+      "title": "Setting the steel front frame",
+      "complexity": "medium",
+      "shot_class": "precision",
+      "beats": [
+        {
+          "task": "lifts the black steel ring frame segments from the kit and bolts them around the rim of the opening",
+          "location": "rim of the front opening",
+          "duration_seconds": 5,
+          "after": "The black steel ring frame lines the whole rim of the opening with its slim mullions; the door frame still lies on the ground beside the crate"
+        },
+        {
+          "task": "stands the door frame in the lower right of the ring and bolts it in",
+          "location": "lower right of the opening",
+          "duration_seconds": 5
+        }
+      ],
+      "proof": true
     },
     {
       "id": "s14",
       "from": "cp14",
       "to": "cp15",
-      "title": "Cut outside (camera change)",
-      "complexity": "static",
-      "shot_class": "time_jump",
-      "beats": []
+      "title": "Glazing the front",
+      "complexity": "medium",
+      "shot_class": "precision",
+      "beats": [
+        {
+          "task": "lifts curved glass panels from the crate with suction lifters and sets them into the upper bays of the frame",
+          "location": "upper half of the frame",
+          "duration_seconds": 5,
+          "after": "Curved glass fills the upper bays of the steel frame; the lower bays and the door frame are still open; the crate is half empty"
+        },
+        {
+          "task": "sets the lower panels and hangs the tall glass door",
+          "location": "lower half and the door frame",
+          "duration_seconds": 5
+        }
+      ]
     },
     {
       "id": "s15",
       "from": "cp15",
       "to": "cp16",
-      "title": "Glass front wall",
-      "complexity": "medium",
-      "shot_class": "precision",
-      "beats": [
-        {
-          "task": "bolts the black steel frame ring into the front rim of the pipe",
-          "location": "front rim",
-          "duration_seconds": 4,
-          "after": "the black steel frame ring with its mullions is bolted into the front rim, all openings still empty; the glass panels still in the padded crate"
-        },
-        {
-          "task": "lifts a curved glass panel from the crate with the suction lifter and sets it into the frame",
-          "location": "front opening",
-          "duration_seconds": 4
-        }
-      ],
-      "proof": true
-    },
-    {
-      "id": "s16",
-      "from": "cp16",
-      "to": "cp17",
-      "title": "Wide view, topsoil delivered (time jump)",
+      "title": "Cut inside (camera change), finishes delivered",
       "complexity": "static",
       "shot_class": "time_jump",
       "beats": []
     },
     {
-      "id": "s17",
-      "from": "cp17",
-      "to": "cp18",
-      "title": "Earth berm",
+      "id": "s16",
+      "from": "cp16",
+      "to": "cp17",
+      "title": "Cedar lining",
       "complexity": "complex",
       "shot_class": "repetitive_labor",
       "beats": [
         {
-          "task": "excavator bucket carries soil from the spoil pile and spreads it over the rear half of the pipe",
-          "location": "rear half",
-          "duration_seconds": 3,
-          "after": "soil covers the rear half of the pipe and blends into the slope; the front half still shows black membrane; the spoil pile is gone and the topsoil heap untouched"
+          "task": "nails cedar boards along both walls in the front half",
+          "location": "front half walls",
+          "duration_seconds": 5,
+          "after": "Cedar boards line both walls in the front half; the rear half and the ceiling show insulation; the cedar bundles are smaller"
         },
         {
-          "task": "bucket carries topsoil onto the front half above the glass",
-          "location": "front half",
-          "duration_seconds": 3,
-          "after": "soil covers the whole pipe down to the glass front, rough and uneven on top; the topsoil heap is nearly gone"
+          "task": "nails cedar boards along both walls in the rear half",
+          "location": "rear half walls",
+          "duration_seconds": 5,
+          "after": "Cedar lines both walls from front to rear; the ceiling still shows insulation"
         },
         {
-          "task": "bucket smooths the berm top into the slope",
-          "location": "berm top",
-          "duration_seconds": 3
+          "task": "nails the last cedar boards across the ceiling and around the round rear window",
+          "location": "ceiling and rear wall",
+          "duration_seconds": 5
         }
-      ],
-      "proof": true
+      ]
+    },
+    {
+      "id": "s17",
+      "from": "cp17",
+      "to": "cp18",
+      "title": "Oak floor",
+      "complexity": "medium",
+      "shot_class": "repetitive_labor",
+      "beats": [
+        {
+          "task": "lays oak floorboards over the front half of the deck",
+          "location": "front half of the floor",
+          "duration_seconds": 5,
+          "after": "Oak boards cover the front half of the floor; the rear half is plywood deck; the oak bundles are half used"
+        },
+        {
+          "task": "lays the oak floorboards over the rear half",
+          "location": "rear half of the floor",
+          "duration_seconds": 5
+        }
+      ]
     },
     {
       "id": "s18",
       "from": "cp18",
       "to": "cp19",
-      "title": "Moss, ferns and path",
-      "complexity": "medium",
+      "title": "Fit-out",
+      "complexity": "complex",
       "shot_class": "repetitive_labor",
       "beats": [
         {
-          "task": "carries moss mats from the pallet and lays them over the berm, planting ferns between",
-          "location": "berm",
-          "duration_seconds": 3,
-          "after": "moss mats and ferns cover the whole berm; the path is still bare soil with the flagstone stack beside it"
+          "task": "assembles the kitchenette units from the cartons along the left wall near the front",
+          "location": "left wall near the front",
+          "duration_seconds": 5,
+          "after": "A slim kitchenette stands along the left wall near the front; the rear is empty oak floor; some cartons remain by the door"
         },
         {
-          "task": "sets flagstones along the path and taps them level with the mallet",
-          "location": "path to the door",
-          "duration_seconds": 3
+          "task": "builds the raised bed platform at the rear under the round window",
+          "location": "rear end",
+          "duration_seconds": 5,
+          "after": "The raised bed platform fills the rear under the round window; the last cartons by the door hold the lights"
+        },
+        {
+          "task": "hangs the pendant lights along the ceiling and switches them on",
+          "location": "ceiling, whole length",
+          "duration_seconds": 5
         }
       ]
     },
@@ -919,17 +1091,192 @@
       "id": "s19",
       "from": "cp19",
       "to": "cp20",
+      "title": "Cut to the wide view (camera change), deck and landscaping materials delivered",
+      "complexity": "static",
+      "shot_class": "time_jump",
+      "beats": []
+    },
+    {
+      "id": "s20",
+      "from": "cp20",
+      "to": "cp21",
+      "title": "Entrance deck",
+      "complexity": "medium",
+      "shot_class": "repetitive_labor",
+      "beats": [
+        {
+          "task": "sets deck posts and joists in front of the glass front",
+          "location": "in front of the glass front",
+          "duration_seconds": 5,
+          "after": "Deck posts and joists stand in front of the glass front; no boards yet; the deck timber stack is half used"
+        },
+        {
+          "task": "screws the deck boards down from the glass door toward the track",
+          "location": "deck frame",
+          "duration_seconds": 5
+        }
+      ]
+    },
+    {
+      "id": "s21",
+      "from": "cp21",
+      "to": "cp22",
+      "title": "Earth berm",
+      "complexity": "complex",
+      "shot_class": "repetitive_labor",
+      "beats": [
+        {
+          "task": "guides the excavator as it pushes topsoil against the pipe's track-side flank",
+          "location": "track-side flank",
+          "duration_seconds": 5,
+          "after": "Topsoil is banked up the track-side flank over the membrane to about half the pipe's height; the topsoil heap is smaller; the top and the slope side are still bare membrane"
+        },
+        {
+          "task": "guides the excavator as it pushes soil up over the top of the pipe",
+          "location": "top of the pipe",
+          "duration_seconds": 5,
+          "after": "Soil covers the top and the track-side flank; the slope side still shows membrane; the topsoil heap is nearly gone and the spoil piles are smaller"
+        },
+        {
+          "task": "guides the excavator as it blends the last soil from the spoil piles into the slope behind the pipe",
+          "location": "slope side and rear",
+          "duration_seconds": 5
+        }
+      ],
+      "proof": true
+    },
+    {
+      "id": "s22",
+      "from": "cp22",
+      "to": "cp23",
+      "title": "Moss, ferns and path",
+      "complexity": "medium",
+      "shot_class": "repetitive_labor",
+      "beats": [
+        {
+          "task": "unrolls moss turf over the berm from the front back",
+          "location": "the berm",
+          "duration_seconds": 5,
+          "after": "Moss turf covers the berm; the ferns are still in their pots in the yard and there is no path yet"
+        },
+        {
+          "task": "plants the ferns along the berm edges and lays the flagstone path from the track to the deck",
+          "location": "berm edges and the path line",
+          "duration_seconds": 5
+        }
+      ]
+    },
+    {
+      "id": "s23",
+      "from": "cp23",
+      "to": "cp24",
+      "title": "Time passes - yard cleared (time jump)",
+      "complexity": "static",
+      "shot_class": "time_jump",
+      "beats": []
+    },
+    {
+      "id": "s24",
+      "from": "cp24",
+      "to": "cp25",
       "title": "Dusk reveal",
       "complexity": "simple",
       "shot_class": "environmental",
       "beats": [
         {
           "task": "slow pull back down the forest track as dusk falls and the interior lights glow; nothing is built",
-          "location": "whole site",
+          "location": "the whole site",
           "duration_seconds": 5
         }
       ],
       "camera_moves": true
+    }
+  ],
+  "stages": [
+    {
+      "n": 1,
+      "title": "discovery",
+      "checkpoints": [
+        "cp01"
+      ]
+    },
+    {
+      "n": 2,
+      "title": "site clearing",
+      "checkpoints": [
+        "cp02"
+      ]
+    },
+    {
+      "n": 3,
+      "title": "interior muck-out",
+      "checkpoints": [
+        "cp03"
+      ]
+    },
+    {
+      "n": 4,
+      "title": "materials arrive",
+      "checkpoints": [
+        "cp04"
+      ]
+    },
+    {
+      "n": 5,
+      "title": "floor + utility base",
+      "checkpoints": [
+        "cp05",
+        "cp06",
+        "cp07",
+        "cp08",
+        "cp09",
+        "cp10"
+      ]
+    },
+    {
+      "n": 6,
+      "title": "interior framing + insulation",
+      "checkpoints": [
+        "cp11",
+        "cp12"
+      ]
+    },
+    {
+      "n": 7,
+      "title": "glass facade + entrance",
+      "checkpoints": [
+        "cp13",
+        "cp14",
+        "cp15"
+      ]
+    },
+    {
+      "n": 8,
+      "title": "interior finishes",
+      "checkpoints": [
+        "cp16",
+        "cp17",
+        "cp18",
+        "cp19"
+      ]
+    },
+    {
+      "n": 9,
+      "title": "exterior deck + landscaping / earth berm",
+      "checkpoints": [
+        "cp20",
+        "cp21",
+        "cp22",
+        "cp23"
+      ]
+    },
+    {
+      "n": 10,
+      "title": "final reveal",
+      "checkpoints": [
+        "cp24",
+        "cp25"
+      ]
     }
   ]
 }

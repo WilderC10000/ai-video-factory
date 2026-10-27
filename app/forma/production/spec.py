@@ -128,7 +128,7 @@ class StillsConfig:
 class ProjectSpec:
     slug: str
     name: str
-    status: str  # template | planning | production | frozen
+    status: str  # template | planning | production | paused (no paid calls) | frozen
     budget_cap_usd: float
     per_clip_max_usd: float
     concept: dict | None = None

@@ -15,6 +15,8 @@ data/forma_project_3/
   stills/           <key>.jpg|png|webp - exactly one file per still (generated or uploaded in the studio)
   stills/_generated/ the raw output of every still generation (<key>__genN.png)
   stills/_replaced/ every file a generation or upload replaced (never deleted)
+  rnd/<date>_<name>/ a superseded still chain kept as history (stills, manifest + plan snapshots, README);
+                    never a source image. Project #3: rnd/2026-10-26_pipe_3m/ (the 3 m pipe)
   clips/            <clip>__attemptN_fal_<model>_raw.mp4 - one file per provider job
   edit/             hard-cut assembly (later)
 docs/forma/production/example_project.json   format reference (not a concept)
@@ -51,6 +53,12 @@ nothing can be spent until a person sets a cap.
 5. **Review** - watch it, **Accept clip** or **Reject** (with a note). Rejected / failed = a new spend
    approval for a new job. Nothing is ever retried automatically.
 6. **Edit** - accepted clips are joined with hard cuts (trimming / speed ramps allowed).
+
+**Project status:** `paused` keeps the plan editable and allows still uploads and approvals but blocks every paid
+action (clip submits and fallback generation); set it back to `planning` to resume. Project #3 restarted on
+2026-10-27 with a 4 m pipe and a 10-stage plan (`project.json` `stages`: discovery, site clearing, interior
+muck-out, materials arrive, floor + utility base, interior framing + insulation, glass facade + entrance,
+interior finishes, exterior deck + landscaping / earth berm, final reveal), paused with a $0 cap.
 
 ## 3. State machines (derived only from files + manifest)
 

@@ -202,7 +202,9 @@ def spec_project(slug: str, data_dir: Path | None = None) -> ProjectDef | None:
     defs.sort(key=lambda d: rank.get(d.key, order.get(d.key, 0)))
     return ProjectDef(slug=spec.slug, name=spec.name, cap_usd=spec.budget_cap_usd, cap_source="project.json budget.cap_usd",
                       stages=defs, spec_driven=True, frozen=spec.status == "frozen",
-                      notes=[f"Project status: {spec.status}. " + (
+                      notes=[f"Project status: {spec.status}"
+                             + (" - paid clip submits and still generation are blocked" if spec.status == "paused" else "")
+                             + ". " + (
                           f"Stills are generated in the studio ({spec.stills_config.generate_model} for the first, "
                           f"{spec.stills_config.edit_model} edits of the previous approved still for the rest), one "
                           "confirmed call each, and approved by you; Upload still is an optional override. "

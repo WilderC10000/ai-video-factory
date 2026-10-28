@@ -252,7 +252,7 @@ def test_project_3_restart_is_paused_with_no_paid_path_and_a_fresh_chain():
     problems = still_gen.plan(spec, manifest, "cp01_still", m)["problems"]
     assert any("paused" in p for p in problems) and any("would exceed" in p for p in problems)
     s02 = next(s for s in spec.shots if s.id == "s02")
-    assert s02.clip_count == 3 and not s02.hold
+    assert s02.clip_count == 3 and "realism review" in s02.hold  # first clips await the start_only decision
 
 
 def test_a_paused_project_refuses_paid_submits(project):

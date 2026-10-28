@@ -312,3 +312,39 @@ def test_project_3_briefs_are_first_edit_or_new_camera_and_name_only_the_next_st
     assert "material yard" not in spec.cameras["wide"]
     assert all(b.after for s in spec.shots for b in s.beats[:-1])  # every intermediate still has a concrete state
     assert all(len(b) < 2800 for b in briefs.values())  # sanity bound; the model accepts far longer prompts
+
+
+# --- causal construction (doctrine, 2026-10-28) ---------------------------------------------------
+
+def test_a_clip_without_causal_reasoning_cannot_be_submitted(project):
+    spec, manifest = project
+    raw = json.loads(EXAMPLE.read_text())
+    raw["shots"][0]["beats"][0].pop("causal")
+    path = manifest.parent / "project.json"
+    path.write_text(json.dumps(raw))
+    spec = load_spec(path)
+    assert any(p.rule == "causal construction" and p.where == "s01 beat 1" for p in rules.check(spec))
+    _approve_all_stills(spec, manifest)
+    budget.approve(manifest, spec, "s01_clip1", 0.5, "x")
+    assert submit.plan(spec, manifest, "s01_clip1")["causal_missing"]
+    with pytest.raises(submit.SubmitError) as e:
+        submit.submit(spec, manifest, "s01_clip1", execution_mode="live")
+    assert any("causal reasoning" in p for p in e.value.problems)
+
+
+def test_a_start_only_clip_pins_no_end_frame_and_its_prompt_carries_the_causal_plan(project):
+    spec, manifest = project
+    raw = json.loads(EXAMPLE.read_text())
+    raw["shots"][0]["beats"][0]["anchor"] = "start_only"
+    path = manifest.parent / "project.json"
+    path.write_text(json.dumps(raw))
+    spec = load_spec(path)
+    _approve_all_stills(spec, manifest)
+    budget.approve(manifest, spec, "s01_clip1", 0.5, "x")
+    plan = submit.plan(spec, manifest, "s01_clip1")
+    assert plan["anchor"] == "start_only" and "does not have to reach any later state" in plan["prompt"]
+    assert "first touches the top concrete pad" in plan["prompt"] and "never looks at the camera" in plan["prompt"]
+    fake = FakeFal()
+    entry = submit.submit(spec, manifest, "s01_clip1", execution_mode="live", provider=_provider(spec, "s01_clip1", fake))
+    assert "end_image_url" not in entry["payload"] and entry["anchor"] == "start_only"
+    assert sum(u.endswith("/storage/upload/initiate") for u in fake.calls) == 1  # only the start still uploaded

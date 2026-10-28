@@ -1,42 +1,269 @@
 {
-  "slug": "forma_project_3",
-  "name": "EXAMPLE ONLY - format reference, not a concept",
-  "status": "planning",
-  "concept": {"summary": "Illustrative only: a small timber cabin on concrete pads, one builder."},
-  "budget": {"cap_usd": 15.0, "per_clip_max_usd": 1.30},
-  "stills": {"source": "generate", "generate_model": "fal-ai/nano-banana", "edit_model": "fal-ai/nano-banana/edit", "per_still_max_usd": 0.20},
-  "bibles": {
-    "location": "a grassy clearing ringed by birch trees under soft overcast light",
-    "structure": "a 3 x 4 m timber cabin on six concrete pads",
-    "builder": "one builder: dark beard, black beanie, charcoal hoodie, tan canvas work pants, work gloves",
-    "materials": "pads and lumber are delivered to the left of the site and stay visible until used"
+ "slug": "forma_project_3",
+ "name": "EXAMPLE ONLY - format reference, not a concept",
+ "status": "planning",
+ "concept": {
+  "summary": "Illustrative only: a small timber cabin on concrete pads, one builder."
+ },
+ "budget": {
+  "cap_usd": 15.0,
+  "per_clip_max_usd": 1.3
+ },
+ "stills": {
+  "source": "generate",
+  "generate_model": "fal-ai/nano-banana",
+  "edit_model": "fal-ai/nano-banana/edit",
+  "per_still_max_usd": 0.2
+ },
+ "bibles": {
+  "location": "a grassy clearing ringed by birch trees under soft overcast light",
+  "structure": "a 3 x 4 m timber cabin on six concrete pads",
+  "builder": "one builder: dark beard, black beanie, charcoal hoodie, tan canvas work pants, work gloves",
+  "materials": "pads and lumber are delivered to the left of the site and stay visible until used"
+ },
+ "cameras": {
+  "wide": "high wide view from the front-left corner, whole site and the material stack in frame",
+  "close": "chest-height view of the front wall from 3 m"
+ },
+ "checkpoints": [
+  {
+   "id": "cp01",
+   "title": "Empty site",
+   "state": "the mown clearing with a pallet of concrete pads and a lumber stack at the left",
+   "camera": "wide",
+   "built": [],
+   "tools_in_view": [
+    "shovel",
+    "level"
+   ]
   },
-  "cameras": {
-    "wide": "high wide view from the front-left corner, whole site and the material stack in frame",
-    "close": "chest-height view of the front wall from 3 m"
+  {
+   "id": "cp02",
+   "title": "Pads set",
+   "state": "six concrete pads set level in two rows; the pallet at the left is empty",
+   "camera": "wide",
+   "built": [
+    "concrete pads"
+   ],
+   "materials": {
+    "concrete pads": "the pallet at the left of the site"
+   },
+   "tools_in_view": [
+    "level",
+    "shovel"
+   ]
   },
-  "checkpoints": [
-    {"id": "cp01", "title": "Empty site", "state": "the mown clearing with a pallet of concrete pads and a lumber stack at the left", "camera": "wide", "built": [], "tools_in_view": ["shovel", "level"]},
-    {"id": "cp02", "title": "Pads set", "state": "six concrete pads set level in two rows; the pallet at the left is empty", "camera": "wide", "built": ["concrete pads"], "materials": {"concrete pads": "the pallet at the left of the site"}, "tools_in_view": ["level", "shovel"]},
-    {"id": "cp03", "title": "Floor frame", "state": "a timber floor frame bolted onto the pads; the lumber stack is smaller", "camera": "wide", "built": ["concrete pads", "floor frame"], "materials": {"floor frame": "the lumber stack at the left"}, "tools_in_view": ["drill", "saw"]},
-    {"id": "cp04", "title": "Front wall studs", "state": "front wall studs standing on the floor frame", "camera": "wide", "built": ["concrete pads", "floor frame", "front wall studs"], "materials": {"front wall studs": "the lumber stack at the left"}, "tools_in_view": ["nail gun"]},
-    {"id": "cp05", "title": "Walls and roof complete", "state": "all walls and the roof framed and sheathed", "camera": "close", "built": ["concrete pads", "floor frame", "front wall studs", "walls and roof"], "materials": {"walls and roof": "the lumber and sheet stacks at the left, now nearly used up"}},
-    {"id": "cp06", "title": "Evening reveal", "state": "the finished frame at dusk", "camera": "wide", "built": ["concrete pads", "floor frame", "front wall studs", "walls and roof"]}
-  ],
-  "shots": [
-    {"id": "s01", "from": "cp01", "to": "cp02", "title": "Setting the pads", "complexity": "medium", "shot_class": "repetitive_labor", "proof": true,
-     "beats": [
-       {"task": "carries a pad from the pallet and levels it in the first row", "location": "front row, left", "duration_seconds": 3, "after": "three pads set level in the front row; three pads left on the pallet at the left; the back row is bare grass"},
-       {"task": "sets and levels the last pad of the back row", "location": "back row, right", "duration_seconds": 3}]},
-    {"id": "s02", "from": "cp02", "to": "cp03", "title": "Floor frame", "complexity": "complex", "shot_class": "repetitive_labor", "proof": true,
-     "beats": [
-       {"task": "carries two joists from the stack and lays them on the left pads", "location": "left third", "duration_seconds": 3, "after": "two joists lie on the left pads; the lumber stack at the left is two joists smaller; the middle and right pads are bare"},
-       {"task": "drills the rim joist to the joists in the middle", "location": "middle third", "duration_seconds": 3, "after": "the rim joist is fastened across the left and middle joists; the right third has no frame yet"},
-       {"task": "bolts the last corner of the frame to its pad", "location": "right third", "duration_seconds": 3}]},
-    {"id": "s03", "from": "cp03", "to": "cp04", "title": "Front wall studs", "complexity": "simple", "shot_class": "precision",
-     "beats": [{"task": "nails the last front wall stud into place against the level", "location": "front wall, centre", "duration_seconds": 5}]},
-    {"id": "s04", "from": "cp04", "to": "cp05", "title": "Walls and roof (time jump)", "complexity": "static", "shot_class": "time_jump"},
-    {"id": "s05", "from": "cp05", "to": "cp06", "title": "Evening reveal", "complexity": "simple", "shot_class": "environmental", "camera_moves": true,
-     "beats": [{"task": "slow pull back from the front wall to the wide view as the light fades; nothing is built", "location": "whole site", "duration_seconds": 3}]}
-  ]
+  {
+   "id": "cp03",
+   "title": "Floor frame",
+   "state": "a timber floor frame bolted onto the pads; the lumber stack is smaller",
+   "camera": "wide",
+   "built": [
+    "concrete pads",
+    "floor frame"
+   ],
+   "materials": {
+    "floor frame": "the lumber stack at the left"
+   },
+   "tools_in_view": [
+    "drill",
+    "saw"
+   ]
+  },
+  {
+   "id": "cp04",
+   "title": "Front wall studs",
+   "state": "front wall studs standing on the floor frame",
+   "camera": "wide",
+   "built": [
+    "concrete pads",
+    "floor frame",
+    "front wall studs"
+   ],
+   "materials": {
+    "front wall studs": "the lumber stack at the left"
+   },
+   "tools_in_view": [
+    "nail gun"
+   ]
+  },
+  {
+   "id": "cp05",
+   "title": "Walls and roof complete",
+   "state": "all walls and the roof framed and sheathed",
+   "camera": "close",
+   "built": [
+    "concrete pads",
+    "floor frame",
+    "front wall studs",
+    "walls and roof"
+   ],
+   "materials": {
+    "walls and roof": "the lumber and sheet stacks at the left, now nearly used up"
+   }
+  },
+  {
+   "id": "cp06",
+   "title": "Evening reveal",
+   "state": "the finished frame at dusk",
+   "camera": "wide",
+   "built": [
+    "concrete pads",
+    "floor frame",
+    "front wall studs",
+    "walls and roof"
+   ]
+  }
+ ],
+ "shots": [
+  {
+   "id": "s01",
+   "from": "cp01",
+   "to": "cp02",
+   "title": "Setting the pads",
+   "complexity": "medium",
+   "shot_class": "repetitive_labor",
+   "proof": true,
+   "beats": [
+    {
+     "task": "carries a pad from the pallet and levels it in the first row",
+     "location": "front row, left",
+     "duration_seconds": 3,
+     "after": "three pads set level in the front row; three pads left on the pallet at the left; the back row is bare grass",
+     "causal": {
+      "first_touch": "the top concrete pad on the pallet at the left",
+      "tool": "gloved hands and a spirit level (on the pallet)",
+      "tool_source": "the pallet of pads at the left of the site",
+      "method": "He lifts one pad, carries it four steps and lowers it into the first-row position, then lays the level on it.",
+      "stationary": "the lumber stack, the pallet and the pads already set",
+      "progress": "one pad carried and set level",
+      "frontier_start": "no pads set | front row | back row untouched",
+      "frontier_end": "front row filling | back row untouched"
+     }
+    },
+    {
+     "task": "sets and levels the last pad of the back row",
+     "location": "back row, right",
+     "duration_seconds": 3,
+     "causal": {
+      "first_touch": "the last pad on the pallet",
+      "tool": "gloved hands and the spirit level",
+      "tool_source": "the pallet at the left",
+      "method": "He carries the pad to the back-row gap, sets it down and taps it level with the heel of his hand.",
+      "stationary": "all pads already set, the lumber stack",
+      "progress": "the last pad of the back row set level",
+      "frontier_start": "front row set | back-row gap | nothing beyond",
+      "frontier_end": "all six pads set"
+     }
+    }
+   ]
+  },
+  {
+   "id": "s02",
+   "from": "cp02",
+   "to": "cp03",
+   "title": "Floor frame",
+   "complexity": "complex",
+   "shot_class": "repetitive_labor",
+   "proof": true,
+   "beats": [
+    {
+     "task": "carries two joists from the stack and lays them on the left pads",
+     "location": "left third",
+     "duration_seconds": 3,
+     "after": "two joists lie on the left pads; the lumber stack at the left is two joists smaller; the middle and right pads are bare",
+     "causal": {
+      "first_touch": "two joists on top of the lumber stack",
+      "tool": "gloved hands",
+      "tool_source": "the lumber stack at the left",
+      "method": "He shoulders two joists, walks them to the pads and lays them across the left pads.",
+      "stationary": "the pads and the lumber stack",
+      "progress": "two joists laid on the left pads",
+      "frontier_start": "bare pads | left third | middle and right untouched",
+      "frontier_end": "left joists laid | middle | right untouched"
+     }
+    },
+    {
+     "task": "drills the rim joist to the joists in the middle",
+     "location": "middle third",
+     "duration_seconds": 3,
+     "after": "the rim joist is fastened across the left and middle joists; the right third has no frame yet",
+     "causal": {
+      "first_touch": "the rim joist lying on the left joists",
+      "tool": "a cordless drill and screws (from his tool belt)",
+      "tool_source": "his tool belt",
+      "method": "He holds the rim joist against the joist ends and drives screws through it.",
+      "stationary": "the joists already laid, the pads",
+      "progress": "the rim joist fixed across the middle",
+      "frontier_start": "left joists | middle | right untouched",
+      "frontier_end": "left and middle framed | right untouched"
+     }
+    },
+    {
+     "task": "bolts the last corner of the frame to its pad",
+     "location": "right third",
+     "duration_seconds": 3,
+     "causal": {
+      "first_touch": "the corner bracket at the last pad",
+      "tool": "a socket wrench and a bolt (from his tool belt)",
+      "tool_source": "his tool belt",
+      "method": "He sets the bracket, pushes the bolt through and tightens it.",
+      "stationary": "the rest of the frame",
+      "progress": "the last corner bolted",
+      "frontier_start": "frame nearly complete | last corner",
+      "frontier_end": "floor frame complete"
+     }
+    }
+   ]
+  },
+  {
+   "id": "s03",
+   "from": "cp03",
+   "to": "cp04",
+   "title": "Front wall studs",
+   "complexity": "simple",
+   "shot_class": "precision",
+   "beats": [
+    {
+     "task": "nails the last front wall stud into place against the level",
+     "location": "front wall, centre",
+     "duration_seconds": 5,
+     "causal": {
+      "first_touch": "the last front wall stud lying on the floor frame",
+      "tool": "a nail gun and a spirit level",
+      "tool_source": "lying on the floor frame",
+      "method": "He stands the stud upright against the level and fires two nails through the bottom plate.",
+      "stationary": "the studs already standing",
+      "progress": "the last stud nailed plumb",
+      "frontier_start": "front wall studs but one | last gap",
+      "frontier_end": "front wall studs complete"
+     }
+    }
+   ]
+  },
+  {
+   "id": "s04",
+   "from": "cp04",
+   "to": "cp05",
+   "title": "Walls and roof (time jump)",
+   "complexity": "static",
+   "shot_class": "time_jump"
+  },
+  {
+   "id": "s05",
+   "from": "cp05",
+   "to": "cp06",
+   "title": "Evening reveal",
+   "complexity": "simple",
+   "shot_class": "environmental",
+   "camera_moves": true,
+   "beats": [
+    {
+     "task": "slow pull back from the front wall to the wide view as the light fades; nothing is built",
+     "location": "whole site",
+     "duration_seconds": 3
+    }
+   ]
+  }
+ ]
 }

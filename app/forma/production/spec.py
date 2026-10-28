@@ -57,6 +57,13 @@ class Beat:
     location: str  # where in the frame / work area
     duration_seconds: int = 3
     after: str = ""  # the visible state once this beat's work is done (the intermediate still that follows it)
+    # Causal reasoning (doctrine.CLIP_CAUSAL_FIELDS): what is touched first, tool, its source, method, what stays
+    # put, achievable progress, frontier at start / end. Required before a clip of this beat may be submitted.
+    causal: dict = field(default_factory=dict, hash=False, compare=False)
+    # first_last: start and end stills pinned - the clip itself must perform the whole change between them.
+    # start_only: start still pinned; the clip demonstrates a sample of the work and the edit jump-cuts to the
+    #             next still (elapsed time). Use it when the change between the stills is more than the clip can do.
+    anchor: str = "first_last"
 
 
 @dataclass(frozen=True)
@@ -278,7 +285,8 @@ def load_spec(path: Path) -> ProjectSpec:
                                   c.get("action", ""), tuple(c.get("not_yet", ())))
                        for c in raw.get("checkpoints", [])]
         shots = [Shot(s["id"], s["from"], s["to"], s["title"], s["complexity"], s["shot_class"],
-                      tuple(Beat(b["task"], b["location"], int(b.get("duration_seconds", 3)), b.get("after", ""))
+                      tuple(Beat(b["task"], b["location"], int(b.get("duration_seconds", 3)), b.get("after", ""),
+                                 dict(b.get("causal", {})), b.get("anchor", "first_last"))
                             for b in s.get("beats", [])),
                       bool(s.get("camera_moves", False)), bool(s.get("proof", False)), s.get("model"),
                       s.get("hold", ""))

@@ -12,6 +12,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
+from app.forma.doctrine import CAUSAL_VIDEO_DOCTRINE, CLIP_CAUSAL_FIELDS
 from app.forma.production import budget, rules, stills
 from app.forma.production.spec import Clip, ProjectSpec
 from app.forma.production.state import attempts, clip_state
@@ -48,17 +49,34 @@ def model_config(route: Route, clip: Clip) -> FalVideoModelConfig:
     return cfg
 
 
+def missing_causal(clip: Clip) -> list[str]:
+    """The causal-reasoning fields this clip has not written down yet (doctrine.CLIP_CAUSAL_FIELDS)."""
+    if clip.shot.shot_class == "environmental":
+        return []
+    return [k for k in CLIP_CAUSAL_FIELDS if not str(clip.beat.causal.get(k, "")).strip()]
+
+
 def prompt(spec: ProjectSpec, clip: Clip) -> str:
     cp = spec.checkpoint(clip.shot.from_cp)
-    camera = spec.cameras.get(cp.camera, cp.camera)
-    move = ("The camera performs only the move described." if clip.shot.camera_moves
-            else "Locked camera - no movement, no zoom, no pan.")
+    if clip.shot.camera_moves:
+        camera, move = spec.cameras.get(cp.camera, cp.camera), "The camera performs only the move described."
+    else:  # the start image fixes the framing; the long still-camera description would only cost prompt length
+        camera, move = "exactly the framing of the start image", "Locked camera - no movement, no zoom, no pan."
+    c = clip.beat.causal
+    if clip.beat.anchor == "start_only":
+        frames = ("It starts exactly on the image; it does not have to reach any later state - it shows a believable "
+                  "sample of the work at a real pace.")
+    else:
+        frames = "It starts exactly on the first image and ends exactly on the last image."
+    if c and clip.shot.shot_class != "environmental":
+        work = (f"The builder first touches {c['first_touch']}, using {c['tool']} ({c['tool_source']}). "
+                f"{c['method']} Achievable in this clip: {c['progress']} Stays exactly where it is: {c['stationary']}. "
+                f"Frontier: {c['frontier_start']} -> {c['frontier_end']}.")
+    else:
+        work = f"One local task at {clip.beat.location}: {clip.beat.task}."
     return (f"Vertical 9:16 realistic documentary footage, one continuous {clip.beat.duration_seconds}-second shot. "
-            f"Camera: {camera}. {move} It starts exactly on the first image and ends exactly on the last image. "
-            f"One local task at {clip.beat.location}: {clip.beat.task}. Same builder ({spec.bibles.get('builder', '')}), "
-            f"same structure and location. Every change is caused by the builder's visible hands and tools; "
-            "materials come from a visible source and go to a visible destination; nothing morphs, appears or "
-            "vanishes on its own.")
+            f"Camera: {camera}. {move} {frames} {work} Same builder ({spec.bibles.get('builder', '')}), same structure "
+            f"and location. {CAUSAL_VIDEO_DOCTRINE}")
 
 
 def _frame_sizes(manifest_path: Path, manifest: dict, clip: Clip) -> dict[str, tuple[int, int]]:
@@ -83,13 +101,16 @@ def plan(spec: ProjectSpec, manifest_path: Path, clip_key: str) -> dict:
         route = route_for(clip)
         cfg = model_config(route, clip)
         request = VideoGenerationRequest(prompt=prompt(spec, clip), duration_seconds=float(clip.beat.duration_seconds),
-                                         reference_image_path="start", end_image_path="end")
+                                         reference_image_path="start",
+                                         end_image_path="end" if clip.beat.anchor == "first_last" else None)
         estimate = FalVideoProvider(cfg, api_key="(not used)").estimate_cost(request)
         route_out = {"model": route.model, "status": route.status, "evidence": route.evidence}
     except Exception as e:  # routing / pricing problems are shown, not raised
         route_out, estimate = {"model": None, "status": "none", "evidence": str(e)}, None
     st = clip_state(spec, manifest_path, manifest, clip, bool(spec_errors))
     sizes = _frame_sizes(manifest_path, manifest, clip)
+    if clip.beat.anchor != "first_last":
+        sizes = {k: v for k, v in sizes.items() if k == clip.start_still}
     if st["state"] in ("ready", "budget_approved") and len(set(sizes.values())) > 1:
         st = {**st, "state": "blocked", "reasons": [
             "Start and end stills differ in size (" + ", ".join(f"{k} {w}x{h}" for k, (w, h) in sizes.items())
@@ -105,6 +126,7 @@ def plan(spec: ProjectSpec, manifest_path: Path, clip_key: str) -> dict:
             "proof": clip.shot.proof, "start_still": clip.start_still, "end_still": clip.end_still,
             "duration_seconds": clip.beat.duration_seconds, "task": clip.beat.task, "location": clip.beat.location,
             "prompt": prompt(spec, clip), "route": route_out, "estimate_usd": estimate, **st,
+            "anchor": clip.beat.anchor, "causal": clip.beat.causal, "causal_missing": missing_causal(clip),
             "budget_approval": (manifest.get("clip_budget") or {}).get(clip.key),
             "budget": budget.spend(manifest, spec),
             "money_problems": budget.submit_problems(manifest, spec, clip.key, estimate) if estimate else [],
@@ -120,6 +142,9 @@ def submit(spec: ProjectSpec, manifest_path: Path, clip_key: str, *, execution_m
         raise SubmitError(f"{spec.name} is {spec.status} - no new submissions.")
     info = plan(spec, manifest_path, clip_key)
     problems = list(info["spec_errors"]) + list(info["money_problems"])
+    if info["causal_missing"]:
+        problems.append("No causal reasoning recorded for this clip (" + ", ".join(info["causal_missing"]) + ") - "
+                        "write beats[].causal in project.json before any submit.")
     if info["state"] != "budget_approved":
         problems.insert(0, f"Clip is {info['state']}: " + ("; ".join(info["reasons"]) or "not ready to submit"))
     if info["estimate_usd"] is None:
@@ -135,12 +160,15 @@ def submit(spec: ProjectSpec, manifest_path: Path, clip_key: str, *, execution_m
     cfg = model_config(route, clip)
     (start, start_sha), (end, end_sha) = (stills.approved_file(manifest_path, clip.start_still),
                                           stills.approved_file(manifest_path, clip.end_still))
+    pinned_end = clip.beat.anchor == "first_last"
     extra = {"negative_prompt": NEGATIVE} if "negative_prompt" in cfg.passthrough_params else {}
-    request = VideoGenerationRequest(prompt=info["prompt"], reference_image_path=str(start), end_image_path=str(end),
+    request = VideoGenerationRequest(prompt=info["prompt"], reference_image_path=str(start),
+                                     end_image_path=str(end) if pinned_end else None,
                                      duration_seconds=float(clip.beat.duration_seconds), extra_params=extra)
     provider = provider or FalVideoProvider(cfg)
     provider.check_request(request)
-    image_url, end_url = provider.upload_image(str(start)), provider.upload_image(str(end))  # free
+    image_url = provider.upload_image(str(start))  # free
+    end_url = provider.upload_image(str(end)) if pinned_end else None
     payload = provider.build_payload(request, image_url, end_url)
     estimate = provider.estimate_cost(request)
     n = len(attempts(manifest, clip_key)) + 1
@@ -153,6 +181,7 @@ def submit(spec: ProjectSpec, manifest_path: Path, clip_key: str, *, execution_m
     manifest[key] = {
         "provider": "fal", "video_model": route.model, "route_status_at_submit": route.status,
         "shot": clip.shot.id, "beat": {"n": clip.n, "of": clip.shot.clip_count, "group": clip.shot.id},
+        "anchor": clip.beat.anchor, "causal": clip.beat.causal,
         "payload": payload, "estimated_cost_usd": estimate, "approved_usd": manifest["clip_budget"][clip_key]["max_usd"],
         "provider_job_id": submitted.provider_job_id, "meta": submitted.meta,
         "start_still": clip.start_still, "start_frame_path": str(start), "start_frame_sha256": start_sha,

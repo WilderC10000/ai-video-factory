@@ -732,15 +732,38 @@
           "task": "takes the bow saw from the wheelbarrow and cuts the fallen branch in front of the opening into three lengths, carrying them to a stack at the left beside the track",
           "location": "in front of the opening to the left beside the track",
           "duration_seconds": 5,
-          "after": "The fallen branch is gone from in front of the opening: it lies as exactly three sawn lengths stacked on the bare ground at the left beside the track, the bow saw on top. The leaf litter and brush are otherwise untouched; the wheelbarrow with the rake and shovel still stands at the track-side flank; no brush pile yet"
+          "after": "The fallen branch is gone from in front of the opening: it lies as exactly three sawn lengths stacked on the bare ground at the left beside the track, the bow saw on top. The leaf litter and brush are otherwise untouched; the wheelbarrow with the rake and shovel still stands at the track-side flank; no brush pile yet",
+          "anchor": "start_only",
+          "causal": {
+            "first_touch": "the orange-framed bow saw lying in the wheelbarrow beside him",
+            "tool": "the orange bow saw",
+            "tool_source": "the wheelbarrow at the track-side flank, where it lies with the shovel and rake",
+            "method": "He lifts the saw out by its handle, takes two steps to the fallen branch in front of the opening, plants his boot on the branch and saws back and forth across it near its thick end, sawdust falling as the cut deepens.",
+            "stationary": "the pipe, the wheelbarrow with the shovel and rake in it, the leaf litter and loose sticks, the rest of the branch",
+            "progress": "the saw taken and one cut started into the branch - not the whole branch cut or stacked.",
+            "frontier_start": "nothing cleared; the whole branch lies in front of the opening",
+            "frontier_end": "the first cut part-way into the branch; everything else untouched"
+          }
         },
         {
           "task": "takes the rake and rakes the leaf litter and brush from in front of the opening and along the track-side strip into a pile at the left beside the stacked lengths",
           "location": "front of the opening and the track-side strip",
-          "duration_seconds": 5
+          "duration_seconds": 5,
+          "anchor": "start_only",
+          "causal": {
+            "first_touch": "the rake already in his hands, its tines on the leaf litter",
+            "tool": "the wooden-handled rake",
+            "tool_source": "already in his hands - it came from the wheelbarrow",
+            "method": "He drags the rake through the leaf litter in front of the opening in three long strokes toward the brush pile at the left; the litter rolls ahead of the tines and builds against the pile, and bare brown soil shows in the raked strip behind each stroke.",
+            "stationary": "the pipe, the wheelbarrow, the stacked sawn lengths with the bow saw on top, the litter outside the strip he rakes",
+            "progress": "one rake-wide strip from the opening toward the pile raked to bare soil.",
+            "frontier_start": "branch cut and stacked; leaf litter still covers the ground in front of the opening",
+            "frontier_end": "one strip raked bare toward the brush pile; the rest of the litter untouched"
+          }
         }
       ],
-      "proof": true
+      "proof": true,
+      "hold": "realism review 2026-10-28: the approved stills differ by more work than one clip can perform, so this shot's first clip(s) are set to start_only (the clip demonstrates a sample, a jump cut reaches the next still) - confirm or change before any submit"
     },
     {
       "id": "s02",
@@ -754,7 +777,18 @@
           "task": "lifts the shovel from the wheelbarrow and shovels silt from just inside the front rim into the wheelbarrow where it stands",
           "location": "just inside the front opening, track-side edge",
           "duration_seconds": 5,
-          "after": "Exactly one wheelbarrow, still in its place at the track-side flank, now holds a low layer of dark silt. The silt patch on the pipe floor keeps its CP02 shape and position; only the silt right at the front rim is removed, so the patch is slightly smaller at its very front edge. The builder stands at the front rim with a shovelful. No spoil pile yet; no new objects"
+          "after": "Exactly one wheelbarrow, still in its place at the track-side flank, now holds a low layer of dark silt. The silt patch on the pipe floor keeps its CP02 shape and position; only the silt right at the front rim is removed, so the patch is slightly smaller at its very front edge. The builder stands at the front rim with a shovelful. No spoil pile yet; no new objects",
+          "anchor": "start_only",
+          "causal": {
+            "first_touch": "the rake in his hands, which he leans against the pipe rim",
+            "tool": "the shovel",
+            "tool_source": "lying in the wheelbarrow at the track side",
+            "method": "He leans the rake against the rim, steps to the wheelbarrow, lifts the shovel out, steps into the front of the opening and drives the blade into the dark silt on the pipe floor, lifting the first shovelful.",
+            "stationary": "the wheelbarrow, the stacked lengths, the brush pile, the raked bare ground, the silt beyond his shovel",
+            "progress": "the rake set down, the shovel taken and one shovelful of silt lifted - no load in the barrow yet.",
+            "frontier_start": "site cleared; dark silt covers the pipe floor",
+            "frontier_end": "one scoop taken at the front edge of the silt; the rest of the silt untouched"
+          }
         },
         {
           "task": "keeps shoveling silt from the floor just inside the opening into the wheelbarrow until it is heaped",
@@ -767,7 +801,8 @@
           "location": "track-side flank to the left beside the brush pile",
           "duration_seconds": 4
         }
-      ]
+      ],
+      "hold": "realism review 2026-10-28: the approved stills differ by more work than one clip can perform, so this shot's first clip(s) are set to start_only (the clip demonstrates a sample, a jump cut reaches the next still) - confirm or change before any submit"
     },
     {
       "id": "s03",

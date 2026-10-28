@@ -6,6 +6,7 @@ shown for review. Each check names the Creative Brain rule or production lesson 
 import re
 from dataclasses import dataclass
 
+from app.forma.doctrine import CLIP_CAUSAL_FIELDS
 from app.forma.production.spec import COMPLEXITY_CLIPS, ProjectSpec
 from app.forma.routing import CANDIDATE_UNPROVEN, RoutingError, select_video_model
 from app.providers.video.fal import FAL_VIDEO_MODELS
@@ -107,6 +108,15 @@ def check(spec: ProjectSpec) -> list[Problem]:
     for shot in spec.shots:
         if shot.hold:
             warn(shot.id, "on hold", f"clips blocked until resolved: {shot.hold}")
+        for i, beat in enumerate(shot.beats, 1):
+            if beat.anchor not in ("first_last", "start_only"):
+                err(f"{shot.id} beat {i}", "anchor", f"anchor must be first_last or start_only, not {beat.anchor!r}")
+            if shot.shot_class != "environmental":
+                missing = [k for k in CLIP_CAUSAL_FIELDS if not str(beat.causal.get(k, "")).strip()]
+                if missing:
+                    warn(f"{shot.id} beat {i}", "causal construction",
+                         f"no causal reasoning yet ({len(missing)} of {len(CLIP_CAUSAL_FIELDS)} fields missing) - "
+                         "required before this clip may be submitted")
 
     # Still doctrine 1-2: end states are explicit final visual conditions; removals say what is gone and where it went.
     for shot in spec.shots:

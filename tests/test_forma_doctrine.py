@@ -6,6 +6,9 @@ from app.forma.doctrine import (
     PHASE_CLIP_COUNTS,
     PRODUCTION_LESSONS,
     SHOT_CLASSES,
+    CAUSAL_CONSTRUCTION_RULES,
+    CAUSAL_VIDEO_DOCTRINE,
+    CLIP_CAUSAL_FIELDS,
     STILL_DOCTRINE,
     STILL_RULES,
     TEMPORAL_REALISM_RULES,
@@ -58,3 +61,13 @@ def test_every_still_rule_appears_in_the_creative_brain():
     assert len(STILL_RULES) == 3
     for rule in STILL_RULES:
         assert _norm(rule) in brain, rule
+
+
+def test_every_causal_construction_rule_appears_in_the_creative_brain():
+    brain = _norm(BRAIN.read_text(encoding="utf-8"))
+    assert len(CAUSAL_CONSTRUCTION_RULES) == 10
+    for rule in CAUSAL_CONSTRUCTION_RULES:
+        assert _norm(rule) in brain, rule
+    assert "morphs" in CAUSAL_VIDEO_DOCTRINE and "never looks at the camera" in CAUSAL_VIDEO_DOCTRINE
+    assert set(CLIP_CAUSAL_FIELDS) == {"first_touch", "tool", "tool_source", "method", "stationary", "progress",
+                                       "frontier_start", "frontier_end"}

@@ -77,6 +77,38 @@ planned and routed so a model can actually deliver it. Established 2026-09-28.
     believable local task, and the clips are joined by hard cuts in the edit (which may trim or speed-ramp
     them). Established 2026-09-28 with the Clip 03 three-clip Kling proof.
 
+## Causal construction — every video clip (permanent, from 2026-10-28)
+
+Applies to Project #3 and every later project. **WAN/KLING/SEEDANCE DEMONSTRATES, EDIT/JUMP CUT ADVANCES
+TIME.** A motion clip demonstrates believable work; elapsed time is added by a hard jump cut to the next approved
+still, never by the model.
+
+1. **The model never morphs the start frame into the end frame.**
+2. **Every visible change is caused by the builder's physical action with a real tool or machine.** A board is
+   positioned and fastened; debris is shoveled, carried, dumped or stacked; soil moves only by shovel, machine or
+   wheelbarrow; glass is lifted into an existing frame.
+3. **Tools and materials come from a visible place and go to a visible place; nothing appears, vanishes,
+   teleports or duplicates** - not a wheelbarrow, not a tool, not a plant or a stone.
+4. **A motion clip shows a believable sample of the work: 1-3 credible actions with real contact between builder,
+   tool, material and structure.** No magical completion.
+5. **Repetitive work keeps a visible COMPLETED | ACTIVE FRONTIER | UNTOUCHED progression; the builder works at the
+   active frontier.** Completed areas stay completed; untouched areas wait their turn.
+6. **Real construction sequencing: earlier work stays intact and later work never appears before its
+   prerequisites** - framing before insulation, insulation before lining, floor base before finished floor, a
+   frame before its glazing, landscaping only from soil, plants, stone and moss that already exist or visibly arrive.
+7. **Observational documentary camera: stable geometry, the builder never looks at or presents to the camera, no
+   posing.** No cinematic move that undermines physical credibility.
+8. **Approved start and end pixels are authoritative: exact objects, geometry, builder position, materials and
+   state.**
+9. **If a clip needs more physical actions than its duration allows, do not force it: add an intermediate still,
+   another clip, a different duration or a jump cut.**
+
+Every motion clip records its causal reasoning before it may be submitted (`beats[].causal` in project.json):
+what the builder touches first, the tool, where the tool or material comes from, the method, what stays
+stationary, the progress possible in the clip, and the construction frontier at the start and at the end.
+A clip is anchored on its start still only (`"anchor": "start_only"`) when the next still is reached by a jump cut
+rather than by the work shown in the clip.
+
 ## Still doctrine — generated stills (from Project #3)
 
 Every generated still after the first is an image edit of the previous approved still, so the previous
